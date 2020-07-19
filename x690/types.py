@@ -11,7 +11,7 @@ Each type is made available via a :py:class:`~.Registry` and can be retrieved
 via :py:meth:`~.Registry.get`.
 
 Additionally, given a :py:class:`bytes` object, the :py:func:`~.pop_tlv`
-function can be used to parse theat bytes object and return a typed instance
+function can be used to parse the bytes object and return a typed instance
 from it. See :py:func:`~.pop_tlv` for details about it's behaviour!
 
 .. note::
