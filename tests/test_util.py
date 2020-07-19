@@ -11,7 +11,6 @@ from x690.util import (
     TypeInfo,
     decode_length,
     encode_length,
-    tablify,
     to_bytes,
     visible_octets
 )
@@ -274,95 +273,6 @@ class TestHelpers(TestCase):
                     '00 55                                              '
                     '.U')
         self.assertEqual(result, expected)
-
-    def test_tablify_simple(self):
-        data = [
-            (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
-        ]
-        result = tablify(data)
-        expected = [
-            {'0': '1',
-             '1': 'row 1 col 1',
-             '2': 'row 1 col 2'},
-            {'0': '2',
-             '1': 'row 2 col 1',
-             '2': 'row 2 col 2'},
-        ]
-        six.assertCountEqual(self, result, expected)
-
-    def test_tablify_with_base(self):
-        """
-        Sometimes, the row indices are actually OIDs, so we need a way to "cut"
-        these off.
-        """
-        data = [
-            (ObjectIdentifier.from_string('1.2.1.1.1.1'), 'row 1.1.1 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.2.1.1'), 'row 2.1.1 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.1.1.1'), 'row 1.1.1 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.2.1.1'), 'row 2.1.1 col 2'),
-        ]
-        result = tablify(data, num_base_nodes=2)
-        expected = [
-            {'0': '1.1.1',
-             '1': 'row 1.1.1 col 1',
-             '2': 'row 1.1.1 col 2'},
-            {'0': '2.1.1',
-             '1': 'row 2.1.1 col 1',
-             '2': 'row 2.1.1 col 2'},
-        ]
-        six.assertCountEqual(self, result, expected)
-
-    def test_tablify_with_base_oid(self):
-        """
-        Using "tablify" with "num_base_nodes" is not very intuitive. It is
-        easier to pass in the base-oid instead.
-        """
-        OID = ObjectIdentifier.from_string
-        table_entry_oid = '1.3.6.1.2.1.1.9.1'
-
-        # Note: This is not a real table. For the test, the row-id suffix ".1"
-        # was added
-        data = [
-            (OID('1.3.6.1.2.1.1.9.1.2.1.1'), 'row 1.1 col 2'),
-            (OID('1.3.6.1.2.1.1.9.1.2.2.1'), 'row 2.1 col 2'),
-            (OID('1.3.6.1.2.1.1.9.1.3.1.1'), 'row 1.1 col 3'),
-            (OID('1.3.6.1.2.1.1.9.1.3.2.1'), 'row 2.1 col 3'),
-            (OID('1.3.6.1.2.1.1.9.1.4.1.1'), 'row 1.1 col 4'),
-            (OID('1.3.6.1.2.1.1.9.1.4.2.1'), 'row 2.1 col 4'),
-        ]
-
-        result = tablify(data, base_oid=table_entry_oid)
-        expected = [
-            {
-                '0': '1.1',
-                '2': 'row 1.1 col 2',
-                '3': 'row 1.1 col 3',
-                '4': 'row 1.1 col 4',
-            }, {
-                '0': '2.1',
-                '2': 'row 2.1 col 2',
-                '3': 'row 2.1 col 3',
-                '4': 'row 2.1 col 4',
-            },
-        ]
-        six.assertCountEqual(self, result, expected)
-
-    def test_tmp(self):
-        data = [
-            (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
-        ]
-        result = tablify(data, num_base_nodes=2)
-        expected = [
-            {'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'},
-            {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
-        ]
-        six.assertCountEqual(self, result, expected)
 
 
 class TestGithubIssue23(TestCase):
