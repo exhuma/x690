@@ -1,0 +1,46 @@
+x690 package
+============
+
+Submodules
+----------
+
+x690.exc module
+---------------
+
+.. automodule:: x690.exc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+x690.types module
+-----------------
+
+.. automodule:: x690.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+x690.util module
+----------------
+
+.. automodule:: x690.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+x690.version module
+-------------------
+
+.. automodule:: x690.version
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: x690
+   :members:
+   :undoc-members:
+   :show-inheritance:
