@@ -6,6 +6,7 @@ Welcome to x690's documentation!
    :caption: Contents:
 
    api/modules
+   glossary
 
 
 .. include:: ../README.rst
