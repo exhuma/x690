@@ -5,7 +5,7 @@ Welcome to x690's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   api/x690
+   api/modules
 
 
 .. include:: ../README.rst
