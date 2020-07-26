@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Welcome to x690’s documentation!" href="../index.html" />
+    <link rel="next" title="Glossary" href="../glossary.html" />
+    <link rel="prev" title="x690" href="modules.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -63,7 +64,7 @@ remote device returns a packet larger than the buffer.</p>
 <div class="section" id="overview">
 <h3>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <p>This module contains the encoding/decoding logic for data types as defined in
-<span class="xref std std-term">X.690</span>.</p>
+<a class="reference internal" href="../glossary.html#term-x-690"><span class="xref std std-term">X.690</span></a>.</p>
 <p>Each type is made available via a <a class="reference internal" href="#x690.types.Registry" title="x690.types.Registry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Registry</span></code></a> and can be retrieved
 via <a class="reference internal" href="#x690.types.Registry.get" title="x690.types.Registry.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get()</span></code></a>.</p>
 <p>Additionally, given a <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> object, the <a class="reference internal" href="#x690.types.pop_tlv" title="x690.types.pop_tlv"><code class="xref py py-func docutils literal notranslate"><span class="pre">pop_tlv()</span></code></a>
@@ -888,8 +889,8 @@ bytes.</p>
 <dt id="x690.util.encode_length">
 <code class="sig-prename descclassname">x690.util.</code><code class="sig-name descname">encode_length</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.util.encode_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function encodes the length of a variable into bytes conforming to the
-rules defined in <span class="xref std std-term">X.690</span>: The “length” field must be specially
-encoded for values above 127.  Additionally, from <span class="xref std std-term">X.690</span>:</p>
+rules defined in <a class="reference internal" href="../glossary.html#term-x-690"><span class="xref std std-term">X.690</span></a>: The “length” field must be specially
+encoded for values above 127.  Additionally, from <a class="reference internal" href="../glossary.html#term-x-690"><span class="xref std std-term">X.690</span></a>:</p>
 <blockquote>
 <div><p>8.1.3.2 A sender shall:</p>
 <blockquote>
@@ -991,22 +992,21 @@ existing solutions.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">x690 package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-x690.exc">x690.exc module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-x690.types">x690.types module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-x690.util">x690.util module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-x690.version">x690.version module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-x690">Module contents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">x690</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">x690 package</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="../index.html" title="previous chapter">Welcome to x690’s documentation!</a></li>
+  <li><a href="modules.html">x690</a><ul>
+      <li>Previous: <a href="modules.html" title="previous chapter">x690</a></li>
+      <li>Next: <a href="../glossary.html" title="next chapter">Glossary</a></li>
+  </ul></li>
   </ul></li>
 </ul>
 </div>

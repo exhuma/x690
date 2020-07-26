@@ -14,7 +14,7 @@
     <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="x690 package" href="api/x690.html" />
+    <link rel="next" title="x690" href="api/modules.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -36,16 +36,73 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/x690.html">x690 package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#module-x690.exc">x690.exc module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#module-x690.types">x690.types module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#module-x690.util">x690.util module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#module-x690.version">x690.version module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html#module-x690">Module contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">x690</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/x690.html">x690 package</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
+</div>
+</div>
+<div class="section" id="pure-python-x-690-implementation">
+<h1>Pure Python <a class="reference external" href="https://www.itu.int/rec/recommendation.asp?lang=en&amp;parent=T-REC-X.690-201508-I">X.690</a> implementation<a class="headerlink" href="#pure-python-x-690-implementation" title="Permalink to this headline">¶</a></h1>
+<img alt="Build &amp; Publish Docs" src="https://github.com/exhuma/x690/workflows/Build%20&amp;%20Publish%20Docs/badge.svg?branch=main" />
+<p>This module contains a pure Python implementation of the “x690” standard for
+BER encoding/decoding. Other encodings are currently unsupported but
+pull-requests are welcome.</p>
+<div class="section" id="type-extensions">
+<h2>Type Extensions<a class="headerlink" href="#type-extensions" title="Permalink to this headline">¶</a></h2>
+<p>It allows defining and detecting new data-types by simply subclassing the base
+class <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code>. An example for this can be seen in <a class="reference external" href="https://github.com/exhuma/puresnmp/blob/4240aa644a1bca01f54683215833dc6711a22745/puresnmp/types.py#L28">puresnmp</a></p>
+</div>
+</div>
+<div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="encoding-to-bytes">
+<h2>Encoding to bytes<a class="headerlink" href="#encoding-to-bytes" title="Permalink to this headline">¶</a></h2>
+<p>Encoding to bytes can be done by simply calling the Python builting <code class="docutils literal notranslate"><span class="pre">bytes()</span></code>
+on instances from <code class="docutils literal notranslate"><span class="pre">x690.types</span></code>:</p>
+<div class="section" id="encoding-of-a-single-value">
+<h3>Encoding of a single value<a class="headerlink" href="#encoding-of-a-single-value" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
+<span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x02\x01\x0c</span><span class="s1">&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="encoding-of-a-composite-value-using-sequence">
+<h3>Encoding of a composite value using Sequence<a class="headerlink" href="#encoding-of-a-composite-value-using-sequence" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="o">...</span> <span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
+<span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="decoding-from-bytes">
+<h3>Decoding from bytes<a class="headerlink" href="#decoding-from-bytes" title="Permalink to this headline">¶</a></h3>
+<p>Decode bytes by calling <code class="docutils literal notranslate"><span class="pre">x690.types.pop_tlv</span></code> on your byte data. This will
+return a tuple where the first value contains the decoded object, and the
+second one will contain any remaining bytes which were not decoded.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span>
+<span class="n">Sequence</span><span class="p">(</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">remaining_bytes</span>
+<span class="sa">b</span><span class="s1">&#39;&#39;</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
@@ -76,14 +133,15 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/x690.html">x690 package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">x690</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="api/x690.html" title="next chapter">x690 package</a></li>
+      <li>Next: <a href="api/modules.html" title="next chapter">x690</a></li>
   </ul></li>
 </ul>
 </div>
