@@ -1,7 +1,7 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
-from __future__ import division, print_function, unicode_literals 
+from __future__ import division, print_function, unicode_literals
 from binascii import hexlify, unhexlify
 from collections import namedtuple
 from typing import TYPE_CHECKING
