@@ -16,7 +16,7 @@ jobs:
         docs-folder: "docs/"
         pre-build-command: "pip install . && sphinx-apidoc -o docs/api x690"
     - name: Commit documentation changes
-      if: ${{ github.ref == 'main' }}
+      if: ${{ github.ref == 'ref/head/main' }}
       run: |
         git clone https://github.com/exhuma/x690.git --branch gh-pages --single-branch gh-pages
         cp -r docs/_build/html/* gh-pages/
@@ -28,7 +28,7 @@ jobs:
         # The above command will fail if no changes were present, so we ignore
         # the return code.
     - name: Push changes
-      if: ${{ github.ref == 'main' }}
+      if: ${{ github.ref == 'ref/head/main' }}
       uses: ad-m/github-push-action@master
       with:
         branch: gh-pages
