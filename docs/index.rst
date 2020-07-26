@@ -8,6 +8,7 @@ Welcome to x690's documentation!
    api/x690
 
 
+.. include:: ../README.rst
 
 
 
