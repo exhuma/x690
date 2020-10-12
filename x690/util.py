@@ -1,13 +1,11 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
-from __future__ import division, print_function, unicode_literals
 
 from binascii import hexlify, unhexlify
 from collections import namedtuple
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
-
-import six
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
@@ -17,52 +15,17 @@ if TYPE_CHECKING:  # pragma: no cover
 
     PyType = Union[str, bytes, int, datetime, timedelta, None, float]
 
-if six.PY2:  # pragma: no cover
 
-    def to_bytes(obj):
-        # type: (Any) -> bytes
-        """
-        Converts an object to bytes.
-
-        If it has a ``__bytes__`` attribute, uses this for conversion,
-        otherwise converts first to ``bytearray``. This was only implemented
-        for Python 2/3 consistency
-        """
-        if hasattr(obj, "__bytes__"):
-            return bytes(obj)
-        else:
-            return bytes(bytearray(obj))
-
-    def int_from_bytes(bytes_, byteorder, signed=False):
-        # type: (bytes, str, bool) -> int
-        """
-        Converts a number to bytes
-        """
-        bytes_ = bytearray(bytes_)
-        if byteorder == "little":
-            little_ordered = list(bytes_)
-        elif byteorder == "big":
-            little_ordered = list(reversed(bytes_))
-        n = sum(b << 8 * i for i, b in enumerate(little_ordered))
-        if signed and little_ordered and (little_ordered[-1] & 0x80):
-            n -= 1 << 8 * len(little_ordered)
-        return n
-
-
-else:
-    unicode = str  # pylint: disable=invalid-name
-    int_from_bytes = int.from_bytes  # pylint: disable=invalid-name
-
-    def to_bytes(obj):
-        # type: (Any) -> bytes
-        """
-        Converts an instance to bytes, and if it does not work, adds helpful
-        details to the raised ``TypeError``
-        """
-        try:
-            return bytes(obj)
-        except TypeError as exc:
-            raise TypeError(exc.args[0] + " on type {}".format(type(obj)))
+def to_bytes(obj):
+    # type: (Any) -> bytes
+    """
+    Converts an instance to bytes, and if it does not work, adds helpful
+    details to the raised ``TypeError``
+    """
+    try:
+        return bytes(obj)
+    except TypeError as exc:
+        raise TypeError(exc.args[0] + " on type {}".format(type(obj)))
 
 
 LengthValue = namedtuple("LengthValue", "length value")
@@ -120,7 +83,7 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
         # pylint: disable=attribute-defined-outside-init
 
         if isinstance(data, (bytes, bytearray)):
-            data = int_from_bytes(data, "big")
+            data = int.from_bytes(data, "big")
         # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError(
@@ -171,14 +134,6 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
         output = cls << 6 | priv_const << 5 | self.tag
         return to_bytes([output])
 
-    if six.PY2:  # pragma: no cover
-
-        def __unicode__(self):
-            return repr(self)
-
-        def __str__(self):
-            return self.__bytes__()
-
 
 def encode_length(value):
     # type: (int) -> bytes
@@ -206,7 +161,7 @@ def encode_length(value):
         >>> encode_length(200)   # > 127, needs to be specially encoded.
         b'\\x81\\xc8'
     """
-    if value == Length.INDEFINITE:
+    if value == Length.INDEFINITE:  # type: ignore
         return to_bytes([0b10000000])
 
     if value < 127:
@@ -250,23 +205,23 @@ def decode_length(data):
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    data0 = six.byte2int(data)
+    data0 = data[0]
     if data0 == 0b11111111:
         # reserved
         raise NotImplementedError("This is a reserved case in X690")
 
     if data0 & 0b10000000 == 0:
         # definite short form
-        output = int_from_bytes([data0], "big")
+        output = int.from_bytes([data0], "big")
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
         raise NotImplementedError("Indefinite lenghts are " "not yet implemented!")
     else:
         # definite long form
-        num_octets = int_from_bytes([data0 ^ 0b10000000], "big")
+        num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
         value_octets = data[1 : 1 + num_octets]
-        output = int_from_bytes(value_octets, "big")
+        output = int.from_bytes(value_octets, "big")
         data = data[num_octets + 1 :]
     return LengthValue(output, data)
 

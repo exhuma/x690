@@ -3,8 +3,6 @@
 import sys
 from unittest import TestCase
 
-import six
-
 from x690.types import ObjectIdentifier
 from x690.util import (
     Length,
@@ -12,7 +10,7 @@ from x690.util import (
     decode_length,
     encode_length,
     to_bytes,
-    visible_octets
+    visible_octets,
 )
 
 from .conftest import assert_bytes_equal
@@ -20,8 +18,7 @@ from .conftest import assert_bytes_equal
 if sys.version_info > (3, 3):
     from unittest.mock import patch
 else:
-    from mock import patch
-
+    from unittest.mock import patch
 
 
 class TestTypeInfoDecoding(TestCase):
@@ -166,17 +163,16 @@ class TestTypeInfoClass(TestCase):
 
     def test_impossible_class(self):
         instance = TypeInfo(10, 100, 1000)
-        with six.assertRaisesRegex(self, ValueError, 'class'):
+        with self.assertRaisesRegex(ValueError, "class"):
             to_bytes(instance)
 
     def test_impossible_pc(self):
         instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
-        with six.assertRaisesRegex(self, ValueError, 'primitive/constructed'):
+        with self.assertRaisesRegex(ValueError, "primitive/constructed"):
             to_bytes(instance)
 
 
 class TestLengthOctets(TestCase):
-
     def test_encode_length_short(self):
         expected = to_bytes([0b00100110])
         result = encode_length(38)
@@ -193,7 +189,7 @@ class TestLengthOctets(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_encode_length_longer_2(self):
-        expected = to_bytes([0x81, 0xa4])
+        expected = to_bytes([0x81, 0xA4])
         result = encode_length(164)
         assert_bytes_equal(result, expected)
 
@@ -205,28 +201,28 @@ class TestLengthOctets(TestCase):
     def test_identifier_long(self):
         with self.assertRaises(NotImplementedError):
             TypeInfo.from_bytes(0b11111111)
-        self.skipTest('Not yet implemented')  # TODO implement
+        self.skipTest("Not yet implemented")  # TODO implement
 
     def test_decode_length_short(self):
-        data = b'\x05'
+        data = b"\x05"
         expected = 5
         result, data = decode_length(data)
         self.assertEqual(result, expected)
-        self.assertEqual(data, b'')
+        self.assertEqual(data, b"")
 
     def test_decode_length_long(self):
         data = to_bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)
-        self.assertEqual(data, b'')
+        self.assertEqual(data, b"")
 
     def test_decode_length_longer(self):
-        data = to_bytes([0x81, 0xa4])
+        data = to_bytes([0x81, 0xA4])
         expected = 164
         result, data = decode_length(data)
         self.assertEqual(result, expected)
-        self.assertEqual(data, b'')
+        self.assertEqual(data, b"")
 
     def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
@@ -238,29 +234,31 @@ class TestLengthOctets(TestCase):
 
 
 class TestHelpers(TestCase):
-
     def test_visible_octets_minimal(self):
         result = visible_octets(to_bytes([0b00000000, 0b01010101]))
-        expected = '00 55                                              .U'
+        expected = "00 55                                              .U"
         self.assertEqual(result, expected)
 
     def test_visible_octets_double_space(self):
         """
         Test that we have a double space after 8 octets for better readability
         """
-        result = visible_octets(to_bytes([
-            0b00000000,
-            0b01010101,
-            0b00000000,
-            0b01010101,
-            0b00000000,
-            0b01010101,
-            0b00000000,
-            0b01010101,
-            0b01010101,
-        ]))
-        expected = ('00 55 00 55 00 55 00 55  55                        '
-                    '.U.U.U.UU')
+        result = visible_octets(
+            to_bytes(
+                [
+                    0b00000000,
+                    0b01010101,
+                    0b00000000,
+                    0b01010101,
+                    0b00000000,
+                    0b01010101,
+                    0b00000000,
+                    0b01010101,
+                    0b01010101,
+                ]
+            )
+        )
+        expected = "00 55 00 55 00 55 00 55  55                        " ".U.U.U.UU"
         self.assertEqual(result, expected)
 
     def test_visible_octets_multiline(self):
@@ -268,10 +266,12 @@ class TestHelpers(TestCase):
         If we have more than 16 octets, we need to go to a new line.
         """
         result = visible_octets(to_bytes([0b00000000, 0b01010101] * 9))
-        expected = ('00 55 00 55 00 55 00 55  00 55 00 55 00 55 00 55   '
-                    '.U.U.U.U.U.U.U.U\n'
-                    '00 55                                              '
-                    '.U')
+        expected = (
+            "00 55 00 55 00 55 00 55  00 55 00 55 00 55 00 55   "
+            ".U.U.U.U.U.U.U.U\n"
+            "00 55                                              "
+            ".U"
+        )
         self.assertEqual(result, expected)
 
 
@@ -294,7 +294,7 @@ class TestGithubIssue23(TestCase):
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)
-        self.assertEqual(data, b'')
+        self.assertEqual(data, b"")
 
     def test_symmetry(self):
         result, _ = decode_length(encode_length(435))
