@@ -43,6 +43,7 @@ from __future__ import division, print_function, unicode_literals
 
 import logging
 import warnings
+from binascii import hexlify
 
 import six
 import t61codec
@@ -279,6 +280,14 @@ class UnknownType(Type):
             )
         return UnknownType(tag, data)
 
+    def pretty(self):
+        return (
+            f"Unknown Type\n"
+            f"    Tag:       {self.tag}\n"
+            f"    Type Info: {self.typeinfo}\n"
+            f'    Hex-Value: {hexlify(self.value).decode("ascii")}'
+        )
+
 
 class NonASN1Type(UnknownType):  # pragma: no cover
     def __init__(self, tag, value):
@@ -382,6 +391,9 @@ class OctetString(Type):
         Convert this object in an appropriate python object
         """
         return self.value
+
+    def pretty(self):
+        return f'OctetString (hex): {hexlify(self.value).decode("ascii")}'
 
 
 class Sequence(Type):
