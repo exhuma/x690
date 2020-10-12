@@ -1,3 +1,3 @@
-include pynet/py.typed
+include x690/py.typed
 include README.rst
 LICENSE.txt
