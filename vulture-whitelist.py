@@ -15,7 +15,6 @@ x690.types.GeneralString
 x690.types.GeneralizedTime
 x690.types.GraphicString
 x690.types.IA5String
-x690.types.NonASN1Type
 x690.types.NumericString
 x690.types.ObjectDescriptor
 x690.types.ObjectIdentifier.childof

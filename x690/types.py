@@ -39,7 +39,6 @@ Depending on type, you may also want to override certain methods. See
 
 
 import logging
-import warnings
 from binascii import hexlify
 from datetime import datetime, timezone
 from itertools import zip_longest
@@ -268,16 +267,6 @@ class UnknownType(Type[bytes]):
             f'  │ Hex-Value: {hexlify(self.value).decode("ascii")}',
             INDENT_STRING * depth,
         )
-
-
-class NonASN1Type(UnknownType):  # pragma: no cover
-    def __init__(self, tag: int, value: Any) -> None:
-        warnings.warn(
-            "puresnmp.x690.types.NonASN1Type is deprecated,"
-            " replace it with UnknownType",
-            stacklevel=2,
-        )
-        super().__init__(tag, value)
 
 
 class Boolean(Type[bool]):
