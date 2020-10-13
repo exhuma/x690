@@ -6,8 +6,8 @@ Overview
 This module contains the encoding/decoding logic for data types as defined in
 :term:`X.690`.
 
-Each type is made available via a :py:class:`~.Registry` and can be retrieved
-via :py:meth:`~.Registry.get`.
+Each type is made available via a registry dictionary on :py:class:`~.Type` and
+can be retrieved via :py:meth:`~.Type.get`.
 
 Additionally, given a :py:class:`bytes` object, the :py:func:`~.pop_tlv`
 function can be used to parse the bytes object and return a typed instance
@@ -15,8 +15,7 @@ from it. See :py:func:`~.pop_tlv` for details about it's behaviour!
 
 .. note::
     The individual type classes in this module do not contain any additional
-    documentation. The bulk of this module is documented in :py:class:`~.Type`
-    and :py:class:`~.Registry`.
+    documentation. The bulk of this module is documented in :py:class:`~.Type`.
 
     For the rest, the type classes simply define the type identifier tag.
 
