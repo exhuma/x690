@@ -30,7 +30,7 @@ setup(
     license="MIT",
     include_package_data=True,
     package_data={"x690": ["py.typed"]},
-    install_requires=["t61codec >= 1.0.1"],
+    install_requires=["t61codec >= 1.0.1", "dataclasses"],
     extras_require={"dev": ["sphinx", "sphinx-rtd-theme"], "test": TEST_DEPENDENCIES},
     packages=find_packages(exclude=["tests.*", "tests", "docs"]),
     url="https://github.com/exhuma/x690",

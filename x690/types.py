@@ -41,6 +41,7 @@ Depending on type, you may also want to override certain methods. See
 import logging
 from binascii import hexlify
 from datetime import datetime, timezone
+from dataclasses import astuple
 from itertools import zip_longest
 from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
@@ -78,7 +79,7 @@ def pop_tlv(data: bytes) -> Tuple["Type[Any]", bytes]:
     if not data:
         return Null(), b""
     type_ = TypeInfo.from_bytes(data[0])
-    length, remainder = decode_length(data[1:])
+    length, remainder = astuple(decode_length(data[1:]))
 
     # determine how many octets are used to encode the length!
     offset = len(data) - len(remainder)
@@ -145,7 +146,7 @@ class Type(Generic[TWrappedPyType]):
         if not data:
             return Null()  # type: ignore
         cls.validate(data)
-        expected_length, data = decode_length(data[1:])
+        expected_length, data = astuple(decode_length(data[1:]))
         if len(data) != expected_length:
             raise InvalidValueLength(
                 "Corrupt packet: Unexpected length for {0} Expected {1} "
@@ -248,7 +249,7 @@ class UnknownType(Type[bytes]):
         if not data:
             return Null()  # type: ignore
         tag = data[0]
-        expected_length, data = decode_length(data[1:])
+        expected_length, data = astuple(decode_length(data[1:]))
         if len(data) != expected_length:
             raise ValueError(
                 "Corrupt packet: Unexpected length for {0} "

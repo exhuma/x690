@@ -3,7 +3,7 @@ Utility functions for working with the X.690 and related standards.
 """
 
 from binascii import hexlify, unhexlify
-from collections import namedtuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -14,7 +14,10 @@ if TYPE_CHECKING:  # pragma: no cover
     from .types import Type
 
 
-LengthValue = namedtuple("LengthValue", "length value")
+@dataclass
+class LengthValue:
+    length: int
+    value: bytes
 
 
 class Length:
@@ -25,7 +28,8 @@ class Length:
     INDEFINITE = "indefinite"
 
 
-class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
+@dataclass
+class TypeInfo:
     """
     Decoded structure for an X.690 "type" octet. Example::
 
@@ -47,6 +51,9 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
     The instance also keeps the raw value as it was seen in the ``_raw_value``
     attribute.
     """
+    cls: str
+    priv_const: str
+    tag: int
 
     UNIVERSAL = "universal"
     APPLICATION = "application"
