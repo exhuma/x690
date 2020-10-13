@@ -234,10 +234,9 @@ class UnknownType(Type[bytes]):
             self.typeinfo,
         )
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
+    def __eq__(self, other: object) -> bool:
         return (
-            type(self) == type(other)
+            isinstance(other, UnknownType)
             and self.value == other.value
             and self.tag == other.tag
         )
@@ -305,9 +304,8 @@ class Boolean(Type[bool]):
     def __bytes__(self) -> bytes:
         return bytes([1, 1, int(self.value)])
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
-        return type(self) == type(other) and self.value == other.value
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Boolean) and self.value == other.value
 
 
 class Null(Type[None]):
@@ -331,8 +329,7 @@ class Null(Type[None]):
     def __bytes__(self) -> bytes:
         return b"\x05\x00"
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
+    def __eq__(self, other: object) -> bool:
         return type(self) == type(other)
 
     def __repr__(self) -> str:
@@ -364,9 +361,8 @@ class OctetString(Type[bytes]):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return bytes(tinfo) + self.length + self.value
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
-        return type(self) == type(other) and self.value == other.value
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, OctetString) and self.value == other.value
 
     def pythonize(self) -> bytes:
         """
@@ -409,9 +405,8 @@ class Sequence(Type[List[Type[Any]]]):
         tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
         return bytes(tinfo) + length + output
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
-        return type(self) == type(other) and self.items == other.items
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Sequence) and self.items == other.items
 
     def __repr__(self) -> str:
         item_repr = [repr(item) for item in self]
@@ -474,9 +469,8 @@ class Integer(Type[int]):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
-        return type(self) == type(other) and self.value == other.value
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Integer) and self.value == other.value
 
 
 class ObjectIdentifier(Type[str]):
@@ -633,10 +627,9 @@ class ObjectIdentifier(Type[str]):
     def __repr__(self) -> str:
         return "ObjectIdentifier(%r)" % (self.identifiers,)
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck, protected-access
+    def __eq__(self, other: object) -> bool:
         return (
-            type(self) == type(other)
+            isinstance(other, ObjectIdentifier)
             and self.__collapsed_identifiers == other.__collapsed_identifiers
         )
 
@@ -773,9 +766,8 @@ class T61String(Type[str]):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return bytes(tinfo) + self.length + self.value.encode("t61")
 
-    def __eq__(self, other: Any) -> bool:
-        # pylint: disable=unidiomatic-typecheck
-        return type(self) == type(other) and self.value == other.value
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, T61String) and self.value == other.value
 
     @classmethod
     def decode(cls, data: bytes) -> "T61String":
