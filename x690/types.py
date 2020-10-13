@@ -112,6 +112,13 @@ class Type(Generic[TWrappedPyType]):
     def get(typeclass: str, typeid: int) -> TypeType["Type[Any]"]:
         return Type.__registry[(typeclass, typeid)]
 
+    @staticmethod
+    def all() -> List[TypeType["Type[Any]"]]:
+        """
+        Returns all registered classes
+        """
+        return list(Type.__registry.values())
+
     @classmethod
     def validate(cls, data: bytes) -> None:
         """
@@ -292,7 +299,7 @@ class Boolean(Type[bool]):
                 "Unexpected Boolean value. Length should be 1," " it was %d" % data[1]
             )
 
-    def __init__(self, value: bool) -> None:
+    def __init__(self, value: bool = False) -> None:
         self.value = value
 
     def __bytes__(self) -> bytes:
@@ -346,7 +353,7 @@ class OctetString(Type[bytes]):
     def decode(cls, data: bytes) -> "OctetString":
         return cls(data)
 
-    def __init__(self, value: Union[str, bytes]) -> None:
+    def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
             self.value = value.encode("ascii")
         else:
@@ -441,7 +448,7 @@ class Integer(Type[int]):
     def decode(cls, data: bytes) -> "Integer":
         return cls(int.from_bytes(data, "big", signed=cls.SIGNED))
 
-    def __init__(self, value: int) -> None:
+    def __init__(self, value: int = 0) -> None:
         self.value = value
 
     def __bytes__(self) -> bytes:
@@ -579,6 +586,9 @@ class ObjectIdentifier(Type[str]):
             # See https://en.wikipedia.org/wiki/X.690#BER_encoding
             first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
             first_output = (40 * first) + second
+        elif len(identifiers) == 0:
+            self.identifiers = tuple()
+            return
         else:
             first_output = identifiers[0]
             rest = tuple()
@@ -749,7 +759,7 @@ class T61String(Type[str]):
     TAG = 0x14
     __INITIALISED = False
 
-    def __init__(self, value: Union[str, bytes]) -> None:
+    def __init__(self, value: Union[str, bytes] = "") -> None:
         if not T61String.__INITIALISED:
             t61codec.register()
             self.__INITIALISED = True

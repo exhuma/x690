@@ -3,6 +3,8 @@
 import sys
 from unittest import TestCase
 
+import pytest
+
 from x690.types import (
     Boolean,
     Integer,
@@ -655,3 +657,13 @@ class TestAllTypes(TestCase):
         self.assertFalse(a.parentof(c))
         self.assertTrue(d.parentof(c))
         self.assertFalse(c.parentof(d))
+
+
+@pytest.mark.parametrize("cls", Type.all())
+def test_noarg_constructor(cls):
+    """
+    We want to allow a no-args constructor on everything. It should create
+    an instance of the requested class
+    """
+    instance = cls()
+    assert isinstance(instance, cls)
