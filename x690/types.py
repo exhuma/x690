@@ -41,7 +41,7 @@ Depending on type, you may also want to override certain methods. See
 import logging
 import warnings
 from binascii import hexlify
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itertools import zip_longest
 from sys import version_info
 from textwrap import indent
@@ -707,10 +707,12 @@ class ObjectIdentifier(Type[str]):
 
 class ObjectDescriptor(Type[str]):
     TAG = 0x07
+    value = ""
 
 
 class External(Type[bytes]):
     TAG = 0x08
+    value = b""
 
 
 class Real(Type[float]):
@@ -720,10 +722,12 @@ class Real(Type[float]):
 
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
+    value: List[Any] = []
 
 
 class EmbeddedPdv(Type[bytes]):
     TAG = 0x0B
+    value = b""
 
 
 class Utf8String(Type[str]):
@@ -733,14 +737,17 @@ class Utf8String(Type[str]):
 
 class RelativeOid(Type[str]):
     TAG = 0x0D
+    value = ""
 
 
 class Set(Type[bytes]):
     TAG = 0x11
+    value = b""
 
 
 class NumericString(Type[str]):
     TAG = 0x12
+    value = ""
 
 
 class PrintableString(Type[str]):
@@ -750,6 +757,7 @@ class PrintableString(Type[str]):
 
 class T61String(Type[str]):
     TAG = 0x14
+    value = ""
     __INITIALISED = False
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
@@ -782,47 +790,59 @@ class T61String(Type[str]):
 
 class VideotexString(Type[str]):
     TAG = 0x15
+    value = ""
 
 
 class IA5String(Type[str]):
     TAG = 0x16
+    value = ""
 
 
 class UtcTime(Type[datetime]):
     TAG = 0x17
+    value = datetime(1979, 1, 1, tzinfo=timezone.utc)
 
 
 class GeneralizedTime(Type[datetime]):
     TAG = 0x18
+    value = datetime(1979, 1, 1)
 
 
 class GraphicString(Type[str]):
     TAG = 0x19
+    value = ""
 
 
 class VisibleString(Type[str]):
     TAG = 0x1A
+    value = ""
 
 
 class GeneralString(Type[str]):
     TAG = 0x1B
+    value = ""
 
 
 class UniversalString(Type[str]):
     TAG = 0x1C
+    value = ""
 
 
 class CharacterString(Type[str]):
     TAG = 0x1D
+    value = ""
 
 
 class BmpString(Type[str]):
     TAG = 0x1E
+    value = ""
 
 
 class EOC(Type[bytes]):
     TAG = 0x00
+    value = b""
 
 
 class BitString(Type[str]):
     TAG = 0x03
+    value = ""

@@ -667,3 +667,12 @@ def test_noarg_constructor(cls):
     """
     instance = cls()
     assert isinstance(instance, cls)
+
+
+@pytest.mark.parametrize("cls", Type.all())
+def test_pretty(cls):
+    """
+    Calling "pretty" on classes should always return a string
+    """
+    result = cls().pretty()
+    assert isinstance(result, str)
