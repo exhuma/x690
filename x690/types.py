@@ -555,13 +555,10 @@ class ObjectIdentifier(Type[str]):
         Create an OID from a string
         """
 
-        if not isinstance(value, str):
-            raise TypeError("%r is not of type `str`" % value)
-
         if value == ".":
             return ObjectIdentifier(1)
 
-        if isinstance(value, str) and value.startswith("."):
+        if value.startswith("."):
             value = value[1:]
 
         identifiers = [int(ident, 10) for ident in value.split(".")]
