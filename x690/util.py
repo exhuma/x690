@@ -9,23 +9,11 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
-    from typing import Any, Dict, Iterable, List, Tuple, Union
+    from typing import Dict, Iterable, List, Tuple, Union
 
     from .types import Type
 
     PyType = Union[str, bytes, int, datetime, timedelta, None, float]
-
-
-def to_bytes(obj):
-    # type: (Any) -> bytes
-    """
-    Converts an instance to bytes, and if it does not work, adds helpful
-    details to the raised ``TypeError``
-    """
-    try:
-        return bytes(obj)
-    except TypeError as exc:
-        raise TypeError(exc.args[0] + " on type {}".format(type(obj)))
 
 
 LengthValue = namedtuple("LengthValue", "length value")
@@ -132,7 +120,7 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
             raise ValueError("Unexpected primitive/constructed for type info")
 
         output = cls << 6 | priv_const << 5 | self.tag
-        return to_bytes([output])
+        return bytes([output])
 
 
 def encode_length(value):
@@ -162,10 +150,10 @@ def encode_length(value):
         b'\\x81\\xc8'
     """
     if value == Length.INDEFINITE:  # type: ignore
-        return to_bytes([0b10000000])
+        return bytes([0b10000000])
 
     if value < 127:
-        return to_bytes([value])
+        return bytes([value])
 
     output = []  # type: List[int]
     while value > 0:
@@ -174,7 +162,7 @@ def encode_length(value):
 
     # prefix length information
     output = [0b10000000 | len(output)] + output
-    return to_bytes(output)
+    return bytes(output)
 
 
 def decode_length(data):

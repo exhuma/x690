@@ -9,7 +9,6 @@ from x690.util import (
     TypeInfo,
     decode_length,
     encode_length,
-    to_bytes,
     visible_octets,
 )
 
@@ -81,50 +80,50 @@ class TestTypeInfoEncoding(TestCase):
 
     def test_to_bytes_a(self):
         obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b00011110])
+        result = bytes(obj)
+        expected = bytes([0b00011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_b(self):
         obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b00111110])
+        result = bytes(obj)
+        expected = bytes([0b00111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_c(self):
         obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b01011110])
+        result = bytes(obj)
+        expected = bytes([0b01011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_d(self):
         obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b01111110])
+        result = bytes(obj)
+        expected = bytes([0b01111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_e(self):
         obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b10011110])
+        result = bytes(obj)
+        expected = bytes([0b10011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_f(self):
         obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b10111110])
+        result = bytes(obj)
+        expected = bytes([0b10111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_g(self):
         obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b11011110])
+        result = bytes(obj)
+        expected = bytes([0b11011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_h(self):
         obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
-        result = to_bytes(obj)
-        expected = to_bytes([0b11111110])
+        result = bytes(obj)
+        expected = bytes([0b11111110])
         self.assertEqual(result, expected)
 
 
@@ -149,7 +148,7 @@ class TestTypeInfoClass(TestCase):
         should yield the same instance.
         """
         expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        result = TypeInfo.from_bytes(to_bytes(expected))
+        result = TypeInfo.from_bytes(bytes(expected))
         self.assertEqual(result, expected)
 
     def test_dencoding_symmetry_b(self):
@@ -157,44 +156,44 @@ class TestTypeInfoClass(TestCase):
         Decoding an object from bytes, and then encoding the resulting instance
         should yield the same bytes.
         """
-        expected = to_bytes([0b11111110])
-        result = to_bytes(TypeInfo.from_bytes(expected))
+        expected = bytes([0b11111110])
+        result = bytes(TypeInfo.from_bytes(expected))
         self.assertEqual(result, expected)
 
     def test_impossible_class(self):
         instance = TypeInfo(10, 100, 1000)
         with self.assertRaisesRegex(ValueError, "class"):
-            to_bytes(instance)
+            bytes(instance)
 
     def test_impossible_pc(self):
         instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
         with self.assertRaisesRegex(ValueError, "primitive/constructed"):
-            to_bytes(instance)
+            bytes(instance)
 
 
 class TestLengthOctets(TestCase):
     def test_encode_length_short(self):
-        expected = to_bytes([0b00100110])
+        expected = bytes([0b00100110])
         result = encode_length(38)
         self.assertEqual(result, expected)
 
     def test_encode_length_long(self):
-        expected = to_bytes([0b10000001, 0b11001001])
+        expected = bytes([0b10000001, 0b11001001])
         result = encode_length(201)
         assert_bytes_equal(result, expected)
 
     def test_encode_length_longer(self):
-        expected = to_bytes([0b10000010, 0b00000001, 0b00101110])
+        expected = bytes([0b10000010, 0b00000001, 0b00101110])
         result = encode_length(302)
         assert_bytes_equal(result, expected)
 
     def test_encode_length_longer_2(self):
-        expected = to_bytes([0x81, 0xA4])
+        expected = bytes([0x81, 0xA4])
         result = encode_length(164)
         assert_bytes_equal(result, expected)
 
     def test_encode_length_indefinite(self):
-        expected = to_bytes([0b10000000])
+        expected = bytes([0b10000000])
         result = encode_length(Length.INDEFINITE)
         assert_bytes_equal(result, expected)
 
@@ -211,14 +210,14 @@ class TestLengthOctets(TestCase):
         self.assertEqual(data, b"")
 
     def test_decode_length_long(self):
-        data = to_bytes([0b10000010, 0b00000001, 0b10110011])
+        data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b"")
 
     def test_decode_length_longer(self):
-        data = to_bytes([0x81, 0xA4])
+        data = bytes([0x81, 0xA4])
         expected = 164
         result, data = decode_length(data)
         self.assertEqual(result, expected)
@@ -226,16 +225,16 @@ class TestLengthOctets(TestCase):
 
     def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
-            decode_length(to_bytes([0b10000000]))
+            decode_length(bytes([0b10000000]))
 
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
-            decode_length(to_bytes([0b11111111]))
+            decode_length(bytes([0b11111111]))
 
 
 class TestHelpers(TestCase):
     def test_visible_octets_minimal(self):
-        result = visible_octets(to_bytes([0b00000000, 0b01010101]))
+        result = visible_octets(bytes([0b00000000, 0b01010101]))
         expected = "00 55                                              .U"
         self.assertEqual(result, expected)
 
@@ -244,7 +243,7 @@ class TestHelpers(TestCase):
         Test that we have a double space after 8 octets for better readability
         """
         result = visible_octets(
-            to_bytes(
+            bytes(
                 [
                     0b00000000,
                     0b01010101,
@@ -265,7 +264,7 @@ class TestHelpers(TestCase):
         """
         If we have more than 16 octets, we need to go to a new line.
         """
-        result = visible_octets(to_bytes([0b00000000, 0b01010101] * 9))
+        result = visible_octets(bytes([0b00000000, 0b01010101] * 9))
         expected = (
             "00 55 00 55 00 55 00 55  00 55 00 55 00 55 00 55   "
             ".U.U.U.U.U.U.U.U\n"
@@ -285,12 +284,12 @@ class TestGithubIssue23(TestCase):
     """
 
     def test_encode(self):
-        expected = to_bytes([0b10000010, 0b00000001, 0b10110011])
+        expected = bytes([0b10000010, 0b00000001, 0b10110011])
         result = encode_length(435)
         assert_bytes_equal(result, expected)
 
     def test_decode(self):
-        data = to_bytes([0b10000010, 0b00000001, 0b10110011])
+        data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)

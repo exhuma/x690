@@ -14,7 +14,6 @@ from x690.types import (
     Type,
     UnknownType,
     pop_tlv,
-    to_bytes,
 )
 from x690.util import TypeInfo
 
@@ -24,13 +23,13 @@ from .conftest import assert_bytes_equal
 class TestBoolean(TestCase):
     def test_encoding_false(self):
         value = Boolean(False)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x01\x01\x00"
         assert_bytes_equal(result, expected)
 
     def test_encoding_true(self):
         value = Boolean(True)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x01\x01\x01"
         assert_bytes_equal(result, expected)
 
@@ -75,7 +74,7 @@ class TestObjectIdentifier(TestCase):
         A simple OID with no identifier above 127
         """
         oid = ObjectIdentifier(1, 3, 6, 1, 2, 1)
-        result = to_bytes(oid)
+        result = bytes(oid)
         expected = b"\x06\x05\x2b\x06\x01\x02\x01"
         assert_bytes_equal(result, expected)
 
@@ -100,7 +99,7 @@ class TestObjectIdentifier(TestCase):
         A simple OID with the top-level ID '0'
         """
         oid = ObjectIdentifier(0)
-        result = to_bytes(oid)
+        result = bytes(oid)
         expected = b"\x06\x00"
         self.assertEqual(result, expected)
 
@@ -110,7 +109,7 @@ class TestObjectIdentifier(TestCase):
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
         oid = ObjectIdentifier(1, 3, 6, 8072)
-        result = to_bytes(oid)
+        result = bytes(oid)
         expected = b"\x06\x04\x2b\x06\xbf\x08"
         assert_bytes_equal(result, expected)
 
@@ -158,7 +157,7 @@ class TestObjectIdentifier(TestCase):
         self.assertEqual(result, expected)
 
     def test_encode_root(self):
-        result = to_bytes(ObjectIdentifier(1))
+        result = bytes(ObjectIdentifier(1))
         expected = b"\x06\x01\x01"
         assert_bytes_equal(result, expected)
 
@@ -280,7 +279,7 @@ class TestObjectIdentifier(TestCase):
 class TestInteger(TestCase):
     def test_encoding(self):
         value = Integer(100)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x01\x64"
         assert_bytes_equal(result, expected)
 
@@ -291,7 +290,7 @@ class TestInteger(TestCase):
 
     def test_encoding_large_value(self):
         value = Integer(1913359423)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x04\x72\x0b\x8c\x3f"
         assert_bytes_equal(result, expected)
 
@@ -302,7 +301,7 @@ class TestInteger(TestCase):
 
     def test_encoding_zero(self):
         value = Integer(0)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x01\x00"
         assert_bytes_equal(result, expected)
 
@@ -335,73 +334,73 @@ class TestIntegerValues(TestCase):
         See https://github.com/exhuma/puresnmp/issues/27
         """
         value = Integer(32768)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\x00\x80\x00"
         assert_bytes_equal(result, expected)
 
     def test_minus_one(self):
         value = Integer(-1)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x01\xff"
         assert_bytes_equal(result, expected)
 
     def test_minus_two(self):
         value = Integer(-2)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x01\xfe"
         assert_bytes_equal(result, expected)
 
     def test_zero(self):
         value = Integer(0)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x01\x00"
         assert_bytes_equal(result, expected)
 
     def test_minus_16bit(self):
         value = Integer(-0b1111111111111111)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\xff\x00\x01"
         assert_bytes_equal(result, expected)
 
     def test_minus_16bit_plus_one(self):
         value = Integer(-0b1111111111111111 + 1)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\xff\x00\x02"
         assert_bytes_equal(result, expected)
 
     def test_minus_16bit_minus_one(self):
         value = Integer(-0b1111111111111111 - 1)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\xff\x00\x00"
         assert_bytes_equal(result, expected)
 
     def test_minus_16bit_minus_two(self):
         value = Integer(-0b1111111111111111 - 2)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\xfe\xff\xff"
         assert_bytes_equal(result, expected)
 
     def test_16bit(self):
         value = Integer(0b1111111111111111)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\x00\xff\xff"
         assert_bytes_equal(result, expected)
 
     def test_16bitplusone(self):
         value = Integer(0b1111111111111111 + 1)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\x01\x00\x00"
         assert_bytes_equal(result, expected)
 
     def test_16bitminusone(self):
         value = Integer(0b1111111111111111 - 1)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x03\x00\xff\xfe"
         assert_bytes_equal(result, expected)
 
     def test_32bit(self):
         value = Integer(0b11111111111111111111111111111111)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x02\x05\x00\xff\xff\xff\xff"
         assert_bytes_equal(result, expected)
 
@@ -409,7 +408,7 @@ class TestIntegerValues(TestCase):
 class TestOctetString(TestCase):
     def test_encoding(self):
         value = OctetString("hello")
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x04\x05hello"
         assert_bytes_equal(result, expected)
 
@@ -427,7 +426,7 @@ class TestOctetString(TestCase):
 class TestT61String(TestCase):
     def test_encoding(self):
         value = T61String("hello Ω")
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x14\x07hello \xe0"
         assert_bytes_equal(result, expected)
 
@@ -452,17 +451,17 @@ class TestT61String(TestCase):
 class TestSequence(TestCase):
     def test_encoding(self):
         value = Sequence(OctetString("hello"), ObjectIdentifier(1, 3, 6), Integer(100))
-        result = to_bytes(value)
+        result = bytes(value)
         expected = (
-            to_bytes(
+            bytes(
                 [
                     0x30,
                     14,  # Expected length (note that an OID drops one byte)
                 ]
             )
-            + to_bytes(OctetString("hello"))
-            + to_bytes(ObjectIdentifier(1, 3, 6))
-            + to_bytes(Integer(100))
+            + bytes(OctetString("hello"))
+            + bytes(ObjectIdentifier(1, 3, 6))
+            + bytes(Integer(100))
         )
         assert_bytes_equal(result, expected)
 
@@ -546,7 +545,7 @@ class TestNull(TestCase):
             Null.validate(b"\x05\x01")
 
     def test_encoding(self):
-        result = to_bytes(Null())
+        result = bytes(Null())
         expected = b"\x05\x00"
         self.assertEqual(result, expected)
 
@@ -573,7 +572,7 @@ class TestUnknownType(TestCase):
         self.assertEqual(result, expected)
 
     def test_encoding(self):
-        result = to_bytes(UnknownType(0x99, b"\x0a"))
+        result = bytes(UnknownType(0x99, b"\x0a"))
         expected = b"\x99\x01\x0a"
         self.assertEqual(result, expected)
 
@@ -599,12 +598,12 @@ class TestAllTypes(TestCase):
         self.assertEqual(result, expected)
 
     def test_tlv_simple(self):
-        result = pop_tlv(to_bytes([2, 1, 0]))
+        result = pop_tlv(bytes([2, 1, 0]))
         expected = (Integer(0), b"")
         self.assertEqual(result, expected)
 
     def test_tlv_unknown_type(self):
-        result = pop_tlv(to_bytes([254, 1, 0]))
+        result = pop_tlv(bytes([254, 1, 0]))
         expected = (UnknownType(254, b"\x00"), b"")
         self.assertEqual(result, expected)
         self.assertEqual(result[0].tag, 254)
@@ -613,7 +612,7 @@ class TestAllTypes(TestCase):
 
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
-            Integer.validate(to_bytes([0b00111110]))
+            Integer.validate(bytes([0b00111110]))
 
     def test_null_from_bytes(self):
         result = Type.from_bytes(b"")

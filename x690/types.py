@@ -53,7 +53,7 @@ from typing import TypeVar, Union
 import t61codec  # type: ignore
 
 from .exc import InvalidValueLength
-from .util import TypeInfo, decode_length, encode_length, to_bytes
+from .util import TypeInfo, decode_length, encode_length
 
 LOG = logging.getLogger(__name__)
 TWrappedPyType = TypeVar("TWrappedPyType")
@@ -218,7 +218,7 @@ class UnknownType(Type[bytes]):
         self.typeinfo = TypeInfo.from_bytes(tag)
 
     def __bytes__(self) -> bytes:
-        return to_bytes([self.tag]) + encode_length(self.length) + self.value
+        return bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self) -> str:
         return "%s(%r, %r, typeinfo=%r)" % (
@@ -297,7 +297,7 @@ class Boolean(Type[bool]):
         self.value = value
 
     def __bytes__(self) -> bytes:
-        return to_bytes([1, 1, int(self.value)])
+        return bytes([1, 1, int(self.value)])
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
@@ -356,7 +356,7 @@ class OctetString(Type[bytes]):
 
     def __bytes__(self) -> bytes:
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
-        return to_bytes(tinfo) + self.length + self.value
+        return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
@@ -397,11 +397,11 @@ class Sequence(Type[List[Type[Any]]]):
         self.items = items
 
     def __bytes__(self) -> bytes:
-        items = [to_bytes(item) for item in self]
+        items = [bytes(item) for item in self]
         output = b"".join(items)
         length = encode_length(len(output))
         tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
-        return to_bytes(tinfo) + length + output
+        return bytes(tinfo) + length + output
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
@@ -466,7 +466,7 @@ class Integer(Type[int]):
             del octets[0]
 
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
-        return to_bytes(tinfo) + to_bytes([len(octets)]) + to_bytes(octets)
+        return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
@@ -614,11 +614,11 @@ class ObjectIdentifier(Type[str]):
         return ".".join([str(_) for _ in self.identifiers])
 
     def __bytes__(self) -> bytes:
-        output = to_bytes([self.TAG])
+        output = bytes([self.TAG])
         if self.__collapsed_identifiers == (0,):
             output += b"\x00"
         else:
-            output += self.length + to_bytes(self.__collapsed_identifiers)
+            output += self.length + bytes(self.__collapsed_identifiers)
         return output
 
     def __repr__(self) -> str:
@@ -762,7 +762,7 @@ class T61String(Type[str]):
 
     def __bytes__(self) -> bytes:
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
-        return to_bytes(tinfo) + self.length + self.value.encode("t61")
+        return bytes(tinfo) + self.length + self.value.encode("t61")
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
