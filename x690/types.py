@@ -41,9 +41,8 @@ Depending on type, you may also want to override certain methods. See
 import logging
 import warnings
 from binascii import hexlify
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from itertools import zip_longest
-from sys import version_info
 from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
 from typing import Type as TypeType
@@ -54,7 +53,6 @@ import t61codec  # type: ignore
 from .exc import InvalidValueLength
 from .util import TypeInfo, decode_length, encode_length
 
-LOG = logging.getLogger(__name__)
 TWrappedPyType = TypeVar("TWrappedPyType")
 INDENT_STRING = "  "
 

@@ -4,16 +4,14 @@ Utility functions for working with the X.690 and related standards.
 
 from binascii import hexlify, unhexlify
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
-    from typing import Dict, Iterable, List, Tuple, Union
+    from typing import Dict, List, Tuple, Union
 
     from .types import Type
-
-    PyType = Union[str, bytes, int, datetime, timedelta, None, float]
 
 
 LengthValue = namedtuple("LengthValue", "length value")
