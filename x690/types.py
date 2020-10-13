@@ -45,6 +45,7 @@ from binascii import hexlify
 from datetime import datetime, timedelta
 from itertools import zip_longest
 from sys import version_info
+from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
 from typing import Type as TypeType
 from typing import TypeVar, Union
@@ -56,6 +57,7 @@ from .util import TypeInfo, decode_length, encode_length, to_bytes
 
 LOG = logging.getLogger(__name__)
 TWrappedPyType = TypeVar("TWrappedPyType")
+INDENT_STRING = "  "
 
 
 def pop_tlv(data: bytes) -> Tuple["Type[Any]", bytes]:
@@ -180,14 +182,14 @@ class Type(Generic[TWrappedPyType]):
         # pylint: disable=no-member
         return self.value
 
-    def pretty(self) -> str:  # pragma: no cover
+    def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
         Returns a readable representation (possibly multiline) of the value.
 
         By default this simply returns the string representation. But more
         complex values may override this.
         """
-        return str(self)
+        return indent(str(self), INDENT_STRING * depth)
 
 
 class UnknownType(Type[bytes]):
@@ -255,12 +257,13 @@ class UnknownType(Type[bytes]):
             )
         return UnknownType(tag, data)
 
-    def pretty(self) -> str:
-        return (
+    def pretty(self, depth: int = 0) -> str:
+        return indent(
             f"Unknown Type\n"
-            f"    Tag:       {self.tag}\n"
-            f"    Type Info: {self.typeinfo}\n"
-            f'    Hex-Value: {hexlify(self.value).decode("ascii")}'
+            f"  │ Tag:       {self.tag}\n"
+            f"  │ Type Info: {self.typeinfo}\n"
+            f'  │ Hex-Value: {hexlify(self.value).decode("ascii")}',
+            INDENT_STRING * depth,
         )
 
 
@@ -365,8 +368,12 @@ class OctetString(Type[bytes]):
         """
         return self.value
 
-    def pretty(self) -> str:
-        return f'OctetString (hex): {hexlify(self.value).decode("ascii")}'
+    def pretty(self, depth: int = 0) -> str:
+        if self.value == b"":
+            hexlified = "<empty string>"
+        else:
+            hexlified = hexlify(self.value).decode("ascii")
+        return indent(f"OctetString (hex): {hexlified}", INDENT_STRING * depth)
 
 
 class Sequence(Type[List[Type[Any]]]):
@@ -416,14 +423,14 @@ class Sequence(Type[List[Type[Any]]]):
     def pythonize(self) -> List[Type[Any]]:
         return [obj.pythonize() for obj in self]
 
-    def pretty(self) -> str:  # pragma: no cover
+    def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
         Overrides :py:meth:`.Type.pretty`
         """
         lines = [self.__class__.__name__]
         for item in self.items:
-            lines.append("   %s" % item.pretty())
-        return "\n".join(lines)
+            lines.append(item.pretty(depth + 1))
+        return indent("\n".join(lines), INDENT_STRING * depth)
 
 
 class Integer(Type[int]):
