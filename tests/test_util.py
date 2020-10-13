@@ -1,13 +1,15 @@
 # pylint: skip-file
 
 import sys
-from unittest import TestCase
 from dataclasses import astuple
+from unittest import TestCase
 
 from x690.types import ObjectIdentifier
 from x690.util import (
     Length,
+    TypeClass,
     TypeInfo,
+    TypeNature,
     decode_length,
     encode_length,
     visible_octets,
@@ -34,42 +36,42 @@ class TestTypeInfoDecoding(TestCase):
 
     def test_from_bytes_a(self):
         result = TypeInfo.from_bytes(0b00011110)
-        expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b11110)
+        expected = TypeInfo(TypeClass.UNIVERSAL, TypeNature.PRIMITIVE, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_b(self):
         result = TypeInfo.from_bytes(0b00111110)
-        expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_c(self):
         result = TypeInfo.from_bytes(0b01011110)
-        expected = TypeInfo(TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b11110)
+        expected = TypeInfo(TypeClass.APPLICATION, TypeNature.PRIMITIVE, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_d(self):
         result = TypeInfo.from_bytes(0b01111110)
-        expected = TypeInfo(TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(TypeClass.APPLICATION, TypeNature.CONSTRUCTED, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_e(self):
         result = TypeInfo.from_bytes(0b10011110)
-        expected = TypeInfo(TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b11110)
+        expected = TypeInfo(TypeClass.CONTEXT, TypeNature.PRIMITIVE, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_f(self):
         result = TypeInfo.from_bytes(0b10111110)
-        expected = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(TypeClass.CONTEXT, TypeNature.CONSTRUCTED, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_g(self):
         result = TypeInfo.from_bytes(0b11011110)
-        expected = TypeInfo(TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b11110)
+        expected = TypeInfo(TypeClass.PRIVATE, TypeNature.PRIMITIVE, 0b11110)
         self.assertEqual(result, expected)
 
     def test_from_bytes_h(self):
         result = TypeInfo.from_bytes(0b11111110)
-        expected = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(TypeClass.PRIVATE, TypeNature.CONSTRUCTED, 0b11110)
         self.assertEqual(result, expected)
 
 
@@ -80,49 +82,49 @@ class TestTypeInfoEncoding(TestCase):
     """
 
     def test_to_bytes_a(self):
-        obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b11110)
+        obj = TypeInfo(TypeClass.UNIVERSAL, TypeNature.PRIMITIVE, 0b11110)
         result = bytes(obj)
         expected = bytes([0b00011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_b(self):
-        obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
+        obj = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
         result = bytes(obj)
         expected = bytes([0b00111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_c(self):
-        obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b11110)
+        obj = TypeInfo(TypeClass.APPLICATION, TypeNature.PRIMITIVE, 0b11110)
         result = bytes(obj)
         expected = bytes([0b01011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_d(self):
-        obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b11110)
+        obj = TypeInfo(TypeClass.APPLICATION, TypeNature.CONSTRUCTED, 0b11110)
         result = bytes(obj)
         expected = bytes([0b01111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_e(self):
-        obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b11110)
+        obj = TypeInfo(TypeClass.CONTEXT, TypeNature.PRIMITIVE, 0b11110)
         result = bytes(obj)
         expected = bytes([0b10011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_f(self):
-        obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b11110)
+        obj = TypeInfo(TypeClass.CONTEXT, TypeNature.CONSTRUCTED, 0b11110)
         result = bytes(obj)
         expected = bytes([0b10111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_g(self):
-        obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b11110)
+        obj = TypeInfo(TypeClass.PRIVATE, TypeNature.PRIMITIVE, 0b11110)
         result = bytes(obj)
         expected = bytes([0b11011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_h(self):
-        obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
+        obj = TypeInfo(TypeClass.PRIVATE, TypeNature.CONSTRUCTED, 0b11110)
         result = bytes(obj)
         expected = bytes([0b11111110])
         self.assertEqual(result, expected)
@@ -134,13 +136,13 @@ class TestTypeInfoClass(TestCase):
     """
 
     def test_equality(self):
-        a = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        b = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
+        a = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
+        b = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
         self.assertEqual(a, b)
 
     def test_inequality(self):
-        a = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        b = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b10110)
+        a = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
+        b = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b10110)
         self.assertNotEqual(a, b)
 
     def test_encoding_symmetry_a(self):
@@ -148,7 +150,7 @@ class TestTypeInfoClass(TestCase):
         Encoding an object to bytes, and then decoding the resulting bytes
         should yield the same instance.
         """
-        expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
         result = TypeInfo.from_bytes(bytes(expected))
         self.assertEqual(result, expected)
 
@@ -167,7 +169,7 @@ class TestTypeInfoClass(TestCase):
             bytes(instance)
 
     def test_impossible_pc(self):
-        instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
+        instance = TypeInfo(TypeClass.APPLICATION, 100, 1000)
         with self.assertRaisesRegex(ValueError, "primitive/constructed"):
             bytes(instance)
 

@@ -40,8 +40,8 @@ Depending on type, you may also want to override certain methods. See
 
 import logging
 from binascii import hexlify
-from datetime import datetime, timezone
 from dataclasses import astuple
+from datetime import datetime, timezone
 from itertools import zip_longest
 from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
@@ -51,7 +51,7 @@ from typing import TypeVar, Union
 import t61codec  # type: ignore
 
 from .exc import InvalidValueLength
-from .util import TypeInfo, decode_length, encode_length
+from .util import TypeClass, TypeInfo, TypeNature, decode_length, encode_length
 
 TWrappedPyType = TypeVar("TWrappedPyType")
 INDENT_STRING = "  "
@@ -99,7 +99,7 @@ class Type(Generic[TWrappedPyType]):
     """
 
     __registry: Dict[Tuple[str, int], TypeType["Type[Any]"]] = {}
-    TYPECLASS: str = TypeInfo.UNIVERSAL
+    TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     TAG: int = 0
     value: TWrappedPyType
 
@@ -225,12 +225,8 @@ class UnknownType(Type[bytes]):
         return bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self) -> str:
-        return "%s(%r, %r, typeinfo=%r)" % (
-            self.__class__.__name__,
-            self.tag,
-            self.value,
-            self.typeinfo,
-        )
+        tinfo = f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
+        return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -346,7 +342,7 @@ class OctetString(Type[bytes]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
         return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other: object) -> bool:
@@ -390,7 +386,7 @@ class Sequence(Type[List[Type[Any]]]):
         items = [bytes(item) for item in self]
         output = b"".join(items)
         length = encode_length(len(output))
-        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
+        tinfo = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, Sequence.TAG)
         return bytes(tinfo) + length + output
 
     def __eq__(self, other: object) -> bool:
@@ -454,7 +450,7 @@ class Integer(Type[int]):
         ):
             del octets[0]
 
-        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other: object) -> bool:
@@ -756,7 +752,7 @@ class T61String(Type[str]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
         return bytes(tinfo) + self.length + self.value.encode("t61")
 
     def __eq__(self, other: object) -> bool:

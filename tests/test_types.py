@@ -585,7 +585,7 @@ class TestUnknownType(TestCase):
     def test_repr(self):
         result = repr(UnknownType(99, b"abc"))
         typeinfo = TypeInfo("application", "constructed", 3)
-        expected = "UnknownType(99, b'abc', typeinfo=%r)" % (typeinfo,)
+        expected = "<UnknownType 99 b'abc' application/constructed/3>"
         self.assertEqual(result, expected)
 
 

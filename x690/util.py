@@ -5,6 +5,7 @@ Utility functions for working with the X.690 and related standards.
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -14,18 +15,30 @@ if TYPE_CHECKING:  # pragma: no cover
     from .types import Type
 
 
-@dataclass
-class LengthValue:
-    length: int
-    value: bytes
-
-
-class Length:
+class Length(str, Enum):
     """
     A simple "namespace" to avoid magic values for indefinite lengths.
     """
 
     INDEFINITE = "indefinite"
+
+
+class TypeClass(str, Enum):
+    UNIVERSAL = "universal"
+    APPLICATION = "application"
+    CONTEXT = "context"
+    PRIVATE = "private"
+
+
+class TypeNature(str, Enum):
+    PRIMITIVE = "primitive"
+    CONSTRUCTED = "constructed"
+
+
+@dataclass
+class LengthValue:
+    length: int
+    value: bytes
 
 
 @dataclass
@@ -34,16 +47,15 @@ class TypeInfo:
     Decoded structure for an X.690 "type" octet. Example::
 
         >>> TypeInfo.from_bytes(b'\\x30')
-        TypeInfo(cls='universal', priv_const='constructed', tag=16)
+        TypeInfo(cls='universal', nature='constructed', tag=16)
 
     The structure contains 3 fields:
 
     cls
-        The typeclass (either :py:attr:`~.UNIVERSAL`, :py:attr:`~.APPLICATION`,
-        :py:attr:`~.CONTEXT` or :py:attr:`~.CONSTRUCTED`)
+        The typeclass (a value taken from :py:class:`~.TypeClass`)
 
-    priv_const
-        Whether the value is :py:attr:`~.CONSTRUCTED` or :py:attr:`~.PRIMITIVE`
+    nature
+        A value taken from :py:`~.TypeNature`
 
     tag
         The actual type identifier.
@@ -51,16 +63,11 @@ class TypeInfo:
     The instance also keeps the raw value as it was seen in the ``_raw_value``
     attribute.
     """
-    cls: str
-    priv_const: str
+
+    cls: TypeClass
+    nature: TypeNature
     tag: int
 
-    UNIVERSAL = "universal"
-    APPLICATION = "application"
-    CONTEXT = "context"
-    PRIVATE = "private"
-    PRIMITIVE = "primitive"
-    CONSTRUCTED = "constructed"
     _raw_value = None
 
     @staticmethod
@@ -71,7 +78,7 @@ class TypeInfo:
         instance::
 
             >>> TypeInfo.from_bytes(b'\\x30')
-            TypeInfo(cls='universal', priv_const='constructed', tag=16)
+            TypeInfo(cls='universal', nature='constructed', tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
 
@@ -87,44 +94,44 @@ class TypeInfo:
         value = data & 0b00011111
 
         if cls_hint == 0b00:
-            cls = TypeInfo.UNIVERSAL
+            cls = TypeClass.UNIVERSAL
         elif cls_hint == 0b01:
-            cls = TypeInfo.APPLICATION
+            cls = TypeClass.APPLICATION
         elif cls_hint == 0b10:
-            cls = TypeInfo.CONTEXT
+            cls = TypeClass.CONTEXT
         elif cls_hint == 0b11:
-            cls = TypeInfo.PRIVATE
+            cls = TypeClass.PRIVATE
         else:
             pass  # Impossible case (2 bits can only have 4 combinations).
 
-        priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
+        nature = TypeNature.CONSTRUCTED if pc_hint else TypeNature.PRIMITIVE
 
-        instance = TypeInfo(cls, priv_const, value)
+        instance = TypeInfo(cls, nature, value)
         instance._raw_value = data
         return instance
 
     def __bytes__(self):
         # type: () -> bytes
         # pylint: disable=invalid-name
-        if self.cls == TypeInfo.UNIVERSAL:
+        if self.cls == TypeClass.UNIVERSAL:
             cls = 0b00
-        elif self.cls == TypeInfo.APPLICATION:
+        elif self.cls == TypeClass.APPLICATION:
             cls = 0b01
-        elif self.cls == TypeInfo.CONTEXT:
+        elif self.cls == TypeClass.CONTEXT:
             cls = 0b10
-        elif self.cls == TypeInfo.PRIVATE:
+        elif self.cls == TypeClass.PRIVATE:
             cls = 0b11
         else:
             raise ValueError("Unexpected class for type info")
 
-        if self.priv_const == TypeInfo.CONSTRUCTED:
-            priv_const = 0b01
-        elif self.priv_const == TypeInfo.PRIMITIVE:
-            priv_const = 0b00
+        if self.nature == TypeNature.CONSTRUCTED:
+            nature = 0b01
+        elif self.nature == TypeNature.PRIMITIVE:
+            nature = 0b00
         else:
             raise ValueError("Unexpected primitive/constructed for type info")
 
-        output = cls << 6 | priv_const << 5 | self.tag
+        output = cls << 6 | nature << 5 | self.tag
         return bytes([output])
 
 
