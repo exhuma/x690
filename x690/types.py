@@ -160,7 +160,7 @@ class Type(Generic[TWrappedPyType]):
         return cls.decode(data)
 
     @classmethod
-    def decode(cls, data: bytes) -> "Type[TWrappedPyType]":
+    def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information
