@@ -44,4 +44,4 @@ jobs:
           poetry run vulture vulture-whitelist.py x690 | pygmentize
       - name: Check for obsolete vulture-whitelist items
         run: |
-          poetry run vulture-whitelist.py
+          poetry run python vulture-whitelist.py
