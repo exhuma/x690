@@ -25,24 +25,23 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install black isort pygments vulture mypy
-          pip install -e .
+          python -m pip install --upgrade pip poetry
+          poetry install
       - name: Lint with black
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          black --check x690
+          poetry run black --check x690
       - name: Check import ordering
         run: |
           set -o pipefail
-          isort --check-only --diff --recursive x690 | pygmentize
+          poetry run isort --check-only --diff --recursive x690 | pygmentize
       - name: Check Types
         run: |
-          mypy --strict -p x690
+          poetry run mypy --strict -p x690
       - name: Check for unused code
         run: |
           set -o pipefail
-          vulture vulture-whitelist.py x690 | pygmentize
+          poetry run vulture vulture-whitelist.py x690 | pygmentize
       - name: Check for obsolete vulture-whitelist items
         run: |
-          python vulture-whitelist.py
+          poetry run vulture-whitelist.py
