@@ -75,5 +75,5 @@ def test_identifiers(octet, expected_class, expected_pc, expected_value):
     ],
 )
 def test_class_detection(typeclass, tag, pc, expected_class):
-    result = t.Type.get(typeclass, tag, pc)
+    result = t.X690Type.get(typeclass, tag, pc)
     assert result == expected_class

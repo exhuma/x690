@@ -14,8 +14,8 @@ from x690.types import (
     OctetString,
     Sequence,
     T61String,
-    Type,
     UnknownType,
+    X690Type,
     decode,
 )
 from x690.util import TypeInfo
@@ -745,7 +745,7 @@ class TestAllTypes(TestCase):
         self.assertFalse(c.parentof(d))
 
 
-@pytest.mark.parametrize("cls", Type.all())
+@pytest.mark.parametrize("cls", X690Type.all())
 def test_noarg_constructor(cls):
     """
     We want to allow a no-args constructor on everything. It should create
@@ -772,7 +772,7 @@ def test_incomplete_decoding():
     assert exc.value.remainder == b"junk-bytes"
 
 
-@pytest.mark.parametrize("cls", Type.all())
+@pytest.mark.parametrize("cls", X690Type.all())
 def test_repr(cls):
     obj = cls()
     result = repr(obj)
@@ -785,7 +785,7 @@ def test_helpful_noarg_error():
     dealt with. Ensure the error-message is somewhat helpful.
     """
 
-    class Foo(Type[str]):
+    class Foo(X690Type[str]):
         def __init__(self, value: str) -> None:
             """
             This enforces *value* which breaks lazy-decoding

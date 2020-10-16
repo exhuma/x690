@@ -6,10 +6,10 @@ import sys
 
 import pytest
 
-from x690.types import Integer, OctetString, Type, UnknownType
+from x690.types import Integer, OctetString, UnknownType, X690Type
 
 
-@pytest.mark.parametrize("cls", Type.all())
+@pytest.mark.parametrize("cls", X690Type.all())
 def test_pretty(cls):
     """
     Calling "pretty" on classes should always return a string
