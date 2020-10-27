@@ -70,7 +70,6 @@ class TestBoolean(TestCase):
 class TestObjectIdentifier(TestCase):
     def setUp(self):
         super().setUp()
-        self.maxDiff = None
 
     def test_uncollapsible_head(self):
         """
