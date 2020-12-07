@@ -75,3 +75,45 @@ second one will contain any remaining bytes which were not decoded.
     Sequence(Integer(12), Integer(12), Integer(12))
     >>> remaining_bytes
     b''
+
+
+Type-Hinting & Enforcing
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.3.0
+
+When decoding bytes, it is possible to specify an expcted type which does two
+things: Firstly, it tells tools like ``mypy`` what the return type will be and
+secondly, it runs an internal type-check which *ensures* that the returned
+value is of the expected type. ``x690.exc.UnexpectedType`` is raised otherwise.
+
+This does of course only work if you know the type in advance.
+
+.. code:: python
+
+    import x690.types as t
+    >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
+    >>> decoded, remaining_bytes = t.pop_tlv(data, enforce_type=t.Sequence)
+    >>> decoded
+    Sequence(Integer(12), Integer(12), Integer(12))
+    >>> remaining_bytes
+    b''
+
+
+Strict Decoding
+~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.3.0
+
+When decoding using ``pop_tlv`` and you don't expect any remaining bytes, use
+``strict=True`` which will raise ``x690.exc.IncompleteDecoding`` if there's any
+remaining data.
+
+.. code:: python
+
+    import x690.types as t
+    >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes'
+    >>> decoded, remaining_bytes = t.pop_tlv(data, strict=True)
+    Traceback (most recent call last):
+      ...
+    x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!

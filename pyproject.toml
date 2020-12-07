@@ -19,12 +19,14 @@ max-line-length = "80"
 
 [tool.poetry]
 name = "x690"
-version = "0.2.0.post2"
+version = "0.3.0"
 description = "Pure Python X.690 implementation"
 authors = ["Michel Albert <michel@albert.lu>"]
 license = "MIT"
 readme = "README.rst"
-homepage = "https://github.com/exhuma/x690"
+homepage = "https://exhuma.github.io/x690/"
+documentation = "https://exhuma.github.io/x690/"
+repository = "https://github.com/exhuma/x690"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
