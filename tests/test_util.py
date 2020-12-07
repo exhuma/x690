@@ -13,6 +13,7 @@ from x690.util import (
     decode_length,
     encode_length,
     visible_octets,
+    wrap,
 )
 
 from .conftest import assert_bytes_equal
@@ -301,3 +302,19 @@ class TestGithubIssue23(TestCase):
     def test_symmetry(self):
         result, _ = astuple(decode_length(encode_length(435)))
         self.assertEqual(result, 435)
+
+
+def test_wrap():
+    """
+    Ensures that wrapping debug text works as expected
+    """
+    result = wrap("Hello\nThis is a long line", "Title", 3)
+    expected = (
+        "      ┌─────────────────────┐\n"
+        "      │ Title               │\n"
+        "      ├─────────────────────┤\n"
+        "      │ Hello               │\n"
+        "      │ This is a long line │\n"
+        "      └─────────────────────┘"
+    )
+    assert result == expected

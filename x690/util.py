@@ -14,6 +14,9 @@ if TYPE_CHECKING:  # pragma: no cover
 
     from .types import Type
 
+#: String to be used for indenting nested items during "pretty()" calls
+INDENT_STRING = "  "
+
 
 class Length(str, Enum):
     """
@@ -268,3 +271,18 @@ def visible_octets(data):
     output.append("%-50s %s" % (" ".join(line), raw_ascii.decode("ascii")))
     line = []
     return "\n".join(output)
+
+
+def wrap(text: str, header: str, depth: int) -> str:
+    """
+    Wraps *text* in a border with a *header* and indented by *indent*.
+    """
+    prefix = INDENT_STRING * depth
+    box_width = max(len(header), max(len(x) for x in text.splitlines()))
+    border1 = prefix + "┌─" + ("─" * box_width) + "─┐"
+    border2 = prefix + "├─" + ("─" * box_width) + "─┤"
+    border3 = prefix + "└─" + ("─" * box_width) + "─┘"
+    fmt = "%s│ %%-%ds │" % (prefix, box_width)
+    wrapped = [(fmt % line) for line in text.splitlines()]
+    output = "\n".join([border1, fmt % header, border2] + wrapped + [border3])
+    return output

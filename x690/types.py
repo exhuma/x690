@@ -52,16 +52,18 @@ import t61codec  # type: ignore
 
 from .exc import IncompleteDecoding, InvalidValueLength, UnexpectedType
 from .util import (
+    INDENT_STRING,
     TypeClass,
     TypeInfo,
     TypeNature,
     decode_length,
     encode_length,
+    visible_octets,
+    wrap,
 )
 
 TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
-INDENT_STRING = "  "
 
 
 def pop_tlv(
@@ -382,10 +384,15 @@ class OctetString(Type[bytes]):
 
     def pretty(self, depth: int = 0) -> str:
         if self.value == b"":
-            hexlified = "<empty string>"
-        else:
-            hexlified = hexlify(self.value).decode("ascii")
-        return indent(f"OctetString (hex): {hexlified}", INDENT_STRING * depth)
+            return repr(self)
+        try:
+            # We try to decode embedded X.690 items. If we can't, we display
+            # the value raw
+            embedded = pop_tlv(self.value)[0]  # type: ignore
+            return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
+        except:  # pylint: disable=bare-except
+            wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
+            return wrapped
 
 
 class Sequence(Type[List[Type[Any]]]):
@@ -438,10 +445,14 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.pretty`
         """
-        lines = [self.__class__.__name__]
+        lines = [f"{self.__class__.__name__} with {len(self.items)} items:"]
         for item in self.items:
-            lines.append(item.pretty(depth + 1))
-        return indent("\n".join(lines), INDENT_STRING * depth)
+            prettified_item = item.pretty(depth)
+            bullet = INDENT_STRING * depth + "⁃ "
+            for line in prettified_item.splitlines():
+                lines.append(bullet + line)
+                bullet = "  "
+        return "\n".join(lines)
 
 
 class Integer(Type[int]):
