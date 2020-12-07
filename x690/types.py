@@ -88,7 +88,7 @@ def pop_tlv(
     """
     # TODO: This function should be moved to another module (util maybe?).
     if not data:
-        return Null(), b""
+        return Null(), b""  # type: ignore
 
     type_ = TypeInfo.from_bytes(data[0])
     length, remainder = astuple(decode_length(data[1:]))
@@ -116,7 +116,7 @@ def pop_tlv(
             remainder=remainder,
         )
 
-    return value, remainder
+    return value, remainder  # type: ignore
 
 
 class Type(Generic[TWrappedPyType]):
@@ -408,6 +408,7 @@ class Sequence(Type[List[Type[Any]]]):
 
     @classmethod
     def decode(cls, data: bytes) -> "Sequence":
+        value: Any
         output = []
         while data:
             value, data = pop_tlv(data)
