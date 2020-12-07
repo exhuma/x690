@@ -694,7 +694,7 @@ def test_pretty_octetstrings():
     embedded = Integer(10)
     data = OctetString(bytes(embedded))
     result = data.pretty()
-    if sys.version_info < (3, 8):
+    if sys.version_info < (3, 7):
         expected = (
             "┌────────────────────────────────────┐\n"
             "│ Embedded in x690.types.OctetString │\n"
@@ -720,7 +720,7 @@ def test_pretty_octetstrings_raw():
     """
     data = OctetString(b"hello-world")
     result = data.pretty()
-    if sys.version_info < (3, 8):
+    if sys.version_info < (3, 7):
         expected = (
             "┌────────────────────────────────────────────────────────────────┐\n"
             "│ x690.types.OctetString                                         │\n"
