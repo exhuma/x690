@@ -38,8 +38,6 @@ Depending on type, you may also want to override certain methods. See
 # pylint: disable=abstract-method, missing-docstring
 
 
-import logging
-from binascii import hexlify
 from dataclasses import astuple
 from datetime import datetime, timezone
 from itertools import zip_longest
@@ -289,7 +287,7 @@ class UnknownType(Type[bytes]):
             f"Unknown Type\n"
             f"  │ Tag:       {self.tag}\n"
             f"  │ Type Info: {self.typeinfo}\n"
-            f'  │ Hex-Value: {hexlify(self.value).decode("ascii")}',
+            f"  │ Hex-Value: {self.value.hex()}",
             INDENT_STRING * depth,
         )
 
