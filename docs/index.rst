@@ -1,11 +1,14 @@
 Welcome to x690's documentation!
 ================================
 
+Repository: https://github.com/exhuma/x690
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   api/modules
+   changelog
+   API Docs <api/modules>
    glossary
 
 

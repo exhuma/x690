@@ -3,11 +3,13 @@ def assert_bytes_equal(a, b):
     """
     Helper method to compare bytes with more helpful output.
     """
+
     def is_bytes(x):
         # type: (Union[bytes, bytearray]) -> bool
         return isinstance(x, (bytes, bytearray))
+
     if not is_bytes(a) or not is_bytes(b):
-        raise ValueError('assertBytesEqual requires two bytes objects!')
+        raise ValueError("assertBytesEqual requires two bytes objects!")
 
     if a != b:
         comparisons = []
@@ -18,30 +20,31 @@ def assert_bytes_equal(a, b):
 
         def char_repr(c):
             # type: (bytes) -> str
-            if 0x1f < char_a < 0x80:
+            if 0x1F < char_a < 0x80:
                 # bytearray to prevent accidental pre-mature str conv
                 # str to prevent b'' suffix in repr's output
-                return repr(str(bytearray([char_a]).decode('ascii')))
-            return '.'
+                return repr(str(bytearray([char_a]).decode("ascii")))
+            return "."
+
         for offset, (char_a, char_b) in enumerate(zip_longest(a, b)):
-            comp, marker = ('==', '') if char_a == char_b else ('!=', '>>')
+            comp, marker = ("==", "") if char_a == char_b else ("!=", ">>")
 
             # Using "zip_longest", overflows are marked as "None", which is
             # unambiguous in this case, but we need to handle these
             # separately from the main format string.
             if char_a is None:
-                char_ab = char_ad = char_ah = char_ar = '?'
+                char_ab = char_ad = char_ah = char_ar = "?"
             else:
-                char_ab = '0b{:08b}'.format(char_a)
-                char_ad = '{:3d}'.format(char_a)
-                char_ah = '0x{:02x}'.format(char_a)
+                char_ab = f"0b{char_a:08b}"
+                char_ad = f"{char_a:3d}"
+                char_ah = f"0x{char_a:02x}"
                 char_ar = char_repr(char_a)
             if char_b is None:
-                char_bb = char_bd = char_bh = char_br = '?'
+                char_bb = char_bd = char_bh = char_br = "?"
             else:
-                char_bb = '0b{:08b}'.format(char_b)
-                char_bd = '{:3d}'.format(char_b)
-                char_bh = '0x{:02x}'.format(char_b)
+                char_bb = f"0b{char_b:08b}"
+                char_bd = f"{char_b:3d}"
+                char_bh = f"0x{char_b:02x}"
                 char_br = char_repr(char_b)
             comparisons.append(
                 "{8:<3} Offset {0:4d}: "
@@ -58,9 +61,12 @@ def assert_bytes_equal(a, b):
                     char_bh,
                     marker,
                     char_ar,
-                    char_br))
+                    char_br,
+                )
+            )
         raise AssertionError(
-            'Bytes differ!\n' +
-            'type(a)=%s, type(b)=%s\n' % (type_a, type_b) +
-            '\nIndividual bytes:\n' +
-            '\n'.join(comparisons))
+            "Bytes differ!\n"
+            + "type(a)=%s, type(b)=%s\n" % (type_a, type_b)
+            + "\nIndividual bytes:\n"
+            + "\n".join(comparisons)
+        )

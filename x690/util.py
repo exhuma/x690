@@ -1,74 +1,23 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
-from __future__ import division, print_function, unicode_literals
 
 from binascii import hexlify, unhexlify
-from collections import namedtuple
+from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING
-
-import six
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
-    from typing import Any, Dict, Iterable, List, Tuple, Union
+    from typing import Dict, List, Tuple, Union
 
     from .types import Type
 
-    PyType = Union[str, bytes, int, datetime, timedelta, None, float]
-
-if six.PY2:  # pragma: no cover
-
-    def to_bytes(obj):
-        # type: (Any) -> bytes
-        """
-        Converts an object to bytes.
-
-        If it has a ``__bytes__`` attribute, uses this for conversion,
-        otherwise converts first to ``bytearray``. This was only implemented
-        for Python 2/3 consistency
-        """
-        if hasattr(obj, "__bytes__"):
-            return bytes(obj)
-        else:
-            return bytes(bytearray(obj))
-
-    def int_from_bytes(bytes_, byteorder, signed=False):
-        # type: (bytes, str, bool) -> int
-        """
-        Converts a number to bytes
-        """
-        bytes_ = bytearray(bytes_)
-        if byteorder == "little":
-            little_ordered = list(bytes_)
-        elif byteorder == "big":
-            little_ordered = list(reversed(bytes_))
-        n = sum(b << 8 * i for i, b in enumerate(little_ordered))
-        if signed and little_ordered and (little_ordered[-1] & 0x80):
-            n -= 1 << 8 * len(little_ordered)
-        return n
+#: String to be used for indenting nested items during "pretty()" calls
+INDENT_STRING = "  "
 
 
-else:
-    unicode = str  # pylint: disable=invalid-name
-    int_from_bytes = int.from_bytes  # pylint: disable=invalid-name
-
-    def to_bytes(obj):
-        # type: (Any) -> bytes
-        """
-        Converts an instance to bytes, and if it does not work, adds helpful
-        details to the raised ``TypeError``
-        """
-        try:
-            return bytes(obj)
-        except TypeError as exc:
-            raise TypeError(exc.args[0] + " on type {}".format(type(obj)))
-
-
-LengthValue = namedtuple("LengthValue", "length value")
-
-
-class Length:
+class Length(str, Enum):
     """
     A simple "namespace" to avoid magic values for indefinite lengths.
     """
@@ -76,21 +25,39 @@ class Length:
     INDEFINITE = "indefinite"
 
 
-class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
+class TypeClass(str, Enum):
+    UNIVERSAL = "universal"
+    APPLICATION = "application"
+    CONTEXT = "context"
+    PRIVATE = "private"
+
+
+class TypeNature(str, Enum):
+    PRIMITIVE = "primitive"
+    CONSTRUCTED = "constructed"
+
+
+@dataclass
+class LengthValue:
+    length: int
+    value: bytes
+
+
+@dataclass
+class TypeInfo:
     """
     Decoded structure for an X.690 "type" octet. Example::
 
         >>> TypeInfo.from_bytes(b'\\x30')
-        TypeInfo(cls='universal', priv_const='constructed', tag=16)
+        TypeInfo(cls='universal', nature='constructed', tag=16)
 
     The structure contains 3 fields:
 
     cls
-        The typeclass (either :py:attr:`~.UNIVERSAL`, :py:attr:`~.APPLICATION`,
-        :py:attr:`~.CONTEXT` or :py:attr:`~.CONSTRUCTED`)
+        The typeclass (a value taken from :py:class:`~.TypeClass`)
 
-    priv_const
-        Whether the value is :py:attr:`~.CONSTRUCTED` or :py:attr:`~.PRIMITIVE`
+    nature
+        A value taken from :py:`~.TypeNature`
 
     tag
         The actual type identifier.
@@ -99,12 +66,10 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
     attribute.
     """
 
-    UNIVERSAL = "universal"
-    APPLICATION = "application"
-    CONTEXT = "context"
-    PRIVATE = "private"
-    PRIMITIVE = "primitive"
-    CONSTRUCTED = "constructed"
+    cls: TypeClass
+    nature: TypeNature
+    tag: int
+
     _raw_value = None
 
     @staticmethod
@@ -115,12 +80,12 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
         instance::
 
             >>> TypeInfo.from_bytes(b'\\x30')
-            TypeInfo(cls='universal', priv_const='constructed', tag=16)
+            TypeInfo(cls='universal', nature='constructed', tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
 
         if isinstance(data, (bytes, bytearray)):
-            data = int_from_bytes(data, "big")
+            data = int.from_bytes(data, "big")
         # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError(
@@ -131,53 +96,45 @@ class TypeInfo(namedtuple("TypeInfo", "cls priv_const tag")):
         value = data & 0b00011111
 
         if cls_hint == 0b00:
-            cls = TypeInfo.UNIVERSAL
+            cls = TypeClass.UNIVERSAL
         elif cls_hint == 0b01:
-            cls = TypeInfo.APPLICATION
+            cls = TypeClass.APPLICATION
         elif cls_hint == 0b10:
-            cls = TypeInfo.CONTEXT
+            cls = TypeClass.CONTEXT
         elif cls_hint == 0b11:
-            cls = TypeInfo.PRIVATE
+            cls = TypeClass.PRIVATE
         else:
             pass  # Impossible case (2 bits can only have 4 combinations).
 
-        priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
+        nature = TypeNature.CONSTRUCTED if pc_hint else TypeNature.PRIMITIVE
 
-        instance = TypeInfo(cls, priv_const, value)
+        instance = TypeInfo(cls, nature, value)
         instance._raw_value = data
         return instance
 
     def __bytes__(self):
         # type: () -> bytes
         # pylint: disable=invalid-name
-        if self.cls == TypeInfo.UNIVERSAL:
+        if self.cls == TypeClass.UNIVERSAL:
             cls = 0b00
-        elif self.cls == TypeInfo.APPLICATION:
+        elif self.cls == TypeClass.APPLICATION:
             cls = 0b01
-        elif self.cls == TypeInfo.CONTEXT:
+        elif self.cls == TypeClass.CONTEXT:
             cls = 0b10
-        elif self.cls == TypeInfo.PRIVATE:
+        elif self.cls == TypeClass.PRIVATE:
             cls = 0b11
         else:
             raise ValueError("Unexpected class for type info")
 
-        if self.priv_const == TypeInfo.CONSTRUCTED:
-            priv_const = 0b01
-        elif self.priv_const == TypeInfo.PRIMITIVE:
-            priv_const = 0b00
+        if self.nature == TypeNature.CONSTRUCTED:
+            nature = 0b01
+        elif self.nature == TypeNature.PRIMITIVE:
+            nature = 0b00
         else:
             raise ValueError("Unexpected primitive/constructed for type info")
 
-        output = cls << 6 | priv_const << 5 | self.tag
-        return to_bytes([output])
-
-    if six.PY2:  # pragma: no cover
-
-        def __unicode__(self):
-            return repr(self)
-
-        def __str__(self):
-            return self.__bytes__()
+        output = cls << 6 | nature << 5 | self.tag
+        return bytes([output])
 
 
 def encode_length(value):
@@ -206,11 +163,11 @@ def encode_length(value):
         >>> encode_length(200)   # > 127, needs to be specially encoded.
         b'\\x81\\xc8'
     """
-    if value == Length.INDEFINITE:
-        return to_bytes([0b10000000])
+    if value == Length.INDEFINITE:  # type: ignore
+        return bytes([0b10000000])
 
     if value < 127:
-        return to_bytes([value])
+        return bytes([value])
 
     output = []  # type: List[int]
     while value > 0:
@@ -219,7 +176,7 @@ def encode_length(value):
 
     # prefix length information
     output = [0b10000000 | len(output)] + output
-    return to_bytes(output)
+    return bytes(output)
 
 
 def decode_length(data):
@@ -250,23 +207,25 @@ def decode_length(data):
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    data0 = six.byte2int(data)
+    data0 = data[0]
     if data0 == 0b11111111:
         # reserved
         raise NotImplementedError("This is a reserved case in X690")
 
     if data0 & 0b10000000 == 0:
         # definite short form
-        output = int_from_bytes([data0], "big")
+        output = int.from_bytes([data0], "big")
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
-        raise NotImplementedError("Indefinite lenghts are " "not yet implemented!")
+        raise NotImplementedError(
+            "Indefinite lenghts are " "not yet implemented!"
+        )
     else:
         # definite long form
-        num_octets = int_from_bytes([data0 ^ 0b10000000], "big")
+        num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
         value_octets = data[1 : 1 + num_octets]
-        output = int_from_bytes(value_octets, "big")
+        output = int.from_bytes(value_octets, "big")
         data = data[num_octets + 1 :]
     return LengthValue(output, data)
 
@@ -306,10 +265,27 @@ def visible_octets(data):
             raw_ascii = unhexlify("".join(ascii_column))
             raw_ascii = raw_ascii.replace(b"\\n z", b".")
             ascii_column = []
-            output.append("%-50s %s" % (" ".join(line), raw_ascii.decode("ascii")))
+            output.append(
+                "%-50s %s" % (" ".join(line), raw_ascii.decode("ascii"))
+            )
             line = []
     raw_ascii = unhexlify("".join(ascii_column))
     raw_ascii = raw_ascii.replace(b"\\n z", b".")
     output.append("%-50s %s" % (" ".join(line), raw_ascii.decode("ascii")))
     line = []
     return "\n".join(output)
+
+
+def wrap(text: str, header: str, depth: int) -> str:
+    """
+    Wraps *text* in a border with a *header* and indented by *indent*.
+    """
+    prefix = INDENT_STRING * depth
+    box_width = max(len(header), max(len(x) for x in text.splitlines()))
+    border1 = prefix + "┌─" + ("─" * box_width) + "─┐"
+    border2 = prefix + "├─" + ("─" * box_width) + "─┤"
+    border3 = prefix + "└─" + ("─" * box_width) + "─┘"
+    fmt = "%s│ %%-%ds │" % (prefix, box_width)
+    wrapped = [(fmt % line) for line in text.splitlines()]
+    output = "\n".join([border1, fmt % header, border2] + wrapped + [border3])
+    return output

@@ -1,9 +1,58 @@
 [tool.black]
+line_length = 80
 exclude = "x690/types.pyi"
 
 [tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
 force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 80
+multi_line_output = 3
+not_skip = "__init__.py"
 use_parentheses = true
-line_length = 88
+virtual_env = ".venv"
+
+[tool.pylint."messages control"]
+disable = ["C0330", "C0326"]
+
+[tool.pylint.format]
+max-line-length = "80"
+
+[tool.poetry]
+name = "x690"
+version = "0.3.0"
+description = "Pure Python X.690 implementation"
+authors = ["Michel Albert <michel@albert.lu>"]
+license = "MIT"
+readme = "README.rst"
+homepage = "https://exhuma.github.io/x690/"
+documentation = "https://exhuma.github.io/x690/"
+repository = "https://github.com/exhuma/x690"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+t61codec = "^1.0.1"
+dataclasses = {version = "^0.7", python = "<3.7"}
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-coverage = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+mypy = "*"
+black = "*"
+isort = "*"
+vulture = "*"
+Pygments = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
