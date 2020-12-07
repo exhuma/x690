@@ -5,6 +5,7 @@ Welcome to x690's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   changelog
    api/modules
    glossary
 
