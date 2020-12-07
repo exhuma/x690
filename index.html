@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Welcome to x690’s documentation! &#8212; x690 0.1.0 documentation</title>
+    <title>Welcome to x690’s documentation! &#8212; x690 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -14,7 +14,7 @@
     <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="x690" href="api/modules.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -33,13 +33,12 @@
             
   <div class="section" id="welcome-to-x690-s-documentation">
 <h1>Welcome to x690’s documentation!<a class="headerlink" href="#welcome-to-x690-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Repository: <a class="reference external" href="https://github.com/exhuma/x690">https://github.com/exhuma/x690</a></p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/modules.html">x690</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/x690.html">x690 package</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 </div>
@@ -103,6 +102,43 @@ second one will contain any remaining bytes which were not decoded.</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="type-hinting-enforcing">
+<h3>Type-Hinting &amp; Enforcing<a class="headerlink" href="#type-hinting-enforcing" title="Permalink to this headline">¶</a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.3.0.</span></p>
+</div>
+<p>When decoding bytes, it is possible to specify an expcted type which does two
+things: Firstly, it tells tools like <code class="docutils literal notranslate"><span class="pre">mypy</span></code> what the return type will be and
+secondly, it runs an internal type-check which <em>ensures</em> that the returned
+value is of the expected type. <code class="docutils literal notranslate"><span class="pre">x690.exc.UnexpectedType</span></code> is raised otherwise.</p>
+<p>This does of course only work if you know the type in advance.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">enforce_type</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span>
+<span class="n">Sequence</span><span class="p">(</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">remaining_bytes</span>
+<span class="sa">b</span><span class="s1">&#39;&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="strict-decoding">
+<h3>Strict Decoding<a class="headerlink" href="#strict-decoding" title="Permalink to this headline">¶</a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.3.0.</span></p>
+</div>
+<p>When decoding using <code class="docutils literal notranslate"><span class="pre">pop_tlv</span></code> and you don’t expect any remaining bytes, use
+<code class="docutils literal notranslate"><span class="pre">strict=True</span></code> which will raise <code class="docutils literal notranslate"><span class="pre">x690.exc.IncompleteDecoding</span></code> if there’s any
+remaining data.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>import x690.types as t
+&gt;&gt;&gt; data = b&#39;0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes&#39;
+&gt;&gt;&gt; decoded, remaining_bytes = t.pop_tlv(data, strict=True)
+Traceback (most recent call last):
+  ...
+x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
@@ -133,7 +169,8 @@ second one will contain any remaining bytes which were not decoded.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/modules.html">x690</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
@@ -141,7 +178,7 @@ second one will contain any remaining bytes which were not decoded.</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="api/modules.html" title="next chapter">x690</a></li>
+      <li>Next: <a href="changelog.html" title="next chapter">Changelog</a></li>
   </ul></li>
 </ul>
 </div>

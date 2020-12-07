@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Index &#8212; x690 0.1.0 documentation</title>
+    <title>Index &#8212; x690 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -52,16 +52,19 @@
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  | <a href="#X"><strong>X</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.util.TypeInfo.APPLICATION">APPLICATION (x690.util.TypeInfo attribute)</a>
+      <li><a href="api/x690.html#x690.types.Type.all">all() (x690.types.Type static method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/x690.html#x690.util.TypeClass.APPLICATION">APPLICATION (x690.util.TypeClass attribute)</a>
+</li>
       <li><a href="glossary.html#term-asn-1"><strong>ASN.1</strong></a>
 </li>
   </ul></td>
@@ -90,9 +93,9 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.util.TypeInfo.CONSTRUCTED">CONSTRUCTED (x690.util.TypeInfo attribute)</a>
+      <li><a href="api/x690.html#x690.util.TypeNature.CONSTRUCTED">CONSTRUCTED (x690.util.TypeNature attribute)</a>
 </li>
-      <li><a href="api/x690.html#x690.util.TypeInfo.CONTEXT">CONTEXT (x690.util.TypeInfo attribute)</a>
+      <li><a href="api/x690.html#x690.util.TypeClass.CONTEXT">CONTEXT (x690.util.TypeClass attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -174,7 +177,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.types.Registry.get">get() (x690.types.Registry static method)</a>
+      <li><a href="api/x690.html#x690.types.Type.get">get() (x690.types.Type static method)</a>
 </li>
       <li><a href="api/x690.html#x690.types.GraphicString">GraphicString (class in x690.types)</a>
 </li>
@@ -186,16 +189,14 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/x690.html#x690.types.IA5String">IA5String (class in x690.types)</a>
 </li>
+      <li><a href="api/x690.html#x690.exc.IncompleteDecoding">IncompleteDecoding</a>
+</li>
       <li><a href="api/x690.html#x690.util.Length.INDEFINITE">INDEFINITE (x690.util.Length attribute)</a>
 </li>
-      <li><a href="api/x690.html#x690.types.int_from_bytes">int_from_bytes() (in module x690.types)</a>
-
-      <ul>
-        <li><a href="api/x690.html#x690.util.int_from_bytes">(in module x690.util)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/x690.html#x690.util.INDENT_STRING">INDENT_STRING (in module x690.util)</a>
+</li>
       <li><a href="api/x690.html#x690.types.Integer">Integer (class in x690.types)</a>
 </li>
       <li><a href="api/x690.html#x690.exc.InvalidValueLength">InvalidValueLength</a>
@@ -210,8 +211,6 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.util.LengthValue.length">length (x690.util.LengthValue attribute)</a>
-</li>
       <li><a href="api/x690.html#x690.util.LengthValue">LengthValue (class in x690.util)</a>
 </li>
   </ul></td>
@@ -220,12 +219,10 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.types.NonASN1Type">NonASN1Type (class in x690.types)</a>
+      <li><a href="api/x690.html#x690.types.Null">Null (class in x690.types)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.types.Null">Null (class in x690.types)</a>
-</li>
       <li><a href="api/x690.html#x690.types.NumericString">NumericString (class in x690.types)</a>
 </li>
   </ul></td>
@@ -252,19 +249,23 @@
 </li>
       <li><a href="api/x690.html#x690.types.pop_tlv">pop_tlv() (in module x690.types)</a>
 </li>
-      <li><a href="api/x690.html#x690.types.Sequence.pretty">pretty() (x690.types.Sequence method)</a>
+      <li><a href="api/x690.html#x690.types.OctetString.pretty">pretty() (x690.types.OctetString method)</a>
 
       <ul>
+        <li><a href="api/x690.html#x690.types.Sequence.pretty">(x690.types.Sequence method)</a>
+</li>
         <li><a href="api/x690.html#x690.types.Type.pretty">(x690.types.Type method)</a>
 </li>
-      </ul></li>
-      <li><a href="api/x690.html#x690.util.TypeInfo.PRIMITIVE">PRIMITIVE (x690.util.TypeInfo attribute)</a>
+        <li><a href="api/x690.html#x690.types.UnknownType.pretty">(x690.types.UnknownType method)</a>
 </li>
-      <li><a href="api/x690.html#x690.types.PrintableString">PrintableString (class in x690.types)</a>
+      </ul></li>
+      <li><a href="api/x690.html#x690.util.TypeNature.PRIMITIVE">PRIMITIVE (x690.util.TypeNature attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.util.TypeInfo.PRIVATE">PRIVATE (x690.util.TypeInfo attribute)</a>
+      <li><a href="api/x690.html#x690.types.PrintableString">PrintableString (class in x690.types)</a>
+</li>
+      <li><a href="api/x690.html#x690.util.TypeClass.PRIVATE">PRIVATE (x690.util.TypeClass attribute)</a>
 </li>
       <li><a href="api/x690.html#x690.types.ObjectIdentifier.pythonize">pythonize() (x690.types.ObjectIdentifier method)</a>
 
@@ -288,8 +289,6 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.types.Registry">Registry (class in x690.types)</a>
-</li>
       <li><a href="api/x690.html#x690.types.RelativeOid">RelativeOid (class in x690.types)</a>
 </li>
   </ul></td>
@@ -380,13 +379,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="glossary.html#term-tlv"><strong>TLV</strong></a>
 </li>
-      <li><a href="api/x690.html#x690.util.to_bytes">to_bytes() (in module x690.util)</a>
-</li>
       <li><a href="api/x690.html#x690.types.Type">Type (class in x690.types)</a>
+</li>
+      <li><a href="api/x690.html#x690.util.TypeClass">TypeClass (class in x690.util)</a>
 </li>
       <li><a href="api/x690.html#x690.types.Type.TYPECLASS">TYPECLASS (x690.types.Type attribute)</a>
 </li>
       <li><a href="api/x690.html#x690.util.TypeInfo">TypeInfo (class in x690.util)</a>
+</li>
+      <li><a href="api/x690.html#x690.util.TypeNature">TypeNature (class in x690.util)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -394,7 +395,9 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/x690.html#x690.util.TypeInfo.UNIVERSAL">UNIVERSAL (x690.util.TypeInfo attribute)</a>
+      <li><a href="api/x690.html#x690.exc.UnexpectedType">UnexpectedType</a>
+</li>
+      <li><a href="api/x690.html#x690.util.TypeClass.UNIVERSAL">UNIVERSAL (x690.util.TypeClass attribute)</a>
 </li>
       <li><a href="api/x690.html#x690.types.UniversalString">UniversalString (class in x690.types)</a>
 </li>
@@ -420,10 +423,36 @@
         <li><a href="api/x690.html#x690.types.Type.validate">(x690.types.Type class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/x690.html#x690.types.Boolean.value">value (x690.types.Boolean attribute)</a>
+      <li><a href="api/x690.html#x690.types.BitString.value">value (x690.types.BitString attribute)</a>
 
       <ul>
+        <li><a href="api/x690.html#x690.types.BmpString.value">(x690.types.BmpString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.Boolean.value">(x690.types.Boolean attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.CharacterString.value">(x690.types.CharacterString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.EmbeddedPdv.value">(x690.types.EmbeddedPdv attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.Enumerated.value">(x690.types.Enumerated attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.EOC.value">(x690.types.EOC attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.External.value">(x690.types.External attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.GeneralizedTime.value">(x690.types.GeneralizedTime attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.GeneralString.value">(x690.types.GeneralString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.GraphicString.value">(x690.types.GraphicString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.IA5String.value">(x690.types.IA5String attribute)</a>
+</li>
         <li><a href="api/x690.html#x690.types.Integer.value">(x690.types.Integer attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.NumericString.value">(x690.types.NumericString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.ObjectDescriptor.value">(x690.types.ObjectDescriptor attribute)</a>
 </li>
         <li><a href="api/x690.html#x690.types.ObjectIdentifier.value">(x690.types.ObjectIdentifier attribute)</a>
 </li>
@@ -433,15 +462,25 @@
 </li>
         <li><a href="api/x690.html#x690.types.Real.value">(x690.types.Real attribute)</a>
 </li>
+        <li><a href="api/x690.html#x690.types.RelativeOid.value">(x690.types.RelativeOid attribute)</a>
+</li>
         <li><a href="api/x690.html#x690.types.Sequence.value">(x690.types.Sequence attribute)</a>
 </li>
-        <li><a href="api/x690.html#x690.types.Type.value">(x690.types.Type attribute)</a>
+        <li><a href="api/x690.html#x690.types.Set.value">(x690.types.Set attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.T61String.value">(x690.types.T61String attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.UniversalString.value">(x690.types.UniversalString attribute)</a>
 </li>
         <li><a href="api/x690.html#x690.types.UnknownType.value">(x690.types.UnknownType attribute)</a>
 </li>
+        <li><a href="api/x690.html#x690.types.UtcTime.value">(x690.types.UtcTime attribute)</a>
+</li>
         <li><a href="api/x690.html#x690.types.Utf8String.value">(x690.types.Utf8String attribute)</a>
 </li>
-        <li><a href="api/x690.html#x690.util.LengthValue.value">(x690.util.LengthValue attribute)</a>
+        <li><a href="api/x690.html#x690.types.VideotexString.value">(x690.types.VideotexString attribute)</a>
+</li>
+        <li><a href="api/x690.html#x690.types.VisibleString.value">(x690.types.VisibleString attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -451,6 +490,14 @@
       <li><a href="api/x690.html#x690.util.visible_octets">visible_octets() (in module x690.util)</a>
 </li>
       <li><a href="api/x690.html#x690.types.VisibleString">VisibleString (class in x690.types)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/x690.html#x690.util.wrap">wrap() (in module x690.util)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -497,7 +544,8 @@
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/modules.html">x690</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
