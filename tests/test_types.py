@@ -453,7 +453,9 @@ class TestT61String(TestCase):
 
 class TestSequence(TestCase):
     def test_encoding(self):
-        value = Sequence(OctetString("hello"), ObjectIdentifier(1, 3, 6), Integer(100))
+        value = Sequence(
+            OctetString("hello"), ObjectIdentifier(1, 3, 6), Integer(100)
+        )
         result = bytes(value)
         expected = (
             bytes(
@@ -506,9 +508,15 @@ class TestSequence(TestCase):
         self.assertEqual(result, expected)
 
     def test_iteration(self):
-        data = Sequence(Integer(1), Sequence(OctetString("123")), OctetString(b"foo"))
+        data = Sequence(
+            Integer(1), Sequence(OctetString("123")), OctetString(b"foo")
+        )
         result = [item for item in data]
-        expected = [Integer(1), Sequence(OctetString("123")), OctetString(b"foo")]
+        expected = [
+            Integer(1),
+            Sequence(OctetString("123")),
+            OctetString(b"foo"),
+        ]
         self.assertEqual(result, expected)
 
     def test_indexing(self):

@@ -251,7 +251,9 @@ class UnknownType(Type[bytes]):
         return bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self) -> str:
-        tinfo = f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
+        tinfo = (
+            f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
+        )
         return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
@@ -305,7 +307,8 @@ class Boolean(Type[bool]):
         super().validate(data)
         if data[1] != 1:
             raise ValueError(
-                "Unexpected Boolean value. Length should be 1," " it was %d" % data[1]
+                "Unexpected Boolean value. Length should be 1,"
+                " it was %d" % data[1]
             )
 
     def __init__(self, value: bool = False) -> None:
@@ -329,7 +332,8 @@ class Null(Type[None]):
         super().validate(data)
         if data[1] != 0:
             raise ValueError(
-                "Unexpected NULL value. Length should be 0, it " "was %d" % data[1]
+                "Unexpected NULL value. Length should be 0, it "
+                "was %d" % data[1]
             )
 
     @classmethod
@@ -417,7 +421,9 @@ class Sequence(Type[List[Type[Any]]]):
         items = [bytes(item) for item in self]
         output = b"".join(items)
         length = encode_length(len(output))
-        tinfo = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, Sequence.TAG)
+        tinfo = TypeInfo(
+            TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, Sequence.TAG
+        )
         return bytes(tinfo) + length + output
 
     def __eq__(self, other: object) -> bool:
@@ -561,7 +567,9 @@ class ObjectIdentifier(Type[str]):
             # Each node can only contain values from 0-127. Other values need
             # to be combined.
             if char > 127:
-                collapsed_value = ObjectIdentifier.decode_large_value(char, remaining)
+                collapsed_value = ObjectIdentifier.decode_large_value(
+                    char, remaining
+                )
                 output.append(collapsed_value)
                 continue
             output.append(char)
@@ -594,7 +602,11 @@ class ObjectIdentifier(Type[str]):
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
             # See https://en.wikipedia.org/wiki/X.690#BER_encoding
-            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
+            first, second, rest = (
+                identifiers[0],
+                identifiers[1],
+                identifiers[2:],
+            )
             first_output = (40 * first) + second
         elif len(identifiers) == 0:
             self.identifiers = tuple()
@@ -608,7 +620,9 @@ class ObjectIdentifier(Type[str]):
         exploded_high_values = []
         for char in rest:
             if char > 127:
-                exploded_high_values.extend(ObjectIdentifier.encode_large_value(char))
+                exploded_high_values.extend(
+                    ObjectIdentifier.encode_large_value(char)
+                )
             else:
                 exploded_high_values.append(char)
 

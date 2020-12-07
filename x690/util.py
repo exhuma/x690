@@ -218,7 +218,9 @@ def decode_length(data):
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
-        raise NotImplementedError("Indefinite lenghts are " "not yet implemented!")
+        raise NotImplementedError(
+            "Indefinite lenghts are " "not yet implemented!"
+        )
     else:
         # definite long form
         num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
@@ -263,7 +265,9 @@ def visible_octets(data):
             raw_ascii = unhexlify("".join(ascii_column))
             raw_ascii = raw_ascii.replace(b"\\n z", b".")
             ascii_column = []
-            output.append("%-50s %s" % (" ".join(line), raw_ascii.decode("ascii")))
+            output.append(
+                "%-50s %s" % (" ".join(line), raw_ascii.decode("ascii"))
+            )
             line = []
     raw_ascii = unhexlify("".join(ascii_column))
     raw_ascii = raw_ascii.replace(b"\\n z", b".")

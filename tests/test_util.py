@@ -42,17 +42,23 @@ class TestTypeInfoDecoding(TestCase):
 
     def test_from_bytes_b(self):
         result = TypeInfo.from_bytes(0b00111110)
-        expected = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(
+            TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110
+        )
         self.assertEqual(result, expected)
 
     def test_from_bytes_c(self):
         result = TypeInfo.from_bytes(0b01011110)
-        expected = TypeInfo(TypeClass.APPLICATION, TypeNature.PRIMITIVE, 0b11110)
+        expected = TypeInfo(
+            TypeClass.APPLICATION, TypeNature.PRIMITIVE, 0b11110
+        )
         self.assertEqual(result, expected)
 
     def test_from_bytes_d(self):
         result = TypeInfo.from_bytes(0b01111110)
-        expected = TypeInfo(TypeClass.APPLICATION, TypeNature.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(
+            TypeClass.APPLICATION, TypeNature.CONSTRUCTED, 0b11110
+        )
         self.assertEqual(result, expected)
 
     def test_from_bytes_e(self):
@@ -151,7 +157,9 @@ class TestTypeInfoClass(TestCase):
         Encoding an object to bytes, and then decoding the resulting bytes
         should yield the same instance.
         """
-        expected = TypeInfo(TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110)
+        expected = TypeInfo(
+            TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, 0b11110
+        )
         result = TypeInfo.from_bytes(bytes(expected))
         self.assertEqual(result, expected)
 
@@ -261,7 +269,9 @@ class TestHelpers(TestCase):
                 ]
             )
         )
-        expected = "00 55 00 55 00 55 00 55  55                        " ".U.U.U.UU"
+        expected = (
+            "00 55 00 55 00 55 00 55  55                        " ".U.U.U.UU"
+        )
         self.assertEqual(result, expected)
 
     def test_visible_octets_multiline(self):
