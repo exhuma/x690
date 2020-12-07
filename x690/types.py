@@ -50,14 +50,18 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import InvalidValueLength
+from .exc import InvalidValueLength, UnexpectedType
 from .util import TypeClass, TypeInfo, TypeNature, decode_length, encode_length
 
 TWrappedPyType = TypeVar("TWrappedPyType")
+TPopType = TypeVar("TPopType", bound=Any)
 INDENT_STRING = "  "
 
 
-def pop_tlv(data: bytes) -> Tuple["Type[Any]", bytes]:
+def pop_tlv(
+    data: bytes,
+    enforce_type: Optional[TypeType[TPopType]] = None,
+) -> Tuple["TPopType", bytes]:
     """
     Given a :py:class:`bytes` object, inspects and parses the first octets (as
     many as required) to determine variable type (and corresponding Python
@@ -78,6 +82,7 @@ def pop_tlv(data: bytes) -> Tuple["Type[Any]", bytes]:
     # TODO: This function should be moved to another module (util maybe?).
     if not data:
         return Null(), b""
+
     type_ = TypeInfo.from_bytes(data[0])
     length, remainder = astuple(decode_length(data[1:]))
 
@@ -90,6 +95,13 @@ def pop_tlv(data: bytes) -> Tuple["Type[Any]", bytes]:
     except KeyError:
         # Add context information
         value = UnknownType.from_bytes(chunk)
+
+    if enforce_type and not isinstance(value, enforce_type):
+        raise UnexpectedType(
+            f"Unexpected decode result. Expected instance of type "
+            f"{enforce_type} but got {type(value)} instead"
+        )
+
     return value, remainder[length:]
 
 

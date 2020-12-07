@@ -9,6 +9,12 @@ class X690Error(Exception):
     """
 
 
+class UnexpectedType(X690Error):
+    """
+    Raised when decoding resulted in an unexpected type.
+    """
+
+
 class InvalidValueLength(ValueError):
     """
     This error is raised when a value when the length information in the header

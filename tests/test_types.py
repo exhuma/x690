@@ -5,6 +5,7 @@ from unittest import TestCase
 
 import pytest
 
+from x690.exc import UnexpectedType
 from x690.types import (
     Boolean,
     Integer,
@@ -676,3 +677,9 @@ def test_pretty(cls):
     """
     result = cls().pretty()
     assert isinstance(result, str)
+
+
+def test_enforcing_types():
+    data = bytes(OctetString(b"foo"))
+    with pytest.raises(UnexpectedType):
+        pop_tlv(data, enforce_type=Integer)
