@@ -104,9 +104,7 @@ second one will contain any remaining bytes which were not decoded.</p>
 </div>
 <div class="section" id="type-hinting-enforcing">
 <h3>Type-Hinting &amp; Enforcing<a class="headerlink" href="#type-hinting-enforcing" title="Permalink to this headline">¶</a></h3>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 0.3.0.</span></p>
-</div>
+<p><strong>New in 0.3.0</strong></p>
 <p>When decoding bytes, it is possible to specify an expcted type which does two
 things: Firstly, it tells tools like <code class="docutils literal notranslate"><span class="pre">mypy</span></code> what the return type will be and
 secondly, it runs an internal type-check which <em>ensures</em> that the returned
@@ -124,9 +122,7 @@ value is of the expected type. <code class="docutils literal notranslate"><span 
 </div>
 <div class="section" id="strict-decoding">
 <h3>Strict Decoding<a class="headerlink" href="#strict-decoding" title="Permalink to this headline">¶</a></h3>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 0.3.0.</span></p>
-</div>
+<p><strong>New in 0.3.0</strong></p>
 <p>When decoding using <code class="docutils literal notranslate"><span class="pre">pop_tlv</span></code> and you don’t expect any remaining bytes, use
 <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> which will raise <code class="docutils literal notranslate"><span class="pre">x690.exc.IncompleteDecoding</span></code> if there’s any
 remaining data.</p>
