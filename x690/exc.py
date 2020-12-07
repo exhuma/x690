@@ -15,6 +15,18 @@ class UnexpectedType(X690Error):
     """
 
 
+class IncompleteDecoding(X690Error):
+    """
+    Raised when decoding did not consume all bytes.
+
+    The junk bytes are stored in the "remainder" attribute
+    """
+
+    def __init__(self, message: str, remainder: bytes) -> None:
+        super().__init__(message)
+        self.remainder = remainder
+
+
 class InvalidValueLength(ValueError):
     """
     This error is raised when a value when the length information in the header

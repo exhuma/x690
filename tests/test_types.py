@@ -5,7 +5,7 @@ from unittest import TestCase
 
 import pytest
 
-from x690.exc import UnexpectedType
+from x690.exc import IncompleteDecoding, UnexpectedType
 from x690.types import (
     Boolean,
     Integer,
@@ -683,3 +683,14 @@ def test_enforcing_types():
     data = bytes(OctetString(b"foo"))
     with pytest.raises(UnexpectedType):
         pop_tlv(data, enforce_type=Integer)
+
+
+def test_incomplete_decoding():
+    """
+    When calling pop_tlv in strict mode we want to raise an exception on
+    unconsumed bytes.
+    """
+    data = bytes(OctetString(b"Hello")) + b"junk-bytes"
+    with pytest.raises(IncompleteDecoding) as exc:
+        pop_tlv(data, strict=True)
+    assert exc.value.remainder == b"junk-bytes"

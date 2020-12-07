@@ -50,8 +50,14 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import InvalidValueLength, UnexpectedType
-from .util import TypeClass, TypeInfo, TypeNature, decode_length, encode_length
+from .exc import IncompleteDecoding, InvalidValueLength, UnexpectedType
+from .util import (
+    TypeClass,
+    TypeInfo,
+    TypeNature,
+    decode_length,
+    encode_length,
+)
 
 TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
@@ -61,6 +67,7 @@ INDENT_STRING = "  "
 def pop_tlv(
     data: bytes,
     enforce_type: Optional[TypeType[TPopType]] = None,
+    strict: bool = False,
 ) -> Tuple["TPopType", bytes]:
     """
     Given a :py:class:`bytes` object, inspects and parses the first octets (as
@@ -101,8 +108,15 @@ def pop_tlv(
             f"Unexpected decode result. Expected instance of type "
             f"{enforce_type} but got {type(value)} instead"
         )
+    remainder = remainder[length:]
 
-    return value, remainder[length:]
+    if strict and remainder:
+        raise IncompleteDecoding(
+            f"Strict decoding still had {len(remainder)} remaining bytes!",
+            remainder=remainder,
+        )
+
+    return value, remainder
 
 
 class Type(Generic[TWrappedPyType]):
