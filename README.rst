@@ -80,7 +80,7 @@ second one will contain any remaining bytes which were not decoded.
 Type-Hinting & Enforcing
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.3.0
+**New in 0.3.0**
 
 When decoding bytes, it is possible to specify an expcted type which does two
 things: Firstly, it tells tools like ``mypy`` what the return type will be and
@@ -103,7 +103,7 @@ This does of course only work if you know the type in advance.
 Strict Decoding
 ~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.3.0
+**New in 0.3.0**
 
 When decoding using ``pop_tlv`` and you don't expect any remaining bytes, use
 ``strict=True`` which will raise ``x690.exc.IncompleteDecoding`` if there's any
