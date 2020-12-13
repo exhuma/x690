@@ -425,6 +425,13 @@ class TestOctetString(TestCase):
         expected = b"hello"
         self.assertEqual(result, expected)
 
+    def test_decoding_indef_length(self):
+        data_def = b'\x04\x0bhello-world'
+        data_indef = b'\x04\x80hello-world\x00\x00'
+        result_def, _ = pop_tlv(data_def)
+        result_indef, _ = pop_tlv(data_indef)
+        assert result_def == result_indef
+
 
 class TestT61String(TestCase):
     def test_encoding(self):
@@ -596,6 +603,17 @@ class TestUnknownType(TestCase):
         typeinfo = TypeInfo("application", "constructed", 3)
         expected = "<UnknownType 99 b'abc' application/constructed/3>"
         self.assertEqual(result, expected)
+
+    def test_decoding_indef_length(self):
+        data = bytearray(bytes(UnknownType(0x99, b'some-data')))
+        data_def = bytes(data)
+        data[1] = 0x80
+        data.extend([0x00, 0x00])
+        data_indef = bytes(data)
+        result_def, _ = pop_tlv(data_def)
+        result_indef, _ = pop_tlv(data_indef)
+        assert result_def == result_indef
+
 
 
 class TestAllTypes(TestCase):

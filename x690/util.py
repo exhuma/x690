@@ -217,10 +217,8 @@ def decode_length(data):
         output = int.from_bytes([data0], "big")
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
-        # indefinite form
-        raise NotImplementedError(
-            "Indefinite lenghts are " "not yet implemented!"
-        )
+        output = -1
+        data = data[1:]
     else:
         # definite long form
         num_octets = int.from_bytes([data0 ^ 0b10000000], "big")

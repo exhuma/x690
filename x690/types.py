@@ -64,6 +64,26 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
 
 
+def convert_indefinite_to_definite(data: bytes) -> Tuple[bytes, int, bytes]:
+    """
+    Converts data of the "indefinite form" to the "definite form"
+
+    The *data* argument should contain the full TLV information at the
+    beginning. The function will return a modified bytes object with the new
+    lenght information encoded as definite lenght.
+    """
+    # TODO (advanced): The "from_bytes" implementation of x690 types should not
+    #       have to deal with lenght encoding/decoding. At the current state having
+    #       the length decoding inside the "from_bytes" method prevents us from
+    #       having a clean implementation for indefinite length values. This function
+    #       simply converts from indefinite to definite to work around this issue.
+    eob = data.find(b'\x00\x00')
+    value, remainder = data[:eob], data[2: eob]
+    length = len(value[2:])
+    as_definite = bytes([value[0]]) + encode_length(length) + value[2:]
+    return as_definite, length, remainder
+
+
 def pop_tlv(
     data: bytes,
     enforce_type: Optional[TypeType[TPopType]] = None,
@@ -92,6 +112,9 @@ def pop_tlv(
 
     type_ = TypeInfo.from_bytes(data[0])
     length, remainder = astuple(decode_length(data[1:]))
+
+    if length == -1:
+        data, length, remainder = convert_indefinite_to_definite(data)
 
     # determine how many octets are used to encode the length!
     offset = len(data) - len(remainder)
