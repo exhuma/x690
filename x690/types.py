@@ -77,8 +77,8 @@ def convert_indefinite_to_definite(data: bytes) -> Tuple[bytes, int, bytes]:
     #       the length decoding inside the "from_bytes" method prevents us from
     #       having a clean implementation for indefinite length values. This function
     #       simply converts from indefinite to definite to work around this issue.
-    eob = data.find(b'\x00\x00')
-    value, remainder = data[:eob], data[2: eob]
+    eob = data.find(b"\x00\x00")
+    value, remainder = data[:eob], data[2:eob]
     length = len(value[2:])
     as_definite = bytes([value[0]]) + encode_length(length) + value[2:]
     return as_definite, length, remainder
