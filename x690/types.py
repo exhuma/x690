@@ -314,11 +314,25 @@ class UnknownType(Type[bytes]):
         return UnknownType(tag, data)
 
     def pretty(self, depth: int = 0) -> str:
+        wrapped = wrap(
+            visible_octets(self.value), str(type(self)), depth
+        ).splitlines()
+        if len(wrapped) > 15:
+            line_width = len(wrapped[0])
+            sniptext = ("<%d more lines>" % (len(wrapped) - 10 - 5)).center(
+                line_width - 2
+            )
+            wrapped = wrapped[:10] + ["┊%s┊" % sniptext] + wrapped[-5:]
+        lines = [
+            "Unknown Type",
+            f"  │ Tag:       {self.tag}",
+            "  │ Type Info:",
+            f"  │  │ Class: {self.typeinfo.cls}",
+            f"  │  │ Nature: {self.typeinfo.nature}",
+            f"  │  │ Tag: {self.typeinfo.tag}",
+        ] + wrapped
         return indent(
-            f"Unknown Type\n"
-            f"  │ Tag:       {self.tag}\n"
-            f"  │ Type Info: {self.typeinfo}\n"
-            f"  │ Hex-Value: {self.value.hex()}",
+            "\n".join(lines),
             INDENT_STRING * depth,
         )
 
