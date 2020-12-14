@@ -120,7 +120,7 @@ def pop_tlv(
     offset = len(data) - len(remainder)
     chunk = data[: length + offset]
     try:
-        cls = Type.get(type_.cls, type_.tag)
+        cls = Type.get(type_.cls, type_.tag, type_.nature)
         value = cls.from_bytes(chunk)
     except KeyError:
         # Add context information
@@ -147,17 +147,21 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __registry: Dict[Tuple[str, int], TypeType["Type[Any]"]] = {}
+    __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
+    NATURE: TypeNature = TypeNature.CONSTRUCTED
     TAG: int = 0
     value: TWrappedPyType
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
-        Type.__registry[(cls.TYPECLASS, cls.TAG)] = cls
+        Type.__registry[(cls.TYPECLASS, cls.TAG, cls.NATURE)] = cls
 
     @staticmethod
-    def get(typeclass: str, typeid: int) -> TypeType["Type[Any]"]:
-        return Type.__registry[(typeclass, typeid)]
+    def get(
+        typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
+    ) -> TypeType["Type[Any]"]:
+        cls = Type.__registry[(typeclass, typeid, nature)]
+        return cls
 
     @staticmethod
     def all() -> List[TypeType["Type[Any]"]]:
@@ -380,6 +384,7 @@ class Null(Type[None]):
 
 
 class OctetString(Type[bytes]):
+    NATURE = TypeNature.PRIMITIVE
     TAG = 0x04
     value = b""
 
@@ -484,6 +489,7 @@ class Sequence(Type[List[Type[Any]]]):
 
 
 class Integer(Type[int]):
+    NATURE = TypeNature.PRIMITIVE
     SIGNED = True
     TAG = 0x02
     value = 0
