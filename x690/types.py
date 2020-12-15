@@ -35,7 +35,7 @@ Python objects.
 Depending on type, you may also want to override certain methods. See
 :py:class:`~.Sequence` and :py:class:`~.Integer` for more complex examples.
 """
-# pylint: disable=abstract-method, missing-docstring
+# pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
 from dataclasses import astuple
@@ -286,8 +286,8 @@ class Boolean(Type[bool]):
     NATURE = [TypeNature.PRIMITIVE]
     value = False
 
-    @staticmethod
-    def decode(data: bytes) -> "Boolean":
+    @classmethod
+    def decode(cls, data: bytes) -> "Boolean":
         return Boolean(data != b"\x00")
 
     @classmethod
