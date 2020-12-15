@@ -46,7 +46,7 @@ except ModuleNotFoundError:
     import importlib_metadata  # type: ignore
 
 
-__version__ = importlib_metadata.version("x690")  # type: ignore
+__version__ = importlib_metadata.version("x690")
 __all__ = [
     "__version__",
     "pop_tlv",
