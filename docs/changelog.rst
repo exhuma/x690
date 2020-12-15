@@ -1,6 +1,25 @@
 Changelog
 =========
 
+0.4.0
+-----
+
+
+* **Removed** Decoding no longer raises a "ValueError" if a value contains
+  junk-bytes after decoding. Use either "strict" mode or inspect the
+  "remainder" after decoding yourself. This was a necessity to remove a
+  duplication with length-decoding and was too impactful to re-introduce.
+* **Removed** Types no longer have a ``from_bytes`` implementation. This was
+  the core of the code-duplication and is now gone in favor of the ``decode``
+  function.
+* Support for "indefinite length" values
+* Allow registering types with "non-constructed" nature
+* Improved prettyfication of unknown types
+* Support types which can be encoded as either "primitive" or "constructed"
+* Implement decoding of the GraphicString type
+* Removed duplication of length-decoding
+
+
 0.3.0
 -----
 
