@@ -12,13 +12,69 @@ BER encoding/decoding. Other encodings are currently unsupported but
 pull-requests are welcome.
 
 
-Type Extensions
----------------
+Supporting New Types
+--------------------
 
-It allows defining and detecting new data-types by simply subclassing the base
-class ``x690.types.Type``. An example for this can be seen in `puresnmp`_
+Some applications may need to support types which are not defined in the X.690
+standard. This is supported by this library but the types must be defined and
+registered.
 
-.. _puresnmp: https://github.com/exhuma/puresnmp/blob/4240aa644a1bca01f54683215833dc6711a22745/puresnmp/types.py#L28
+To register a type, simply subclass ``x690.types.Type``. This will take care of
+the registration. Make sure that your new type is imported before using it.
+
+New types should define the following 3 class-variables:
+
+**TYPECLASS**
+    A value from ``x690.util.TypeClass``
+**TypeNature**
+    A value from ``x690.util.TypeNature``
+**TAG**
+    A numerical identifier for the type
+
+Refer to the x690 standard for more details on these values. As a general
+rule-of-thumb you can assume that the class is either "context" or
+"application" (it might be good to keep the "universal" class reserved for
+x690). The nature should be "primitive" for simple values and "constructed" for
+composed types. The tag is free to choose as long as you don't overlap with an
+existing type.
+
+To support **decoding**, the class must implement a ``decode(data: bytes) ->
+YourType`` function. The contents of ``data`` will be the raw bytes excluding
+the type information.
+
+To support **encoding**, the class must implement the ``__bytes__(self) ->
+bytes`` method. This should return the raw-bytes without type-information.
+Wrapping with the appropriate type-information is handled by the library.
+
+
+Reverse Engineering Bytes
+-------------------------
+
+All types defined in the ``x690`` library provide a ``.pretty()`` method which
+returns a prettyfied string.
+
+If you are confronted with a bytes-object encoded using X.690 but don't have
+any documentation, you can write the following loop::
+
+    from x690 import pop_tlv
+
+    data = open("mydatafile.bin", "rb").read()
+
+    value, remaining_bytes = pop_tlv(data)
+    print(value.pretty())
+
+    while remaining_bytes:
+        value, remaining_bytes = pop_tlv(remaining_bytes)
+        print(value.pretty())
+
+This should get you started.
+
+If the data contain non-standard types, they will get detected as "UnknownType"
+and will print out the type-class, nature and tag in the pretty-printed block.
+
+This will allow you to define your own subclass of ``x690.types.Type`` using
+those values. Override ``decode(...)`` in that class to handle the unknown
+type.
 
 
 Examples
@@ -35,8 +91,7 @@ Encoding of a single value
 
 .. code:: python
 
-    import x690.types as t
-
+    >>> import x690.types as t
     >>> myvalue = t.Integer(12)
     >>> asbytes = bytes(myvalue)
     >>> repr(asbytes)
@@ -47,8 +102,7 @@ Encoding of a composite value using Sequence
 
 .. code:: python
 
-    import x690.types as t
-
+    >>> import x690.types as t
     >>> myvalue = t.Sequence(
     ...     t.Integer(12),
     ...     t.Integer(12),
@@ -68,9 +122,9 @@ second one will contain any remaining bytes which were not decoded.
 
 .. code:: python
 
-    import x690.types as t
+    >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, remaining_bytes = t.pop_tlv(data)
+    >>> decoded, remaining_bytes = x690.pop_tlv(data)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
     >>> remaining_bytes
@@ -91,9 +145,10 @@ This does of course only work if you know the type in advance.
 
 .. code:: python
 
-    import x690.types as t
+    >>> import x690
+    >>> import x690.types as t
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, remaining_bytes = t.pop_tlv(data, enforce_type=t.Sequence)
+    >>> decoded, remaining_bytes = x690.pop_tlv(data, enforce_type=t.Sequence)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
     >>> remaining_bytes
@@ -111,9 +166,9 @@ remaining data.
 
 .. code:: python
 
-    import x690.types as t
+    >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes'
-    >>> decoded, remaining_bytes = t.pop_tlv(data, strict=True)
+    >>> decoded, remaining_bytes = x690.pop_tlv(data, strict=True)
     Traceback (most recent call last):
       ...
     x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!
