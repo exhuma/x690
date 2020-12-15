@@ -73,10 +73,11 @@ def convert_indefinite_to_definite(data: bytes) -> Tuple[bytes, int, bytes]:
     lenght information encoded as definite lenght.
     """
     # TODO (advanced): The "from_bytes" implementation of x690 types should not
-    #       have to deal with lenght encoding/decoding. At the current state having
-    #       the length decoding inside the "from_bytes" method prevents us from
-    #       having a clean implementation for indefinite length values. This function
-    #       simply converts from indefinite to definite to work around this issue.
+    #       have to deal with lenght encoding/decoding. At the current state
+    #       having the length decoding inside the "from_bytes" method prevents
+    #       us from having a clean implementation for indefinite length values.
+    #       This function simply converts from indefinite to definite to work
+    #       around this issue.
     eob = data.find(b"\x00\x00")
     value, remainder = data[:eob], data[2:eob]
     length = len(value[2:])
@@ -117,21 +118,20 @@ def pop_tlv(
         data, length, remainder = convert_indefinite_to_definite(data)
 
     # determine how many octets are used to encode the length!
-    offset = len(data) - len(remainder)
-    chunk = data[: length + offset]
+    chunk, remainder = remainder[:length], remainder[length:]
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
-        value = cls.from_bytes(chunk)
+        value = cls.decode(chunk)
     except KeyError:
         # Add context information
-        value = UnknownType.from_bytes(chunk)
+        value = UnknownType.decode(chunk)
+        value.tag = data[0]
 
     if enforce_type and not isinstance(value, enforce_type):
         raise UnexpectedType(
             f"Unexpected decode result. Expected instance of type "
             f"{enforce_type} but got {type(value)} instead"
         )
-    remainder = remainder[length:]
 
     if strict and remainder:
         raise IncompleteDecoding(
@@ -190,30 +190,6 @@ class Type(Generic[TWrappedPyType]):
             )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Type[TWrappedPyType]":
-        """
-        Given a bytes object, this method reads the type information and length
-        and uses it to convert the bytes representation into a python object.
-
-        :raises puresnmp.x690.exc.InvalidValueLength: If the packet-length does
-            not match the expected length reported in the package header.
-        """
-
-        if not data:
-            return Null()  # type: ignore
-        cls.validate(data)
-        expected_length, data = astuple(decode_length(data[1:]))
-        if len(data) != expected_length:
-            raise InvalidValueLength(
-                "Corrupt packet: Unexpected length for {0} Expected {1} "
-                "(0x{1:02x}) but got {2} (0x{2:02x}). Consider increasing "
-                "puresnmp.transport.BUFFER_SIZE.".format(
-                    cls, expected_length, len(data)
-                )
-            )
-        return cls.decode(data)
-
-    @classmethod
     def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
@@ -269,9 +245,7 @@ class UnknownType(Type[bytes]):
 
     value = b""
 
-    def __init__(
-        self, tag: int = -1, value: bytes = b'', typeinfo: Optional[TypeInfo] = None
-    ) -> None:
+    def __init__(self, tag: int = -1, value: bytes = b'') -> None:
         self.value = value
         self.tag = tag
         self.length = len(value)
@@ -294,25 +268,15 @@ class UnknownType(Type[bytes]):
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "UnknownType":
+    def decode(cls, data: bytes) -> "UnknownType":
         """
         Overrides typical conversion by removing type validation. As, by
         definition this class is used for unknown types, we cannot validate
         them.
         """
         if not data:
-            return Null()  # type: ignore
-        tag = data[0]
-        expected_length, data = astuple(decode_length(data[1:]))
-        if len(data) != expected_length:
-            raise ValueError(
-                "Corrupt packet: Unexpected length for {0} "
-                "Expected {1} (0x{1:02x}) "
-                "but got {2} (0x{2:02x})".format(
-                    UnknownType, expected_length, len(data)
-                )
-            )
-        return UnknownType(tag, data)
+            return UnknownType()  # type: ignore
+        return UnknownType(value=data)
 
     def pretty(self, depth: int = 0) -> str:
         wrapped = wrap(
@@ -438,6 +402,8 @@ class OctetString(Type[bytes]):
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
             embedded = pop_tlv(self.value)[0]  # type: ignore
+            if isinstance(embedded, UnknownType):
+                raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
