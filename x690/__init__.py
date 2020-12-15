@@ -39,8 +39,14 @@ This will do two things:
 """
 
 from .types import pop_tlv
-from .version import VERSION as __version__
 
+try:
+    import importlib.metadata as importlib_metadata
+except ModuleNotFoundError:
+    import importlib_metadata  # type: ignore
+
+
+__version__ = importlib_metadata.version("x690")  # type: ignore
 __all__ = [
     "__version__",
     "pop_tlv",
