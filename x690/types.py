@@ -86,7 +86,6 @@ def pop_tlv(
     Note that in the example above, ``\\x11`` is the remainder of the bytes
     object after popping of the integer object.
     """
-    # TODO: This function should be moved to another module (util maybe?).
     if not data:
         return Null(), b""  # type: ignore
 
@@ -255,7 +254,7 @@ class UnknownType(Type[bytes]):
         them.
         """
         if not data:
-            return UnknownType()  # type: ignore
+            return UnknownType()
         return UnknownType(value=data)
 
     def pretty(self, depth: int = 0) -> str:
