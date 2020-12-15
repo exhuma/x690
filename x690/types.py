@@ -48,7 +48,7 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import IncompleteDecoding, InvalidValueLength, UnexpectedType
+from .exc import IncompleteDecoding, UnexpectedType
 from .util import (
     INDENT_STRING,
     TypeClass,
