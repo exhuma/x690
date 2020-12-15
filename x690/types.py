@@ -95,7 +95,7 @@ def pop_tlv(
 
     if length == -1:
         eob = data.find(b"\x00\x00")
-        chunk, remainder = data[2:eob], data[eob+4:]
+        chunk, remainder = data[2:eob], data[eob + 4 :]
     else:
         chunk, remainder = remainder[:length], remainder[length:]
 
@@ -225,7 +225,7 @@ class UnknownType(Type[bytes]):
 
     value = b""
 
-    def __init__(self, tag: int = -1, value: bytes = b'') -> None:
+    def __init__(self, tag: int = -1, value: bytes = b"") -> None:
         self.value = value
         self.tag = tag
         self.length = len(value)
@@ -415,9 +415,7 @@ class Sequence(Type[List[Type[Any]]]):
         items = [bytes(item) for item in self]
         output = b"".join(items)
         length = encode_length(len(output))
-        tinfo = TypeInfo(
-            TypeClass.UNIVERSAL, self.NATURE[0], Sequence.TAG
-        )
+        tinfo = TypeInfo(TypeClass.UNIVERSAL, self.NATURE[0], Sequence.TAG)
         return bytes(tinfo) + length + output
 
     def __eq__(self, other: object) -> bool:
