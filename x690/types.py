@@ -901,9 +901,21 @@ class GeneralizedTime(Type[datetime]):
 
 
 class GraphicString(Type[str]):
+    # NOTE: As per x.690, this should inherit from OctetString. However, this
+    #       library serves as an abstraction layer between X.690 and Python.
+    #       For this reason, it defines this as a "str" type. To keep the
+    #       correct behaviours, we can still "borrow" the implementation from
+    #       OctetString if needed
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
+
+    @classmethod
+    def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
+        return GraphicString(data.decode("ascii"))
+
+    def __init__(self, value: str = "") -> None:
+        self.value = value
 
 
 class VisibleString(Type[str]):
