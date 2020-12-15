@@ -48,7 +48,7 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import IncompleteDecoding, UnexpectedType
+from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (
     INDENT_STRING,
     TypeClass,
@@ -400,15 +400,35 @@ class Sequence(Type[List[Type[Any]]]):
 
     @classmethod
     def decode(cls, data: bytes) -> "Sequence":
-        value: Any
-        output = []
-        while data:
-            value, data = pop_tlv(data)
-            output.append(value)
-        return Sequence(*output)
+        output = Sequence()
+        output.set_lazy_data(data)
+        return output
+
+    def set_lazy_data(self, data: bytes) -> None:
+        """
+        Prepares a lazy-sequence.
+
+        A lazy-sequence will only consume and decode items when they are
+        first accessed.
+        """
+        if self.value:
+            raise X690Error("Sequence was already initialised!")
+        self.unconsumed_data = data
+        self.num_consumed_items = 0
 
     def __init__(self, *items: Type[Any]) -> None:
-        self.items = items
+        self.items = list(items)
+        self.unconsumed_data = b""
+        self.num_consumed_items = len(items)
+
+    def materialise(self) -> None:
+        """
+        Consumes any unconsumed values from the underlying data.
+        """
+        while self.unconsumed_data:
+            next_item, remainder = pop_tlv(self.unconsumed_data)  # type: ignore
+            self.items.append(next_item)  # type: ignore
+            self.unconsumed_data = remainder
 
     def __bytes__(self) -> bytes:
         items = [bytes(item) for item in self]
@@ -418,19 +438,34 @@ class Sequence(Type[List[Type[Any]]]):
         return bytes(tinfo) + length + output
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Sequence) and self.items == other.items
+        if not isinstance(other, Sequence):
+            return False
+        self.materialise()
+        other.materialise()
+        return self.items == other.items
 
     def __repr__(self) -> str:
         item_repr = [repr(item) for item in self]
         return "Sequence(%s)" % ", ".join(item_repr)
 
     def __len__(self) -> int:
+        self.materialise()
         return len(self.items)
 
     def __iter__(self) -> Iterator[Type[Any]]:
-        return iter(self.items)
+        for item in self.items:
+            yield item
+        while self.unconsumed_data:
+            next_item, remainder = pop_tlv(self.unconsumed_data)  # type: ignore
+            self.items.append(next_item)
+            self.unconsumed_data = remainder
+            yield next_item
 
     def __getitem__(self, idx: int) -> Type[Any]:
+        while len(self.items) <= idx:
+            item, remainder = pop_tlv(self.unconsumed_data)  # type: ignore
+            self.items.append(item)
+            self.unconsumed_data = remainder
         return self.items[idx]
 
     def pythonize(self) -> List[Type[Any]]:

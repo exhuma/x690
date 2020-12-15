@@ -526,6 +526,20 @@ class TestSequence(TestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_lazy_indexing(self):
+        """
+        Since sequences have become lazy, indexing needs to consume up to the
+        requested index
+        """
+        data = b"0\x0c\x02\x01\x01\x02\x01\x02\x02\x01\x03\x02\x01\x04"
+        seq, _ = pop_tlv(data)
+        result = seq[1]
+        assert result == Integer(2)
+        assert seq.unconsumed_data == b"\x02\x01\x03\x02\x01\x04"
+        result = seq[2]
+        assert result == Integer(3)
+        assert seq.unconsumed_data == b"\x02\x01\x04"
+
     def test_indexing(self):
         data = Sequence(Integer(1), OctetString(b"foo"))
         result = data[1]
