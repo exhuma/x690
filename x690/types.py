@@ -150,10 +150,12 @@ class Type(Generic[TWrappedPyType]):
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE: TypeNature = TypeNature.CONSTRUCTED
-    TAG: int = 0
+    TAG: int = -1
     value: TWrappedPyType
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
+        if cls.__name__ == "Type" and cls.TAG == -1:
+            return
         Type.__registry[(cls.TYPECLASS, cls.TAG, cls.NATURE)] = cls
 
     @staticmethod
@@ -267,7 +269,7 @@ class UnknownType(Type[bytes]):
     value = b""
 
     def __init__(
-        self, tag: int, value: bytes, typeinfo: Optional[TypeInfo] = None
+        self, tag: int = -1, value: bytes = b'', typeinfo: Optional[TypeInfo] = None
     ) -> None:
         self.value = value
         self.tag = tag
