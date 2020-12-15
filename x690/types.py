@@ -149,14 +149,15 @@ class Type(Generic[TWrappedPyType]):
 
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
-    NATURE: TypeNature = TypeNature.CONSTRUCTED
+    NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
     value: TWrappedPyType
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
         if cls.__name__ == "Type" and cls.TAG == -1:
             return
-        Type.__registry[(cls.TYPECLASS, cls.TAG, cls.NATURE)] = cls
+        for nature in cls.NATURE:
+            Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
     @staticmethod
     def get(
@@ -339,6 +340,7 @@ class UnknownType(Type[bytes]):
 
 class Boolean(Type[bool]):
     TAG = 0x01
+    NATURE = [TypeNature.PRIMITIVE]
     value = False
 
     @staticmethod
@@ -366,6 +368,7 @@ class Boolean(Type[bool]):
 
 class Null(Type[None]):
     TAG = 0x05
+    NATURE = [TypeNature.PRIMITIVE]
 
     def __init__(self) -> None:
         self.value = None
@@ -400,8 +403,8 @@ class Null(Type[None]):
 
 
 class OctetString(Type[bytes]):
-    NATURE = TypeNature.PRIMITIVE
     TAG = 0x04
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = b""
 
     @classmethod
@@ -416,7 +419,7 @@ class OctetString(Type[bytes]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other: object) -> bool:
@@ -467,7 +470,7 @@ class Sequence(Type[List[Type[Any]]]):
         output = b"".join(items)
         length = encode_length(len(output))
         tinfo = TypeInfo(
-            TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, Sequence.TAG
+            TypeClass.UNIVERSAL, self.NATURE[0], Sequence.TAG
         )
         return bytes(tinfo) + length + output
 
@@ -505,9 +508,9 @@ class Sequence(Type[List[Type[Any]]]):
 
 
 class Integer(Type[int]):
-    NATURE = TypeNature.PRIMITIVE
     SIGNED = True
     TAG = 0x02
+    NATURE = [TypeNature.PRIMITIVE]
     value = 0
 
     @classmethod
@@ -537,7 +540,7 @@ class Integer(Type[int]):
         ):
             del octets[0]
 
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other: object) -> bool:
@@ -559,6 +562,7 @@ class ObjectIdentifier(Type[str]):
     """
 
     TAG = 0x06
+    NATURE = [TypeNature.PRIMITIVE]
     value = ""
     identifiers: Tuple[int, ...]
 
@@ -783,6 +787,7 @@ class ObjectIdentifier(Type[str]):
 
 class ObjectDescriptor(Type[str]):
     TAG = 0x07
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
@@ -793,11 +798,13 @@ class External(Type[bytes]):
 
 class Real(Type[float]):
     TAG = 0x09
+    NATURE = [TypeNature.PRIMITIVE]
     value = 0.0
 
 
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
+    NATURE = [TypeNature.PRIMITIVE]
     value: List[Any] = []
 
 
@@ -808,11 +815,13 @@ class EmbeddedPdv(Type[bytes]):
 
 class Utf8String(Type[str]):
     TAG = 0x0C
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class RelativeOid(Type[str]):
     TAG = 0x0D
+    NATURE = [TypeNature.PRIMITIVE]
     value = ""
 
 
@@ -823,16 +832,19 @@ class Set(Type[bytes]):
 
 class NumericString(Type[str]):
     TAG = 0x12
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class PrintableString(Type[str]):
     TAG = 0x13
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class T61String(Type[str]):
     TAG = 0x14
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
     __INITIALISED = False
 
@@ -847,7 +859,7 @@ class T61String(Type[str]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + self.length + self.value.encode("t61")
 
     def __eq__(self, other: object) -> bool:
@@ -866,41 +878,49 @@ class T61String(Type[str]):
 
 class VideotexString(Type[str]):
     TAG = 0x15
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class IA5String(Type[str]):
     TAG = 0x16
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class UtcTime(Type[datetime]):
     TAG = 0x17
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = datetime(1979, 1, 1, tzinfo=timezone.utc)
 
 
 class GeneralizedTime(Type[datetime]):
     TAG = 0x18
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = datetime(1979, 1, 1)
 
 
 class GraphicString(Type[str]):
     TAG = 0x19
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class VisibleString(Type[str]):
     TAG = 0x1A
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class GeneralString(Type[str]):
     TAG = 0x1B
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class UniversalString(Type[str]):
     TAG = 0x1C
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
@@ -911,14 +931,17 @@ class CharacterString(Type[str]):
 
 class BmpString(Type[str]):
     TAG = 0x1E
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class EOC(Type[bytes]):
     TAG = 0x00
+    NATURE = [TypeNature.PRIMITIVE]
     value = b""
 
 
 class BitString(Type[str]):
     TAG = 0x03
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
