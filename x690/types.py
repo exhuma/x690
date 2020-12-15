@@ -126,6 +126,7 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
+    __slots__ = ["value"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE = [TypeNature.CONSTRUCTED]
