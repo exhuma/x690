@@ -217,30 +217,30 @@ class TestLengthOctets(TestCase):
     def test_decode_length_short(self):
         data = b"\x05"
         expected = 5
-        result, data = astuple(decode_length(data))
+        result, offset = astuple(decode_length(data))
         self.assertEqual(result, expected)
-        self.assertEqual(data, b"")
+        self.assertEqual(offset, 1)
 
     def test_decode_length_long(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
-        result, data = astuple(decode_length(data))
+        result, offset = astuple(decode_length(data))
         self.assertEqual(result, expected)
-        self.assertEqual(data, b"")
+        self.assertEqual(offset, 3)
 
     def test_decode_length_longer(self):
         data = bytes([0x81, 0xA4])
         expected = 164
-        result, data = astuple(decode_length(data))
+        result, offset = astuple(decode_length(data))
         self.assertEqual(result, expected)
-        self.assertEqual(data, b"")
+        self.assertEqual(offset, 2)
 
     def test_decode_length_indefinite(self):
         data = bytes([0x80])
         expected = -1
-        result, data = astuple(decode_length(data))
+        result, offset = astuple(decode_length(data))
         self.assertEqual(result, expected)
-        self.assertEqual(data, b"")
+        self.assertEqual(offset, -1)
 
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
@@ -308,9 +308,9 @@ class TestGithubIssue23(TestCase):
     def test_decode(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
-        result, data = astuple(decode_length(data))
+        result, offset = astuple(decode_length(data))
         self.assertEqual(result, expected)
-        self.assertEqual(data, b"")
+        self.assertEqual(offset, 3)
 
     def test_symmetry(self):
         result, _ = astuple(decode_length(encode_length(435)))

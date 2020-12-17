@@ -90,7 +90,8 @@ def pop_tlv(
         return Null(), b""  # type: ignore
 
     type_ = TypeInfo.from_bytes(data[0])
-    length, remainder = astuple(decode_length(data[1:]))
+    length, offset = astuple(decode_length(data[1:]))
+    remainder = data[1 + offset :]
 
     if length == -1:
         eob = data.find(b"\x00\x00")

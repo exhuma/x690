@@ -38,9 +38,9 @@ class TypeNature(str, Enum):
 
 
 @dataclass
-class LengthValue:
+class LengthInfo:
     length: int
-    value: bytes
+    offset: int
 
 
 @dataclass
@@ -180,29 +180,30 @@ def encode_length(value):
 
 
 def decode_length(data):
-    # type: ( bytes ) -> LengthValue
+    # type: ( bytes ) -> LengthInfo
     """
     Given a bytes object, which starts with the length information of a TLV
-    value, returns a namedtuple with the length and the remaining bytes. So,
-    given a TLV value, this function takes the "LV" part as input, parses the
-    length information and returns the length plus the remaining "V" part
-    (including any subsequent bytes).
+    value, returns a namedtuple with the length and the number of bytes which
+    contained the length information. So, given a TLV value, this function
+    takes the "LV" part as input, parses the length information and returns
+    the length plus the number of bytes which need to be skipped to arrive at
+    the beginning of the value.
 
     For values which are longer than 127 bytes, the length must be encoded into
     an unknown amount of "length" bytes. This function reads as many bytes as
-    needed for the length. The return value contains the parsed length in
-    number of bytes, and the remaining data bytes which follow the length
-    bytes.
+    needed for the length. Consuming bytes for the value must therefore start
+    after the bytes containing the length info. The second value returned
+    from this function includes this information.
 
     Examples::
 
         >>> # length > 127, consume multiple length bytes
         >>> decode_length(b'\\x81\\xc8...')
-        LengthValue(length=200, value=b'...')
+        LengthInfo(length=200, offset=2)
 
         >>> # length <= 127, consume one length byte
         >>> decode_length(b'\\x10...')
-        LengthValue(length=16, value=b'...')
+        LengthInfo(length=16, offset=1)
 
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
@@ -215,18 +216,18 @@ def decode_length(data):
     if data0 & 0b10000000 == 0:
         # definite short form
         output = int.from_bytes([data0], "big")
-        data = data[1:]
+        offset = 1
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
         output = -1
-        data = data[1:]
+        offset = -1
     else:
         # definite long form
         num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
         value_octets = data[1 : 1 + num_octets]
         output = int.from_bytes(value_octets, "big")
-        data = data[num_octets + 1 :]
-    return LengthValue(output, data)
+        offset = num_octets + 1
+    return LengthInfo(output, offset)
 
 
 def visible_octets(data):
