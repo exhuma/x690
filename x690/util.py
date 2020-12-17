@@ -179,8 +179,8 @@ def encode_length(value):
     return bytes(output)
 
 
-def decode_length(data):
-    # type: ( bytes ) -> LengthInfo
+def decode_length(data, index=0):
+    # type: ( bytes, int ) -> LengthInfo
     """
     Given a bytes object, which starts with the length information of a TLV
     value, returns a namedtuple with the length and the number of bytes which
@@ -195,6 +195,9 @@ def decode_length(data):
     after the bytes containing the length info. The second value returned
     from this function includes this information.
 
+    The second argument (*index*) tells the function at which position to
+    look for the length information.
+
     Examples::
 
         >>> # length > 127, consume multiple length bytes
@@ -208,7 +211,7 @@ def decode_length(data):
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    data0 = data[0]
+    data0 = data[index]
     if data0 == 0b11111111:
         # reserved
         raise NotImplementedError("This is a reserved case in X690")

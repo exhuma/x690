@@ -214,6 +214,13 @@ class TestLengthOctets(TestCase):
             TypeInfo.from_bytes(0b11111111)
         self.skipTest("Not yet implemented")  # TODO implement
 
+    def test_decode_length_at_index(self):
+        data = b"foobar\x05"
+        expected = 5
+        result, offset = astuple(decode_length(data, index=6))
+        self.assertEqual(result, expected)
+        self.assertEqual(offset, 1)
+
     def test_decode_length_short(self):
         data = b"\x05"
         expected = 5
