@@ -1,12 +1,10 @@
 # pylint: skip-file
 
-import sys
 from dataclasses import astuple
 from unittest import TestCase
 
 import pytest
 
-from x690.types import ObjectIdentifier
 from x690.util import (
     Length,
     TypeClass,
@@ -20,11 +18,6 @@ from x690.util import (
 )
 
 from .conftest import assert_bytes_equal
-
-if sys.version_info > (3, 3):
-    from unittest.mock import patch
-else:
-    from unittest.mock import patch
 
 
 class TestTypeInfoDecoding(TestCase):
