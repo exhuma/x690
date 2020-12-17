@@ -44,6 +44,12 @@ class LengthInfo:
 
 
 @dataclass
+class ValueMetaData:
+    bounds: slice
+    next_value_index: int
+
+
+@dataclass
 class TypeInfo:
     """
     Decoded structure for an X.690 "type" octet. Example::
@@ -177,6 +183,27 @@ def encode_length(value):
     # prefix length information
     output = [0b10000000 | len(output)] + output
     return bytes(output)
+
+
+def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
+    """
+    Helper method to extract lightweight information about value locations in
+    a data-stream.
+
+    The function returns both a slice at which a value can be found, and the
+    index at which the next value can be found.
+    """
+    length_info = decode_length(data, index + 1)
+    if length_info.length == -1:
+        start = index + 2
+        end = data.find(b"\x00\x00", index)
+        nex_index = end + 2
+    else:
+        start = index + 1 + length_info.offset
+        end = index + 1 + length_info.offset + length_info.length
+        nex_index = end
+    value_slice = slice(start, end)
+    return ValueMetaData(value_slice, nex_index)
 
 
 def decode_length(data, index=0):

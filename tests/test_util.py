@@ -4,6 +4,8 @@ import sys
 from dataclasses import astuple
 from unittest import TestCase
 
+import pytest
+
 from x690.types import ObjectIdentifier
 from x690.util import (
     Length,
@@ -12,6 +14,7 @@ from x690.util import (
     TypeNature,
     decode_length,
     encode_length,
+    get_value_slice,
     visible_octets,
     wrap,
 )
@@ -338,3 +341,33 @@ def test_wrap():
         "      └─────────────────────┘"
     )
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "data, slc, next_index",
+    [
+        (b"\x02\01\01", slice(2, 3), 3),
+        (b"\x04\03xxx", slice(2, 5), 5),
+        (b"\x04\x80xxx\x00\x00", slice(2, 5), 7),
+    ],
+)
+def test_value_slice(data, slc, next_index):
+    res_slc, res_next_index = astuple(get_value_slice(data))
+    assert res_slc == slc
+    assert res_next_index == next_index
+
+
+@pytest.mark.parametrize(
+    "data, slc, next_index",
+    [
+        (b"padding\x02\x01\x01end-padding", slice(9, 10), 10),
+        (b"padding\x04\x80the-value\x00\x00end-padding", slice(9, 18), 20),
+    ],
+)
+def test_value_slice_indexed(data, slc, next_index):
+    """
+    We should be able to fetch a value slice starting at a given index
+    """
+    res_slc, res_next_index = astuple(get_value_slice(data, 7))
+    assert res_slc == slc
+    assert data[next_index:] == b"end-padding"
