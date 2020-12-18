@@ -133,6 +133,7 @@ class Type(Generic[TWrappedPyType]):
     NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
     value: TWrappedPyType
+    raw_bytes: bytes
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
         if cls.__name__ == "Type" and cls.TAG == -1:
@@ -228,6 +229,7 @@ class UnknownType(Type[bytes]):
 
     def __init__(self, tag: int = -1, value: bytes = b"") -> None:
         self.value = value
+        self.raw_bytes = value
         self.tag = tag
         self.length = len(value)
         self.typeinfo = TypeInfo.from_bytes(tag)
@@ -290,7 +292,9 @@ class Boolean(Type[bool]):
 
     @classmethod
     def decode(cls, data: bytes) -> "Boolean":
-        return Boolean(data != b"\x00")
+        instance = Boolean(data != b"\x00")
+        instance.raw_bytes = data
+        return instance
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -329,7 +333,9 @@ class Null(Type[None]):
 
     @classmethod
     def decode(cls, data: bytes) -> "Null":
-        return Null()
+        instance = Null()
+        instance.raw_bytes = data
+        return instance
 
     def __bytes__(self) -> bytes:
         return b"\x05\x00"
@@ -359,8 +365,10 @@ class OctetString(Type[bytes]):
     def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
             self.value = value.encode("ascii")
+            self.raw_bytes = value.encode("ascii")
         else:
             self.value = value
+            self.raw_bytes = value
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
@@ -416,6 +424,7 @@ class Sequence(Type[List[Type[Any]]]):
         if self.value:
             raise X690Error("Sequence was already initialised!")
         self.unconsumed_data = data
+        self.raw_bytes = data
         self.num_consumed_items = 0
 
     def __init__(self, items: Optional[Iterable[Type[Any]]] = None) -> None:
@@ -495,7 +504,9 @@ class Integer(Type[int]):
 
     @classmethod
     def decode(cls, data: bytes) -> "Integer":
-        return cls(int.from_bytes(data, "big", signed=cls.SIGNED))
+        instance = cls(int.from_bytes(data, "big", signed=cls.SIGNED))
+        instance.raw_bytes = data
+        return instance
 
     def __init__(self, value: int = 0) -> None:
         self.value = value
@@ -584,7 +595,9 @@ class ObjectIdentifier(Type[str]):
         # Special case for "empty" object identifiers which should be returned
         # as "0"
         if not data:
-            return ObjectIdentifier(0)
+            instance = ObjectIdentifier(0)
+            instance.raw_bytes = data
+            return instance
 
         # unpack the first byte into first and second sub-identifiers.
         data0 = data[0]
@@ -604,7 +617,9 @@ class ObjectIdentifier(Type[str]):
                 continue
             output.append(char)
 
-        return ObjectIdentifier(*output)
+        instance = ObjectIdentifier(*output)
+        instance.raw_bytes = data
+        return instance
 
     @staticmethod
     def from_string(value: str) -> "ObjectIdentifier":
@@ -834,9 +849,11 @@ class T61String(Type[str]):
             self.__INITIALISED = True
         if isinstance(value, str):
             self.value = value
+            self.raw_bytes = value.encode("t61")
         else:
             self.value = value.decode("t61")
-        self.length = encode_length(len(self.value))
+            self.raw_bytes = value
+        self.length = encode_length(len(self.raw_bytes))
 
     def __bytes__(self) -> bytes:
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
@@ -892,7 +909,9 @@ class GraphicString(Type[str]):
 
     @classmethod
     def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
-        return GraphicString(data.decode("ascii"))
+        instance = GraphicString(data.decode("ascii"))
+        instance.raw_bytes = data
+        return instance
 
     def __init__(self, value: str = "") -> None:
         self.value = value
