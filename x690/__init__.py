@@ -38,7 +38,7 @@ This will do two things:
 * Inform the type-checker of the return-type, improving type-checker output.
 """
 
-from .types import pop_tlv
+from .types import decode, pop_tlv
 
 try:
     import importlib.metadata as importlib_metadata

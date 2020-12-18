@@ -66,6 +66,36 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
 
 
+def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
+    if not data[start_index:]:
+        return Null(), 0
+
+    type_ = TypeInfo.from_bytes(data[start_index])
+    length, offset = astuple(decode_length(data, start_index + 1))
+    if length == -1:
+        data_start = start_index + 2
+        data_end = data.find(b"\x00\x00", data_start)
+        next_tlv = data_end + 2
+    else:
+        data_start = start_index + 1 + offset
+        data_end = data_start + length
+        next_tlv = data_end
+
+    data_slice = slice(data_start, data_end)
+
+    try:
+        cls = Type.get(type_.cls, type_.tag, type_.nature)
+        value = cls.decode(data[data_slice])
+    except KeyError:
+        # Add context information
+        value = UnknownType.decode(data[data_slice])
+        value.tag = data[start_index]
+
+    print(data, start_index, next_tlv)
+
+    return value, next_tlv
+
+
 def pop_tlv(
     data: bytes,
     enforce_type: Optional[TypeType[TPopType]] = None,
@@ -88,26 +118,7 @@ def pop_tlv(
     Note that in the example above, ``\\x11`` is the remainder of the bytes
     object after popping of the integer object.
     """
-    if not data:
-        return Null(), b""  # type: ignore
-
-    type_ = TypeInfo.from_bytes(data[0])
-    length, offset = astuple(decode_length(data[1:]))
-    remainder = data[1 + offset :]
-
-    if length == -1:
-        eob = data.find(b"\x00\x00")
-        chunk, remainder = data[2:eob], data[eob + 4 :]
-    else:
-        chunk, remainder = remainder[:length], remainder[length:]
-
-    try:
-        cls = Type.get(type_.cls, type_.tag, type_.nature)
-        value = cls.decode(chunk)
-    except KeyError:
-        # Add context information
-        value = UnknownType.decode(chunk)
-        value.tag = data[0]
+    value, next_tlv = decode(data, 0)
 
     if enforce_type and not isinstance(value, enforce_type):
         raise UnexpectedType(
@@ -115,6 +126,7 @@ def pop_tlv(
             f"{enforce_type} but got {type(value)} instead"
         )
 
+    remainder = data[next_tlv:]
     if strict and remainder:
         raise IncompleteDecoding(
             f"Strict decoding still had {len(remainder)} remaining bytes!",
