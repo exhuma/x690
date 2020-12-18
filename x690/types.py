@@ -42,7 +42,7 @@ from dataclasses import astuple
 from datetime import datetime, timezone
 from itertools import zip_longest
 from textwrap import indent
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, Iterable
 from typing import Type as TypeType
 from typing import TypeVar, Union
 
@@ -418,10 +418,10 @@ class Sequence(Type[List[Type[Any]]]):
         self.unconsumed_data = data
         self.num_consumed_items = 0
 
-    def __init__(self, *items: Type[Any]) -> None:
-        self.items = list(items)
+    def __init__(self, items: Optional[Iterable[Type[Any]]] = None) -> None:
+        self.items = list(items) if items else []
         self.unconsumed_data = b""
-        self.num_consumed_items = len(items)
+        self.num_consumed_items = len(self.items)
 
     def materialise(self) -> None:
         """
@@ -447,8 +447,8 @@ class Sequence(Type[List[Type[Any]]]):
         return self.items == other.items
 
     def __repr__(self) -> str:
-        item_repr = [repr(item) for item in self]
-        return "Sequence(%s)" % ", ".join(item_repr)
+        item_repr = [item for item in self]
+        return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
         self.materialise()
