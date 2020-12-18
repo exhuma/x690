@@ -534,20 +534,6 @@ class TestSequence(TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_lazy_indexing(self):
-        """
-        Since sequences have become lazy, indexing needs to consume up to the
-        requested index
-        """
-        data = b"0\x0c\x02\x01\x01\x02\x01\x02\x02\x01\x03\x02\x01\x04"
-        seq, _ = pop_tlv(data)
-        result = seq[1]
-        assert result == Integer(2)
-        assert seq.unconsumed_data == b"\x02\x01\x03\x02\x01\x04"
-        result = seq[2]
-        assert result == Integer(3)
-        assert seq.unconsumed_data == b"\x02\x01\x04"
-
     def test_indexing(self):
         data = Sequence([Integer(1), OctetString(b"foo")])
         result = data[1]
@@ -613,7 +599,7 @@ class TestUnknownType(TestCase):
 
     def test_encoding(self):
         result = bytes(UnknownType(0x99, b"\x0a"))
-        expected = b"\x99\x01\x0a"
+        expected = b"\xb9\x01\x0a"
         self.assertEqual(result, expected)
 
     def test_repr(self):
@@ -663,13 +649,6 @@ class TestAllTypes(TestCase):
     def test_null_from_bytes(self):
         result, _ = pop_tlv(b"")
         expected = Null()
-        self.assertEqual(result, expected)
-
-    def test_repr(self):
-        obj = Type()
-        obj.value = 10
-        result = repr(obj)
-        expected = "Type(10)"
         self.assertEqual(result, expected)
 
     def test_childof(self):
@@ -785,3 +764,10 @@ def test_incomplete_decoding():
     with pytest.raises(IncompleteDecoding) as exc:
         pop_tlv(data, strict=True)
     assert exc.value.remainder == b"junk-bytes"
+
+
+@pytest.mark.parametrize("cls", Type.all())
+def test_repr(cls):
+    obj = cls()
+    result = repr(obj)
+    assert cls.__name__ in result
