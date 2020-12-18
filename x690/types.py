@@ -846,7 +846,7 @@ class T61String(Type[str]):
     def __init__(self, value: Union[str, bytes] = "") -> None:
         if not T61String.__INITIALISED:
             t61codec.register()
-            self.__INITIALISED = True
+            T61String.__INITIALISED = True
         if isinstance(value, str):
             self.value = value
             self.raw_bytes = value.encode("t61")
