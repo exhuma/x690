@@ -75,11 +75,10 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
 
 
-def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
-    if not data[start_index:]:
-        return Null(), 0
+def find_slice(data: bytes, start_index: int = 0) -> Tuple[slice, int]:
+    if not bytes:
+        return slice(0, -1)
 
-    type_ = TypeInfo.from_bytes(data[start_index])
     length, offset = astuple(decode_length(data, start_index + 1))
     if length == -1:
         data_start = start_index + 2
@@ -89,18 +88,25 @@ def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
         data_start = start_index + 1 + offset
         data_end = data_start + length
         next_tlv = data_end
+    return slice(data_start, data_end), next_tlv
 
-    data_slice = slice(data_start, data_end)
 
+def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
+    if not data[start_index:]:
+        return Null(), 0
+
+    type_ = TypeInfo.from_bytes(data[start_index])
+    data_slice, next_tlv = find_slice(data, start_index)
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
-        value = cls.decode(data[data_slice])
+        value = cls.decode_raw(data[data_slice])
+        output = cls(value)
     except KeyError:
         # Add context information
-        value = UnknownType.decode(data[data_slice])
-        value.tag = data[start_index]
+        value = UnknownType.decode_raw(data[data_slice])
+        output = UnknownType(data[start_index], value)
 
-    return value, next_tlv
+    return output, next_tlv
 
 
 def pop_tlv(
@@ -168,6 +174,10 @@ class Type(Generic[TWrappedPyType]):
         return self._value
 
     @staticmethod
+    def decode_raw(data: bytes) -> TWrappedPyType:
+        return data  # type: ignore
+
+    @staticmethod
     def get(
         typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
     ) -> TypeType["Type[Any]"]:
@@ -206,7 +216,9 @@ class Type(Generic[TWrappedPyType]):
 
         This function must be overridden by the concrete subclasses.
         """
-        raise NotImplementedError("Decoding is not yet implemented on %s" % cls)
+        slc, _ = find_slice(data)
+        output = cls.decode_raw(data[slc])
+        return cls(output)
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
         if value is None:
@@ -330,10 +342,9 @@ class Boolean(Type[bool]):
     NATURE = [TypeNature.PRIMITIVE]
     DEFAULT_VALUE = False
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Boolean":
-        instance = Boolean(data != b"\x00")
-        return instance
+    @staticmethod
+    def decode_raw(data: bytes) -> "Boolean":
+        return data != b"\x00"
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -365,10 +376,9 @@ class Null(Type[None]):
                 "was %d" % data[1]
             )
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Null":
-        instance = Null()
-        return instance
+    @staticmethod
+    def decode_raw(data: bytes) -> "Null":
+        return None
 
     def encode_raw(self, value: None) -> bytes:
         return b"\x00"
@@ -393,10 +403,6 @@ class OctetString(Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     DEFAULT_VALUE = b""
-
-    @classmethod
-    def decode(cls, data: bytes) -> "OctetString":
-        return cls(data)
 
     def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
@@ -434,14 +440,13 @@ class Sequence(Type[List[Type[Any]]]):
     value: List[Type[Any]] = []
 
     @classmethod
-    def decode(cls, data: bytes) -> "Sequence":
-        items = []
-        remainder = data
-        while remainder:
-            item, remainder = pop_tlv(remainder)  # type: ignore
+    def decode_raw(cls, data: bytes) -> "Sequence":
+        item, next_pos = decode(data, 0)
+        items = [item]
+        while next_pos < len(data):
+            item, next_pos = decode(data, next_pos)
             items.append(item)
-        output = Sequence(items)
-        return output
+        return cls(items)
 
     def __init__(self, items: Optional[List[Type[Any]]] = None) -> None:
         super().__init__(items if items else [])
@@ -496,10 +501,9 @@ class Integer(Type[int]):
     NATURE = [TypeNature.PRIMITIVE]
     DEFAULT_VALUE = 0
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Integer":
-        instance = cls(int.from_bytes(data, "big", signed=cls.SIGNED))
-        return instance
+    @staticmethod
+    def decode_raw(data: bytes) -> int:
+        return int.from_bytes(data, "big", signed=Integer.SIGNED)
 
     def encode_raw(self, value: int) -> bytes:
         octets = [value & 0b11111111]
@@ -578,12 +582,11 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return output
 
     @classmethod
-    def decode(cls, data: bytes) -> "ObjectIdentifier":
+    def decode_raw(cls, data: bytes) -> Tuple[int, ...]:
         # Special case for "empty" object identifiers which should be returned
         # as "0"
         if not data:
-            instance = ObjectIdentifier((0,))
-            return instance
+            return (0,)
 
         # unpack the first byte into first and second sub-identifiers.
         data0 = data[0]
@@ -592,18 +595,18 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
 
         remaining = iter(data[1:])
 
-        for char in remaining:
+        for node in remaining:
             # Each node can only contain values from 0-127. Other values need
             # to be combined.
-            if char > 127:
+            if node > 127:
                 collapsed_value = ObjectIdentifier.decode_large_value(
-                    char, remaining
+                    node, remaining
                 )
                 output.append(collapsed_value)
                 continue
-            output.append(char)
+            output.append(node)
 
-        instance = ObjectIdentifier(tuple(output))
+        instance = tuple(output)
         return instance
 
     @staticmethod
@@ -815,23 +818,25 @@ class T61String(Type[str]):
     __INITIALISED = False
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
-        if not T61String.__INITIALISED:
-            t61codec.register()
-            T61String.__INITIALISED = True
         if isinstance(value, str):
             super().__init__(value)
         else:
-            super().__init__(value.decode("t61"))
-        self.length = encode_length(len(self.raw_bytes))
+            super().__init__(T61String.decode_raw(value))
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, T61String) and self._value == other._value
 
-    @classmethod
-    def decode(cls, data: bytes) -> "T61String":
-        return cls(data)
+    @staticmethod
+    def decode_raw(data: bytes) -> str:
+        if not T61String.__INITIALISED:
+            t61codec.register()
+            T61String.__INITIALISED = True
+        return data.decode("t61")
 
     def encode_raw(self, value: str) -> bytes:
+        if not T61String.__INITIALISED:
+            t61codec.register()
+            T61String.__INITIALISED = True
         return value.encode("t61")
 
 
@@ -869,10 +874,9 @@ class GraphicString(Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     DEFAULT_VALUE = ""
 
-    @classmethod
-    def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
-        instance = GraphicString(data.decode("ascii"))
-        return instance
+    @staticmethod
+    def decode_raw(data: bytes) -> str:
+        return data.decode("ascii")
 
 
 class VisibleString(Type[str]):
