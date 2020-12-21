@@ -236,8 +236,11 @@ class TestLengthOctets(TestCase):
         self.assertEqual(data, b"")
 
     def test_decode_length_indefinite(self):
-        with self.assertRaises(NotImplementedError):
-            decode_length(bytes([0b10000000]))
+        data = bytes([0x80])
+        expected = -1
+        result, data = astuple(decode_length(data))
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b"")
 
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):

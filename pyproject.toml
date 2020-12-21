@@ -19,7 +19,7 @@ max-line-length = "80"
 
 [tool.poetry]
 name = "x690"
-version = "0.3.0"
+version = "0.4.0"
 description = "Pure Python X.690 implementation"
 authors = ["Michel Albert <michel@albert.lu>"]
 license = "MIT"
@@ -41,6 +41,7 @@ classifiers = [
 python = "^3.6"
 t61codec = "^1.0.1"
 dataclasses = {version = "^0.7", python = "<3.7"}
+importlib-metadata = {version = "^3.3.0", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -52,6 +53,7 @@ black = "*"
 isort = "*"
 vulture = "*"
 Pygments = "*"
+pylint = "^2.6.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

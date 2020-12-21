@@ -35,7 +35,7 @@ Python objects.
 Depending on type, you may also want to override certain methods. See
 :py:class:`~.Sequence` and :py:class:`~.Integer` for more complex examples.
 """
-# pylint: disable=abstract-method, missing-docstring
+# pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
 from dataclasses import astuple
@@ -48,7 +48,7 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import IncompleteDecoding, InvalidValueLength, UnexpectedType
+from .exc import IncompleteDecoding, UnexpectedType
 from .util import (
     INDENT_STRING,
     TypeClass,
@@ -86,29 +86,31 @@ def pop_tlv(
     Note that in the example above, ``\\x11`` is the remainder of the bytes
     object after popping of the integer object.
     """
-    # TODO: This function should be moved to another module (util maybe?).
     if not data:
         return Null(), b""  # type: ignore
 
     type_ = TypeInfo.from_bytes(data[0])
     length, remainder = astuple(decode_length(data[1:]))
 
-    # determine how many octets are used to encode the length!
-    offset = len(data) - len(remainder)
-    chunk = data[: length + offset]
+    if length == -1:
+        eob = data.find(b"\x00\x00")
+        chunk, remainder = data[2:eob], data[eob + 4 :]
+    else:
+        chunk, remainder = remainder[:length], remainder[length:]
+
     try:
-        cls = Type.get(type_.cls, type_.tag)
-        value = cls.from_bytes(chunk)
+        cls = Type.get(type_.cls, type_.tag, type_.nature)
+        value = cls.decode(chunk)
     except KeyError:
         # Add context information
-        value = UnknownType.from_bytes(chunk)
+        value = UnknownType.decode(chunk)
+        value.tag = data[0]
 
     if enforce_type and not isinstance(value, enforce_type):
         raise UnexpectedType(
             f"Unexpected decode result. Expected instance of type "
             f"{enforce_type} but got {type(value)} instead"
         )
-    remainder = remainder[length:]
 
     if strict and remainder:
         raise IncompleteDecoding(
@@ -124,17 +126,24 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __registry: Dict[Tuple[str, int], TypeType["Type[Any]"]] = {}
+    __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
-    TAG: int = 0
+    NATURE = [TypeNature.CONSTRUCTED]
+    TAG: int = -1
     value: TWrappedPyType
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
-        Type.__registry[(cls.TYPECLASS, cls.TAG)] = cls
+        if cls.__name__ == "Type" and cls.TAG == -1:
+            return
+        for nature in cls.NATURE:
+            Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
     @staticmethod
-    def get(typeclass: str, typeid: int) -> TypeType["Type[Any]"]:
-        return Type.__registry[(typeclass, typeid)]
+    def get(
+        typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
+    ) -> TypeType["Type[Any]"]:
+        cls = Type.__registry[(typeclass, typeid, nature)]
+        return cls
 
     @staticmethod
     def all() -> List[TypeType["Type[Any]"]]:
@@ -158,30 +167,6 @@ class Type(Generic[TWrappedPyType]):
                 "ID 0x%02x, but got a %s class with "
                 "tag ID 0x%02x" % (cls.TYPECLASS, cls.TAG, tinfo.cls, data[0])
             )
-
-    @classmethod
-    def from_bytes(cls, data: bytes) -> "Type[TWrappedPyType]":
-        """
-        Given a bytes object, this method reads the type information and length
-        and uses it to convert the bytes representation into a python object.
-
-        :raises puresnmp.x690.exc.InvalidValueLength: If the packet-length does
-            not match the expected length reported in the package header.
-        """
-
-        if not data:
-            return Null()  # type: ignore
-        cls.validate(data)
-        expected_length, data = astuple(decode_length(data[1:]))
-        if len(data) != expected_length:
-            raise InvalidValueLength(
-                "Corrupt packet: Unexpected length for {0} Expected {1} "
-                "(0x{1:02x}) but got {2} (0x{2:02x}). Consider increasing "
-                "puresnmp.transport.BUFFER_SIZE.".format(
-                    cls, expected_length, len(data)
-                )
-            )
-        return cls.decode(data)
 
     @classmethod
     def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
@@ -239,9 +224,7 @@ class UnknownType(Type[bytes]):
 
     value = b""
 
-    def __init__(
-        self, tag: int, value: bytes, typeinfo: Optional[TypeInfo] = None
-    ) -> None:
+    def __init__(self, tag: int = -1, value: bytes = b"") -> None:
         self.value = value
         self.tag = tag
         self.length = len(value)
@@ -264,42 +247,47 @@ class UnknownType(Type[bytes]):
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "UnknownType":
+    def decode(cls, data: bytes) -> "UnknownType":
         """
         Overrides typical conversion by removing type validation. As, by
         definition this class is used for unknown types, we cannot validate
         them.
         """
         if not data:
-            return Null()  # type: ignore
-        tag = data[0]
-        expected_length, data = astuple(decode_length(data[1:]))
-        if len(data) != expected_length:
-            raise ValueError(
-                "Corrupt packet: Unexpected length for {0} "
-                "Expected {1} (0x{1:02x}) "
-                "but got {2} (0x{2:02x})".format(
-                    UnknownType, expected_length, len(data)
-                )
-            )
-        return UnknownType(tag, data)
+            return UnknownType()
+        return UnknownType(value=data)
 
     def pretty(self, depth: int = 0) -> str:
+        wrapped = wrap(
+            visible_octets(self.value), str(type(self)), depth
+        ).splitlines()
+        if len(wrapped) > 15:
+            line_width = len(wrapped[0])
+            sniptext = ("<%d more lines>" % (len(wrapped) - 10 - 5)).center(
+                line_width - 2
+            )
+            wrapped = wrapped[:10] + ["┊%s┊" % sniptext] + wrapped[-5:]
+        lines = [
+            "Unknown Type",
+            f"  │ Tag:       {self.tag}",
+            "  │ Type Info:",
+            f"  │  │ Class: {self.typeinfo.cls}",
+            f"  │  │ Nature: {self.typeinfo.nature}",
+            f"  │  │ Tag: {self.typeinfo.tag}",
+        ] + wrapped
         return indent(
-            f"Unknown Type\n"
-            f"  │ Tag:       {self.tag}\n"
-            f"  │ Type Info: {self.typeinfo}\n"
-            f"  │ Hex-Value: {self.value.hex()}",
+            "\n".join(lines),
             INDENT_STRING * depth,
         )
 
 
 class Boolean(Type[bool]):
     TAG = 0x01
+    NATURE = [TypeNature.PRIMITIVE]
     value = False
 
-    @staticmethod
-    def decode(data: bytes) -> "Boolean":
+    @classmethod
+    def decode(cls, data: bytes) -> "Boolean":
         return Boolean(data != b"\x00")
 
     @classmethod
@@ -323,6 +311,7 @@ class Boolean(Type[bool]):
 
 class Null(Type[None]):
     TAG = 0x05
+    NATURE = [TypeNature.PRIMITIVE]
 
     def __init__(self) -> None:
         self.value = None
@@ -358,6 +347,7 @@ class Null(Type[None]):
 
 class OctetString(Type[bytes]):
     TAG = 0x04
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = b""
 
     @classmethod
@@ -372,7 +362,7 @@ class OctetString(Type[bytes]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other: object) -> bool:
@@ -391,6 +381,8 @@ class OctetString(Type[bytes]):
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
             embedded = pop_tlv(self.value)[0]  # type: ignore
+            if isinstance(embedded, UnknownType):
+                raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
@@ -422,9 +414,7 @@ class Sequence(Type[List[Type[Any]]]):
         items = [bytes(item) for item in self]
         output = b"".join(items)
         length = encode_length(len(output))
-        tinfo = TypeInfo(
-            TypeClass.UNIVERSAL, TypeNature.CONSTRUCTED, Sequence.TAG
-        )
+        tinfo = TypeInfo(TypeClass.UNIVERSAL, self.NATURE[0], Sequence.TAG)
         return bytes(tinfo) + length + output
 
     def __eq__(self, other: object) -> bool:
@@ -463,6 +453,7 @@ class Sequence(Type[List[Type[Any]]]):
 class Integer(Type[int]):
     SIGNED = True
     TAG = 0x02
+    NATURE = [TypeNature.PRIMITIVE]
     value = 0
 
     @classmethod
@@ -492,7 +483,7 @@ class Integer(Type[int]):
         ):
             del octets[0]
 
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other: object) -> bool:
@@ -514,6 +505,7 @@ class ObjectIdentifier(Type[str]):
     """
 
     TAG = 0x06
+    NATURE = [TypeNature.PRIMITIVE]
     value = ""
     identifiers: Tuple[int, ...]
 
@@ -738,6 +730,7 @@ class ObjectIdentifier(Type[str]):
 
 class ObjectDescriptor(Type[str]):
     TAG = 0x07
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
@@ -748,11 +741,13 @@ class External(Type[bytes]):
 
 class Real(Type[float]):
     TAG = 0x09
+    NATURE = [TypeNature.PRIMITIVE]
     value = 0.0
 
 
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
+    NATURE = [TypeNature.PRIMITIVE]
     value: List[Any] = []
 
 
@@ -763,11 +758,13 @@ class EmbeddedPdv(Type[bytes]):
 
 class Utf8String(Type[str]):
     TAG = 0x0C
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class RelativeOid(Type[str]):
     TAG = 0x0D
+    NATURE = [TypeNature.PRIMITIVE]
     value = ""
 
 
@@ -778,16 +775,19 @@ class Set(Type[bytes]):
 
 class NumericString(Type[str]):
     TAG = 0x12
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class PrintableString(Type[str]):
     TAG = 0x13
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class T61String(Type[str]):
     TAG = 0x14
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
     __INITIALISED = False
 
@@ -802,7 +802,7 @@ class T61String(Type[str]):
         self.length = encode_length(len(self.value))
 
     def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, TypeNature.PRIMITIVE, self.TAG)
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + self.length + self.value.encode("t61")
 
     def __eq__(self, other: object) -> bool:
@@ -821,41 +821,61 @@ class T61String(Type[str]):
 
 class VideotexString(Type[str]):
     TAG = 0x15
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class IA5String(Type[str]):
     TAG = 0x16
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class UtcTime(Type[datetime]):
     TAG = 0x17
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = datetime(1979, 1, 1, tzinfo=timezone.utc)
 
 
 class GeneralizedTime(Type[datetime]):
     TAG = 0x18
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = datetime(1979, 1, 1)
 
 
 class GraphicString(Type[str]):
+    # NOTE: As per x.690, this should inherit from OctetString. However, this
+    #       library serves as an abstraction layer between X.690 and Python.
+    #       For this reason, it defines this as a "str" type. To keep the
+    #       correct behaviours, we can still "borrow" the implementation from
+    #       OctetString if needed
     TAG = 0x19
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
+
+    @classmethod
+    def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
+        return GraphicString(data.decode("ascii"))
+
+    def __init__(self, value: str = "") -> None:
+        self.value = value
 
 
 class VisibleString(Type[str]):
     TAG = 0x1A
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class GeneralString(Type[str]):
     TAG = 0x1B
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class UniversalString(Type[str]):
     TAG = 0x1C
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
@@ -866,14 +886,17 @@ class CharacterString(Type[str]):
 
 class BmpString(Type[str]):
     TAG = 0x1E
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
 
 
 class EOC(Type[bytes]):
     TAG = 0x00
+    NATURE = [TypeNature.PRIMITIVE]
     value = b""
 
 
 class BitString(Type[str]):
     TAG = 0x03
+    NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     value = ""
