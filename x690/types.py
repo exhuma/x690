@@ -38,17 +38,26 @@ Depending on type, you may also want to override certain methods. See
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
-from sys import byteorder
-from unittest.mock import DEFAULT
 from dataclasses import astuple
 from datetime import datetime, timezone
 from itertools import zip_longest
+from sys import byteorder
 from textwrap import indent
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, Iterable
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
 from typing import Type as TypeType
 from typing import TypeVar, Union
 
-import t61codec  # type: ignore
+import t61codec
 
 from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (

@@ -2,11 +2,10 @@
 We should be able to decode values without creating excessive copies in memory
 """
 
-from x690 import decode
-import x690.types as t
-
-
 import pytest
+
+import x690.types as t
+from x690 import decode
 
 
 @pytest.mark.parametrize(
