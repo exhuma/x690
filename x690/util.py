@@ -260,7 +260,7 @@ def decode_length(data, index=0):
     else:
         # definite long form
         num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
-        value_octets = data[1 : 1 + num_octets]
+        value_octets = data[index + 1 : index + num_octets + 1]
         output = int.from_bytes(value_octets, "big")
         offset = num_octets + 1
     return LengthInfo(output, offset)

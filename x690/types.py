@@ -67,6 +67,7 @@ from .util import (
     TypeNature,
     decode_length,
     encode_length,
+    get_value_slice,
     visible_octets,
     wrap,
 )
@@ -75,28 +76,12 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
 
 
-def find_slice(data: bytes, start_index: int = 0) -> Tuple[slice, int]:
-    if not bytes:
-        return slice(0, -1)
-
-    length, offset = astuple(decode_length(data, start_index + 1))
-    if length == -1:
-        data_start = start_index + 2
-        data_end = data.find(b"\x00\x00", data_start)
-        next_tlv = data_end + 2
-    else:
-        data_start = start_index + 1 + offset
-        data_end = data_start + length
-        next_tlv = data_end
-    return slice(data_start, data_end), next_tlv
-
-
-def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
+def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
     if not data[start_index:]:
         return Null(), 0
 
     type_ = TypeInfo.from_bytes(data[start_index])
-    data_slice, next_tlv = find_slice(data, start_index)
+    data_slice, next_tlv = astuple(get_value_slice(data, start_index))
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
     except KeyError:
@@ -217,7 +202,7 @@ class Type(Generic[TWrappedPyType]):
 
         This function must be overridden by the concrete subclasses.
         """
-        slc, _ = find_slice(data)
+        slc = get_value_slice(data).bounds
         output = cls.decode_raw(data[slc])
         return cls(output)
 
