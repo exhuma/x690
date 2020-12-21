@@ -577,7 +577,7 @@ class TestNull(TestCase):
 
     def test_decode_null(self):
         expected = Null()
-        result = Null.decode("\x05\x00\x00")
+        result = Null.decode(b"\x05\x00\x00")
         self.assertEqual(result, expected)
 
     def test_repr(self):
