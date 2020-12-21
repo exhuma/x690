@@ -76,7 +76,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        oid = ObjectIdentifier([1, 3, 6, 1, 2, 1])
+        oid = ObjectIdentifier((1, 3, 6, 1, 2, 1))
         result = bytes(oid)
         expected = b"\x06\x05\x2b\x06\x01\x02\x01"
         assert_bytes_equal(result, expected)
@@ -85,7 +85,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        expected = ObjectIdentifier([1, 3, 6, 1, 2, 1])
+        expected = ObjectIdentifier((1, 3, 6, 1, 2, 1))
         result, _ = pop_tlv(b"\x06\x05\x2b\x06\x01\x02\x01")
         self.assertEqual(result, expected)
 
@@ -93,7 +93,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with the top-level ID '0'
         """
-        expected = ObjectIdentifier([0])
+        expected = ObjectIdentifier((0,))
         result, _ = pop_tlv(b"\x06\x00")
         self.assertEqual(result, expected)
 
@@ -101,7 +101,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with the top-level ID '0'
         """
-        oid = ObjectIdentifier([0])
+        oid = ObjectIdentifier((0,))
         result = bytes(oid)
         expected = b"\x06\x00"
         self.assertEqual(result, expected)
@@ -111,7 +111,7 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the encoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        oid = ObjectIdentifier([1, 3, 6, 8072])
+        oid = ObjectIdentifier((1, 3, 6, 8072))
         result = bytes(oid)
         expected = b"\x06\x04\x2b\x06\xbf\x08"
         assert_bytes_equal(result, expected)
@@ -121,7 +121,7 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the decoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        expected = ObjectIdentifier([1, 3, 6, 8072])
+        expected = ObjectIdentifier((1, 3, 6, 8072))
         result, _ = pop_tlv(b"\x06\x04\x2b\x06\xbf\x08")
         self.assertEqual(result, expected)
 
@@ -137,7 +137,7 @@ class TestObjectIdentifier(TestCase):
 
     def test_fromstring(self):
         result = ObjectIdentifier.from_string("1.2.3")
-        expected = ObjectIdentifier([1, 2, 3])
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_fromstring_leading_dot(self):
@@ -146,12 +146,12 @@ class TestObjectIdentifier(TestCase):
         string input.
         """
         result = ObjectIdentifier.from_string(".1.2.3")
-        expected = ObjectIdentifier([1, 2, 3])
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = ObjectIdentifier([1, 2, 3]).pythonize()
-        expected = "1.2.3"
+        result = ObjectIdentifier((1, 2, 3)).pythonize()
+        expected = (1, 2, 3)
         self.assertEqual(result, expected)
 
     def test_str(self):
@@ -169,7 +169,7 @@ class TestObjectIdentifier(TestCase):
         Using "." to denote the root OID is common. We should allow this.
         """
         result = ObjectIdentifier.from_string(".")
-        expected = ObjectIdentifier([1])
+        expected = ObjectIdentifier((1,))
         self.assertEqual(result, expected)
 
     def test_containment_a(self):
@@ -213,12 +213,12 @@ class TestObjectIdentifier(TestCase):
         self.assertFalse(a in b)
 
     def test_create_by_iterable(self):
-        result = ObjectIdentifier([1, 2, 3])
-        expected = ObjectIdentifier([1, 2, 3])
+        result = ObjectIdentifier((1, 2, 3))
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(ObjectIdentifier([1, 2, 3]))
+        result = repr(ObjectIdentifier((1, 2, 3)))
         expected = "ObjectIdentifier((1, 2, 3))"
         self.assertEqual(result, expected)
 
@@ -226,8 +226,8 @@ class TestObjectIdentifier(TestCase):
         """
         Test hash function and that it makes sense.
         """
-        result = hash(ObjectIdentifier([1, 2, 3]))
-        expected = hash(ObjectIdentifier([1, 2, 3]))
+        result = hash(ObjectIdentifier((1, 2, 3)))
+        expected = hash(ObjectIdentifier((1, 2, 3)))
         self.assertEqual(result, expected)
 
     def test_non_containment_f(self):
@@ -273,8 +273,8 @@ class TestObjectIdentifier(TestCase):
         self.assertEqual(result, expected)
 
     def test_item_access(self):
-        a = ObjectIdentifier([1, 2, 3])
-        expected = ObjectIdentifier([2])
+        a = ObjectIdentifier((1, 2, 3))
+        expected = ObjectIdentifier((2,))
         result = a[1]
         self.assertEqual(result, expected)
 

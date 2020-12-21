@@ -526,23 +526,23 @@ class Integer(Type[int]):
         return isinstance(other, Integer) and self._value == other._value
 
 
-class ObjectIdentifier(Type[str]):
+class ObjectIdentifier(Type[Tuple[int, ...]]):
     """
     Represents an OID.
 
     Instances of this class support containment checks to determine if one OID
     is a sub-item of another::
 
-        >>> ObjectIdentifier(1, 2, 3, 4, 5) in ObjectIdentifier(1, 2, 3)
+        >>> ObjectIdentifier((1, 2, 3, 4, 5)) in ObjectIdentifier((1, 2, 3))
         True
 
-        >>> ObjectIdentifier(1, 2, 4, 5, 6) in ObjectIdentifier(1, 2, 3)
+        >>> ObjectIdentifier((1, 2, 4, 5, 6)) in ObjectIdentifier((1, 2, 3))
         False
     """
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = ""
+    DEFAULT_VALUE = (0,)
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -582,7 +582,7 @@ class ObjectIdentifier(Type[str]):
         # Special case for "empty" object identifiers which should be returned
         # as "0"
         if not data:
-            instance = ObjectIdentifier([0])
+            instance = ObjectIdentifier((0,))
             return instance
 
         # unpack the first byte into first and second sub-identifiers.
@@ -603,7 +603,7 @@ class ObjectIdentifier(Type[str]):
                 continue
             output.append(char)
 
-        instance = ObjectIdentifier(output)
+        instance = ObjectIdentifier(tuple(output))
         return instance
 
     @staticmethod
@@ -613,26 +613,13 @@ class ObjectIdentifier(Type[str]):
         """
 
         if value == ".":
-            return ObjectIdentifier([1])
+            return ObjectIdentifier((1,))
 
         if value.startswith("."):
             value = value[1:]
 
-        identifiers = [int(ident, 10) for ident in value.split(".")]
+        identifiers = tuple(int(ident, 10) for ident in value.split("."))
         return ObjectIdentifier(identifiers)
-
-    def __init__(self, identifiers: Optional[List[int]] = None) -> None:
-        # pylint: disable=line-too-long
-        identifiers = identifiers or []
-        super().__init__(tuple(identifiers))
-
-        # If the user hands in an iterable, instead of positional arguments,
-        # make sure we unpack it
-        if len(identifiers) == 1 and not isinstance(identifiers[0], int):
-            identifiers = [int(ident) for ident in identifiers[0]]
-
-        collapsed_identifiers = self.collapse_identifiers(identifiers)
-        self.length = encode_length(len(collapsed_identifiers))
 
     def collapse_identifiers(
         self, identifiers: Tuple[int, ...]
@@ -670,7 +657,7 @@ class ObjectIdentifier(Type[str]):
             )
         return tuple(collapsed_identifiers)
 
-    def get_raw_bytes(self, value: str) -> bytes:
+    def get_raw_bytes(self, value: Tuple[int, ...]) -> bytes:
         collapsed_identifiers = self.collapse_identifiers(value)
         if collapsed_identifiers == (0,):
             return b""
@@ -749,7 +736,7 @@ class ObjectIdentifier(Type[str]):
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier([self._value[index]])
+        return ObjectIdentifier((self._value[index],))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
@@ -762,9 +749,6 @@ class ObjectIdentifier(Type[str]):
         Convenience method to check whether this OID is a child of another OID
         """
         return self in other
-
-    def pythonize(self) -> str:
-        return ".".join([str(n) for n in self._value])
 
 
 class ObjectDescriptor(Type[str]):
