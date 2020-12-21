@@ -214,14 +214,14 @@ class Type(Generic[TWrappedPyType]):
             self.raw_bytes = b""
         else:
             self._value = value
-            self.raw_bytes = self.get_raw_bytes(value)
+            self.raw_bytes = self.encode_raw(value)
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        value = self.get_raw_bytes(self._value)
+        value = self.encode_raw(self._value)
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
@@ -229,7 +229,7 @@ class Type(Generic[TWrappedPyType]):
         # pylint: disable=no-member
         return "%s(%r)" % (self.__class__.__name__, self._value)
 
-    def get_raw_bytes(self, value: TWrappedPyType) -> bytes:
+    def encode_raw(self, value: TWrappedPyType) -> bytes:
         return b""
 
     def pythonize(self) -> TWrappedPyType:
@@ -298,7 +298,7 @@ class UnknownType(Type[bytes]):
             return UnknownType()
         return UnknownType(value=data)
 
-    def get_raw_bytes(self, value: bytes) -> bytes:
+    def encode_raw(self, value: bytes) -> bytes:
         return value
 
     def pretty(self, depth: int = 0) -> str:
@@ -344,7 +344,7 @@ class Boolean(Type[bool]):
                 " it was %d" % data[1]
             )
 
-    def get_raw_bytes(self, value: bool) -> bytes:
+    def encode_raw(self, value: bool) -> bytes:
         return b"\x01" if value else b"\x00"
 
     def __eq__(self, other: object) -> bool:
@@ -370,7 +370,7 @@ class Null(Type[None]):
         instance = Null()
         return instance
 
-    def get_raw_bytes(self, value: None) -> bytes:
+    def encode_raw(self, value: None) -> bytes:
         return b"\x00"
 
     def __bytes__(self) -> bytes:
@@ -406,7 +406,7 @@ class OctetString(Type[bytes]):
     def __eq__(self, other: object) -> bool:
         return isinstance(other, OctetString) and self._value == other._value
 
-    def get_raw_bytes(self, value: bytes) -> bytes:
+    def encode_raw(self, value: bytes) -> bytes:
         return value
 
     def pretty(self, depth: int = 0) -> str:
@@ -447,7 +447,7 @@ class Sequence(Type[List[Type[Any]]]):
         super().__init__(items if items else [])
         self.iter_position = 0
 
-    def get_raw_bytes(self, value: List[Type[Any]]) -> bytes:
+    def encode_raw(self, value: List[Type[Any]]) -> bytes:
         items = [bytes(item) for item in value]
         output = b"".join(items)
         return output
@@ -501,7 +501,7 @@ class Integer(Type[int]):
         instance = cls(int.from_bytes(data, "big", signed=cls.SIGNED))
         return instance
 
-    def get_raw_bytes(self, value: int) -> bytes:
+    def encode_raw(self, value: int) -> bytes:
         octets = [value & 0b11111111]
 
         # Append remaining octets for long integers.
@@ -657,7 +657,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
             )
         return tuple(collapsed_identifiers)
 
-    def get_raw_bytes(self, value: Tuple[int, ...]) -> bytes:
+    def encode_raw(self, value: Tuple[int, ...]) -> bytes:
         collapsed_identifiers = self.collapse_identifiers(value)
         if collapsed_identifiers == (0,):
             return b""
@@ -831,7 +831,7 @@ class T61String(Type[str]):
     def decode(cls, data: bytes) -> "T61String":
         return cls(data)
 
-    def get_raw_bytes(self, value: str) -> bytes:
+    def encode_raw(self, value: str) -> bytes:
         return value.encode("t61")
 
 
