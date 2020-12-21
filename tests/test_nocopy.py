@@ -11,7 +11,7 @@ from x690 import decode
 @pytest.mark.parametrize(
     "data, index, expected, expected_nxt",
     [
-        (b"padding\x02\x01\01padding", 7, t.Integer(1), 10),
+        (b"padding\x02\x01\x01padding", 7, t.Integer(1), 10),
         (b"padding\x04\x03foopadding", 7, t.OctetString(b"foo"), 12),
         (
             b"pa\x00dding\x04\x80foo\x00\x00padding",
