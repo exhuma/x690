@@ -317,7 +317,7 @@ class Boolean(Type[bool]):
     DEFAULT_VALUE = False
 
     @staticmethod
-    def decode_raw(data: bytes) -> "Boolean":
+    def decode_raw(data: bytes) -> bool:
         return data != b"\x00"
 
     @classmethod
@@ -351,7 +351,7 @@ class Null(Type[None]):
             )
 
     @staticmethod
-    def decode_raw(data: bytes) -> "Null":
+    def decode_raw(data: bytes) -> None:
         return None
 
     def encode_raw(self, value: None) -> bytes:
@@ -414,7 +414,7 @@ class Sequence(Type[List[Type[Any]]]):
     value: List[Type[Any]] = []
 
     @classmethod
-    def decode_raw(cls, data: bytes) -> "Sequence":
+    def decode_raw(cls, data: bytes) -> List[Type[Any]]:
         item, next_pos = decode(data, 0)
         items = [item]
         while next_pos < len(data):
