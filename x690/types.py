@@ -99,12 +99,13 @@ def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
     data_slice, next_tlv = find_slice(data, start_index)
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
-        value = cls.decode_raw(data[data_slice])
-        output = cls(value)
     except KeyError:
-        # Add context information
-        value = UnknownType.decode_raw(data[data_slice])
-        output = UnknownType(data[start_index], value)
+        cls = UnknownType
+
+    value = cls.decode_raw(data[data_slice])
+    output = cls(value)
+    if isinstance(output, UnknownType):
+        output.tag = data[start_index]
 
     return output, next_tlv
 
@@ -279,17 +280,15 @@ class UnknownType(Type[bytes]):
     DEFAULT_VALUE = b""
     TAG = 0x99
 
-    def __init__(self, tag: int = -1, value: bytes = b"") -> None:
+    def __init__(self, value: bytes = b"", tag: int = -1) -> None:
         super().__init__(value)
         self._value = value
         self.tag = tag
         self.length = len(value)
-        self.typeinfo = TypeInfo.from_bytes(tag)
 
     def __repr__(self) -> str:
-        tinfo = (
-            f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
-        )
+        typeinfo = TypeInfo.from_bytes(self.tag)
+        tinfo = f"{typeinfo.cls}/{typeinfo.nature}/{typeinfo.tag}"
         return f"<{self.__class__.__name__} {self.tag} {self._value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
@@ -298,17 +297,6 @@ class UnknownType(Type[bytes]):
             and self._value == other._value
             and self.tag == other.tag
         )
-
-    @classmethod
-    def decode(cls, data: bytes) -> "UnknownType":
-        """
-        Overrides typical conversion by removing type validation. As, by
-        definition this class is used for unknown types, we cannot validate
-        them.
-        """
-        if not data:
-            return UnknownType()
-        return UnknownType(value=data)
 
     def encode_raw(self, value: bytes) -> bytes:
         return value
@@ -323,13 +311,14 @@ class UnknownType(Type[bytes]):
                 line_width - 2
             )
             wrapped = wrapped[:10] + ["┊%s┊" % sniptext] + wrapped[-5:]
+        typeinfo = TypeInfo.from_bytes(self.tag)
         lines = [
             "Unknown Type",
             f"  │ Tag:       {self.tag}",
             "  │ Type Info:",
-            f"  │  │ Class: {self.typeinfo.cls}",
-            f"  │  │ Nature: {self.typeinfo.nature}",
-            f"  │  │ Tag: {self.typeinfo.tag}",
+            f"  │  │ Class: {typeinfo.cls}",
+            f"  │  │ Nature: {typeinfo.nature}",
+            f"  │  │ Tag: {typeinfo.tag}",
         ] + wrapped
         return indent(
             "\n".join(lines),

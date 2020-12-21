@@ -594,22 +594,22 @@ class TestUnknownType(TestCase):
 
     def test_decoding(self):
         result, _ = pop_tlv(b"\x99\x01\x0a")
-        expected = UnknownType(0x99, b"\x0a")
+        expected = UnknownType(b"\x0a", 0x99)
         self.assertEqual(result, expected)
 
     def test_encoding(self):
-        result = bytes(UnknownType(0x99, b"\x0a"))
+        result = bytes(UnknownType(b"\x0a", 0x99))
         expected = b"\xb9\x01\x0a"
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(UnknownType(99, b"abc"))
+        result = repr(UnknownType(b"abc", 99))
         typeinfo = TypeInfo("application", "constructed", 3)
         expected = "<UnknownType 99 b'abc' application/constructed/3>"
         self.assertEqual(result, expected)
 
     def test_decoding_indef_length(self):
-        data = bytearray(bytes(UnknownType(0x99, b"some-data")))
+        data = bytearray(bytes(UnknownType(b"some-data", 0x99)))
         data_def = bytes(data)
         data[1] = 0x80
         data.extend([0x00, 0x00])
@@ -635,12 +635,13 @@ class TestAllTypes(TestCase):
         self.assertEqual(result, expected)
 
     def test_tlv_unknown_type(self):
-        result = pop_tlv(bytes([254, 1, 0]))
-        expected = (UnknownType(254, b"\x00"), b"")
+        result, remainder = pop_tlv(bytes([254, 1, 0]))
+        expected = UnknownType(b"\x00", 254)
+        self.assertEqual(remainder, b"")
         self.assertEqual(result, expected)
-        self.assertEqual(result[0].tag, 254)
-        self.assertEqual(result[0].length, 1)
-        self.assertEqual(result[0].value, b"\x00")
+        self.assertEqual(result.tag, 254)
+        self.assertEqual(result.length, 1)
+        self.assertEqual(result.value, b"\x00")
 
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
