@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from .exc import X690Error
+
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Dict, List, Tuple, Union
@@ -203,6 +205,10 @@ def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
         end = index + 1 + length_info.offset + length_info.length
         nex_index = end
     value_slice = slice(start, end)
+    if end > len(data):
+        raise X690Error(
+            "Invalid Slice %r (data length=%r)" % (value_slice, len(data))
+        )
     return ValueMetaData(value_slice, nex_index)
 
 
