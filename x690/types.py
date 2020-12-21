@@ -146,6 +146,7 @@ class Type(Generic[TWrappedPyType]):
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
+    DEFAULT_VALUE: TWrappedPyType
     value: TWrappedPyType
     raw_bytes: bytes
 
@@ -198,9 +199,11 @@ class Type(Generic[TWrappedPyType]):
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
         if value is None:
-            value = self.DEFAULT_VALUE
-        self.value = value
-        self.raw_bytes = self.get_raw_bytes(value)
+            self.value = self.DEFAULT_VALUE
+            self.raw_bytes = b""
+        else:
+            self.value = value
+            self.raw_bytes = self.get_raw_bytes(value)
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
@@ -385,11 +388,9 @@ class OctetString(Type[bytes]):
         return cls(data)
 
     def __init__(self, value: Union[str, bytes] = b"") -> None:
-        super().__init__(value)
         if isinstance(value, str):
-            self.value = value.encode("ascii")
-        else:
-            self.value = value
+            value = value.encode("ascii")
+        super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, OctetString) and self.value == other.value
@@ -435,7 +436,7 @@ class Sequence(Type[List[Type[Any]]]):
         super().__init__(items if items else [])
         self.iter_position = 0
 
-    def get_raw_bytes(self, value) -> bytes:
+    def get_raw_bytes(self, value: List[Type[Any]]) -> bytes:
         items = [bytes(item) for item in value]
         output = b"".join(items)
         return output
@@ -773,7 +774,7 @@ class Real(Type[float]):
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = []
+    DEFAULT_VALUE: List[Type[Any]] = []
 
 
 class EmbeddedPdv(Type[bytes]):
@@ -875,10 +876,6 @@ class GraphicString(Type[str]):
     def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
         instance = GraphicString(data.decode("ascii"))
         return instance
-
-    def __init__(self, value: str = "") -> None:
-        self.value = value
-        super().__init__(value.encode("ascii"))
 
 
 class VisibleString(Type[str]):
