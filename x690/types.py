@@ -139,13 +139,13 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["value"]
+    __slots__ = ["_value"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
     DEFAULT_VALUE: TWrappedPyType
-    value: TWrappedPyType
+    _value: TWrappedPyType
     raw_bytes: bytes
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
@@ -153,6 +153,10 @@ class Type(Generic[TWrappedPyType]):
             return
         for nature in cls.NATURE:
             Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
+
+    @property
+    def value(self) -> TWrappedPyType:
+        return self._value
 
     @staticmethod
     def get(
@@ -197,10 +201,10 @@ class Type(Generic[TWrappedPyType]):
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
         if value is None:
-            self.value = self.DEFAULT_VALUE
+            self._value = self.DEFAULT_VALUE
             self.raw_bytes = b""
         else:
-            self.value = value
+            self._value = value
             self.raw_bytes = self.get_raw_bytes(value)
 
     def __bytes__(self) -> bytes:  # pragma: no cover
@@ -208,13 +212,13 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        value = self.get_raw_bytes(self.value)
+        value = self.get_raw_bytes(self._value)
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
         # pylint: disable=no-member
-        return "%s(%r)" % (self.__class__.__name__, self.value)
+        return "%s(%r)" % (self.__class__.__name__, self._value)
 
     def get_raw_bytes(self, value: TWrappedPyType) -> bytes:
         return b""
@@ -224,7 +228,7 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance to an appropriate pure Python object.
         """
         # pylint: disable=no-member
-        return self.value
+        return self._value
 
     def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
@@ -256,7 +260,7 @@ class UnknownType(Type[bytes]):
 
     def __init__(self, tag: int = -1, value: bytes = b"") -> None:
         super().__init__(value)
-        self.value = value
+        self._value = value
         self.tag = tag
         self.length = len(value)
         self.typeinfo = TypeInfo.from_bytes(tag)
@@ -265,12 +269,12 @@ class UnknownType(Type[bytes]):
         tinfo = (
             f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
         )
-        return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
+        return f"<{self.__class__.__name__} {self.tag} {self._value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, UnknownType)
-            and self.value == other.value
+            and self._value == other._value
             and self.tag == other.tag
         )
 
@@ -290,7 +294,7 @@ class UnknownType(Type[bytes]):
 
     def pretty(self, depth: int = 0) -> str:
         wrapped = wrap(
-            visible_octets(self.value), str(type(self)), depth
+            visible_octets(self._value), str(type(self)), depth
         ).splitlines()
         if len(wrapped) > 15:
             line_width = len(wrapped[0])
@@ -335,7 +339,7 @@ class Boolean(Type[bool]):
         return b"\x01" if value else b"\x00"
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Boolean) and self.value == other.value
+        return isinstance(other, Boolean) and self._value == other._value
 
 
 class Null(Type[None]):
@@ -391,23 +395,23 @@ class OctetString(Type[bytes]):
         super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, OctetString) and self.value == other.value
+        return isinstance(other, OctetString) and self._value == other._value
 
     def get_raw_bytes(self, value: bytes) -> bytes:
         return value
 
     def pretty(self, depth: int = 0) -> str:
-        if self.value == b"":
+        if self._value == b"":
             return repr(self)
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = pop_tlv(self.value)[0]  # type: ignore
+            embedded = pop_tlv(self._value)[0]  # type: ignore
             if isinstance(embedded, UnknownType):
                 raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
-            wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
+            wrapped = wrap(visible_octets(self._value), str(type(self)), depth)
             return wrapped
 
 
@@ -449,16 +453,16 @@ class Sequence(Type[List[Type[Any]]]):
         return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
-        return len(self.value)
+        return len(self._value)
 
     def __iter__(self) -> Iterator[Type[Any]]:
-        if self.value:
-            yield from self.value
+        if self._value:
+            yield from self._value
         else:
             return
 
     def __getitem__(self, idx: int) -> Type[Any]:
-        return self.value[idx]
+        return self._value[idx]
 
     def pythonize(self) -> List[Type[Any]]:
         return [obj.pythonize() for obj in self]
@@ -467,8 +471,8 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.pretty`
         """
-        lines = [f"{self.__class__.__name__} with {len(self.value)} items:"]
-        for item in self.value:
+        lines = [f"{self.__class__.__name__} with {len(self._value)} items:"]
+        for item in self._value:
             prettified_item = item.pretty(depth)
             bullet = INDENT_STRING * depth + "⁃ "
             for line in prettified_item.splitlines():
@@ -510,7 +514,7 @@ class Integer(Type[int]):
         return bytes(octets)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Integer) and self.value == other.value
+        return isinstance(other, Integer) and self._value == other._value
 
 
 class ObjectIdentifier(Type[str]):
@@ -664,24 +668,26 @@ class ObjectIdentifier(Type[str]):
         return bytes(collapsed_identifiers)
 
     def __int__(self) -> int:
-        if len(self.value) != 1:
+        if len(self._value) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
                 "converted to int. %r is not convertable" % self
             )
-        return self.value[0]
+        return self._value[0]
 
     def __str__(self) -> str:
-        return ".".join([str(_) for _ in self.value])
+        return ".".join([str(_) for _ in self._value])
 
     def __repr__(self) -> str:
-        return "ObjectIdentifier(%r)" % (self.value,)
+        return "ObjectIdentifier(%r)" % (self._value,)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, ObjectIdentifier) and self.value == other.value
+        return (
+            isinstance(other, ObjectIdentifier) and self._value == other._value
+        )
 
     def __len__(self) -> int:
-        return len(self.value)
+        return len(self._value)
 
     def __contains__(self, other: "ObjectIdentifier") -> bool:
         """
@@ -691,7 +697,7 @@ class ObjectIdentifier(Type[str]):
         """
         # pylint: disable=invalid-name
 
-        a, b = other.value, self.value
+        a, b = other._value, self._value
 
         # if both have the same amount of identifiers, check for equality
         if len(a) == len(b):
@@ -724,17 +730,17 @@ class ObjectIdentifier(Type[str]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        return self.value < other.value
+        return self._value < other._value
 
     def __hash__(self) -> int:
-        return hash(self.value)
+        return hash(self._value)
 
     def __add__(self, other: "ObjectIdentifier") -> "ObjectIdentifier":
-        nodes = self.value + other.value
+        nodes = self._value + other._value
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier([self.value[index]])
+        return ObjectIdentifier([self._value[index]])
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
@@ -749,7 +755,7 @@ class ObjectIdentifier(Type[str]):
         return self in other
 
     def pythonize(self) -> str:
-        return ".".join([str(n) for n in self.value])
+        return ".".join([str(n) for n in self._value])
 
 
 class ObjectDescriptor(Type[str]):
@@ -826,7 +832,7 @@ class T61String(Type[str]):
         self.length = encode_length(len(self.raw_bytes))
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, T61String) and self.value == other.value
+        return isinstance(other, T61String) and self._value == other._value
 
     @classmethod
     def decode(cls, data: bytes) -> "T61String":
