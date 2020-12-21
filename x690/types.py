@@ -91,8 +91,6 @@ def decode(data: bytes, start_index: int) -> Tuple["Type[Any]", int]:
         value = UnknownType.decode(data[data_slice])
         value.tag = data[start_index]
 
-    print(data, start_index, next_tlv)
-
     return value, next_tlv
 
 
