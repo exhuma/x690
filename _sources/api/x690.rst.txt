@@ -28,14 +28,6 @@ x690.util module
    :undoc-members:
    :show-inheritance:
 
-x690.version module
--------------------
-
-.. automodule:: x690.version
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Module contents
 ---------------

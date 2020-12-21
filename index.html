@@ -49,10 +49,59 @@
 <p>This module contains a pure Python implementation of the “x690” standard for
 BER encoding/decoding. Other encodings are currently unsupported but
 pull-requests are welcome.</p>
-<div class="section" id="type-extensions">
-<h2>Type Extensions<a class="headerlink" href="#type-extensions" title="Permalink to this headline">¶</a></h2>
-<p>It allows defining and detecting new data-types by simply subclassing the base
-class <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code>. An example for this can be seen in <a class="reference external" href="https://github.com/exhuma/puresnmp/blob/4240aa644a1bca01f54683215833dc6711a22745/puresnmp/types.py#L28">puresnmp</a></p>
+<div class="section" id="supporting-new-types">
+<h2>Supporting New Types<a class="headerlink" href="#supporting-new-types" title="Permalink to this headline">¶</a></h2>
+<p>Some applications may need to support types which are not defined in the X.690
+standard. This is supported by this library but the types must be defined and
+registered.</p>
+<p>To register a type, simply subclass <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code>. This will take care of
+the registration. Make sure that your new type is imported before using it.</p>
+<p>New types should define the following 3 class-variables:</p>
+<dl class="simple">
+<dt><strong>TYPECLASS</strong></dt><dd><p>A value from <code class="docutils literal notranslate"><span class="pre">x690.util.TypeClass</span></code></p>
+</dd>
+<dt><strong>TypeNature</strong></dt><dd><p>A value from <code class="docutils literal notranslate"><span class="pre">x690.util.TypeNature</span></code></p>
+</dd>
+<dt><strong>TAG</strong></dt><dd><p>A numerical identifier for the type</p>
+</dd>
+</dl>
+<p>Refer to the x690 standard for more details on these values. As a general
+rule-of-thumb you can assume that the class is either “context” or
+“application” (it might be good to keep the “universal” class reserved for
+x690). The nature should be “primitive” for simple values and “constructed” for
+composed types. The tag is free to choose as long as you don’t overlap with an
+existing type.</p>
+<p>To support <strong>decoding</strong>, the class must implement a <code class="docutils literal notranslate"><span class="pre">decode(data:</span> <span class="pre">bytes)</span> <span class="pre">-&gt;</span>
+<span class="pre">YourType</span></code> function. The contents of <code class="docutils literal notranslate"><span class="pre">data</span></code> will be the raw bytes excluding
+the type information.</p>
+<p>To support <strong>encoding</strong>, the class must implement the <code class="docutils literal notranslate"><span class="pre">__bytes__(self)</span> <span class="pre">-&gt;</span>
+<span class="pre">bytes</span></code> method. This should return the raw-bytes without type-information.
+Wrapping with the appropriate type-information is handled by the library.</p>
+</div>
+<div class="section" id="reverse-engineering-bytes">
+<h2>Reverse Engineering Bytes<a class="headerlink" href="#reverse-engineering-bytes" title="Permalink to this headline">¶</a></h2>
+<p>All types defined in the <code class="docutils literal notranslate"><span class="pre">x690</span></code> library provide a <code class="docutils literal notranslate"><span class="pre">.pretty()</span></code> method which
+returns a prettyfied string.</p>
+<p>If you are confronted with a bytes-object encoded using X.690 but don’t have
+any documentation, you can write the following loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">x690</span> <span class="kn">import</span> <span class="n">pop_tlv</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;mydatafile.bin&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">value</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">pretty</span><span class="p">())</span>
+
+<span class="k">while</span> <span class="n">remaining_bytes</span><span class="p">:</span>
+    <span class="n">value</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">pop_tlv</span><span class="p">(</span><span class="n">remaining_bytes</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">pretty</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This should get you started.</p>
+<p>If the data contain non-standard types, they will get detected as “UnknownType”
+and will print out the type-class, nature and tag in the pretty-printed block.</p>
+<p>This will allow you to define your own subclass of <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code> using
+those values. Override <code class="docutils literal notranslate"><span class="pre">decode(...)</span></code> in that class to handle the unknown
+type.</p>
 </div>
 </div>
 <div class="section" id="examples">
@@ -63,27 +112,25 @@ class <code class="docutils literal notranslate"><span class="pre">x690.types.Ty
 on instances from <code class="docutils literal notranslate"><span class="pre">x690.types</span></code>:</p>
 <div class="section" id="encoding-of-a-single-value">
 <h3>Encoding of a single value<a class="headerlink" href="#encoding-of-a-single-value" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
-
-<span class="o">&gt;&gt;&gt;</span> <span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
-<span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x02\x01\x0c</span><span class="s1">&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
+<span class="go">b&#39;\x02\x01\x0c&#39;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="encoding-of-a-composite-value-using-sequence">
 <h3>Encoding of a composite value using Sequence<a class="headerlink" href="#encoding-of-a-composite-value-using-sequence" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
-
-<span class="o">&gt;&gt;&gt;</span> <span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
-<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
-<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
-<span class="o">...</span>     <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
-<span class="o">...</span> <span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
-<span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">asbytes</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">myvalue</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">(</span><span class="n">asbytes</span><span class="p">)</span>
+<span class="go">b&#39;0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -92,13 +139,13 @@ on instances from <code class="docutils literal notranslate"><span class="pre">x
 <p>Decode bytes by calling <code class="docutils literal notranslate"><span class="pre">x690.types.pop_tlv</span></code> on your byte data. This will
 return a tuple where the first value contains the decoded object, and the
 second one will contain any remaining bytes which were not decoded.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span>
-<span class="n">Sequence</span><span class="p">(</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">remaining_bytes</span>
-<span class="sa">b</span><span class="s1">&#39;&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">x690</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">decoded</span>
+<span class="go">Sequence(Integer(12), Integer(12), Integer(12))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remaining_bytes</span>
+<span class="go">b&#39;&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -110,13 +157,14 @@ things: Firstly, it tells tools like <code class="docutils literal notranslate">
 secondly, it runs an internal type-check which <em>ensures</em> that the returned
 value is of the expected type. <code class="docutils literal notranslate"><span class="pre">x690.exc.UnexpectedType</span></code> is raised otherwise.</p>
 <p>This does of course only work if you know the type in advance.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">enforce_type</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">decoded</span>
-<span class="n">Sequence</span><span class="p">(</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">remaining_bytes</span>
-<span class="sa">b</span><span class="s1">&#39;&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">x690</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">enforce_type</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">decoded</span>
+<span class="go">Sequence(Integer(12), Integer(12), Integer(12))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">remaining_bytes</span>
+<span class="go">b&#39;&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -126,12 +174,12 @@ value is of the expected type. <code class="docutils literal notranslate"><span 
 <p>When decoding using <code class="docutils literal notranslate"><span class="pre">pop_tlv</span></code> and you don’t expect any remaining bytes, use
 <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> which will raise <code class="docutils literal notranslate"><span class="pre">x690.exc.IncompleteDecoding</span></code> if there’s any
 remaining data.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>import x690.types as t
-&gt;&gt;&gt; data = b&#39;0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes&#39;
-&gt;&gt;&gt; decoded, remaining_bytes = t.pop_tlv(data, strict=True)
-Traceback (most recent call last):
-  ...
-x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;0</span><span class="se">\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c</span><span class="s1">junk-bytes&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">decoded</span><span class="p">,</span> <span class="n">remaining_bytes</span> <span class="o">=</span> <span class="n">x690</span><span class="o">.</span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">x690.exc.IncompleteDecoding</span>: <span class="n">Strict decoding still had 10 remaining bytes!</span>
 </pre></div>
 </div>
 </div>

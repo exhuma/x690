@@ -49,17 +49,6 @@
 </dd></dl>
 
 <dl class="exception">
-<dt id="x690.exc.InvalidValueLength">
-<em class="property">exception </em><code class="sig-prename descclassname">x690.exc.</code><code class="sig-name descname">InvalidValueLength</code><a class="headerlink" href="#x690.exc.InvalidValueLength" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
-<p>This error is raised when a value when the length information in the header
-of a “TLV” value does not match the actual value length.</p>
-<p>A likely scenario for this to happen is for example if an IO-operation
-ended prematurely. For example, if the UDP buffer size is too small and the
-remote device returns a packet larger than the buffer.</p>
-</dd></dl>
-
-<dl class="exception">
 <dt id="x690.exc.UnexpectedType">
 <em class="property">exception </em><code class="sig-prename descclassname">x690.exc.</code><code class="sig-name descname">UnexpectedType</code><a class="headerlink" href="#x690.exc.UnexpectedType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.exc.X690Error" title="x690.exc.X690Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.exc.X690Error</span></code></a></p>
@@ -109,6 +98,11 @@ Python objects.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BitString</code><a class="headerlink" href="#x690.types.BitString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.BitString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.BitString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.BitString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 3</em><a class="headerlink" href="#x690.types.BitString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -124,6 +118,11 @@ Python objects.</p>
 <dt id="x690.types.BmpString">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BmpString</code><a class="headerlink" href="#x690.types.BmpString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.BmpString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.BmpString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.BmpString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 30</em><a class="headerlink" href="#x690.types.BmpString.TAG" title="Permalink to this definition">¶</a></dt>
@@ -141,13 +140,18 @@ Python objects.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Boolean</code><span class="sig-paren">(</span><em class="sig-param">value: bool = False</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Boolean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.Boolean.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.Boolean.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.Boolean.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 1</em><a class="headerlink" href="#x690.types.Boolean.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="x690.types.Boolean.decode">
-<em class="property">static </em><code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; x690.types.Boolean<a class="headerlink" href="#x690.types.Boolean.decode" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; x690.types.Boolean<a class="headerlink" href="#x690.types.Boolean.decode" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method takes a bytes object which contains the raw content octets
 of the object. That means, the octets <em>without</em> the type information
 and length.</p>
@@ -189,6 +193,11 @@ this object. If not, raises a ValueError.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">EOC</code><a class="headerlink" href="#x690.types.EOC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.EOC.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.EOC.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.EOC.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 0</em><a class="headerlink" href="#x690.types.EOC.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -220,6 +229,11 @@ this object. If not, raises a ValueError.</p>
 <dt id="x690.types.Enumerated">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Enumerated</code><a class="headerlink" href="#x690.types.Enumerated" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.Enumerated.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.Enumerated.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.Enumerated.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 10</em><a class="headerlink" href="#x690.types.Enumerated.TAG" title="Permalink to this definition">¶</a></dt>
@@ -253,6 +267,11 @@ this object. If not, raises a ValueError.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralString</code><a class="headerlink" href="#x690.types.GeneralString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.GeneralString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.GeneralString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.GeneralString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 27</em><a class="headerlink" href="#x690.types.GeneralString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -269,6 +288,11 @@ this object. If not, raises a ValueError.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralizedTime</code><a class="headerlink" href="#x690.types.GeneralizedTime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.GeneralizedTime.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.GeneralizedTime.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.GeneralizedTime.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 24</em><a class="headerlink" href="#x690.types.GeneralizedTime.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -282,12 +306,26 @@ this object. If not, raises a ValueError.</p>
 
 <dl class="class">
 <dt id="x690.types.GraphicString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GraphicString</code><a class="headerlink" href="#x690.types.GraphicString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GraphicString</code><span class="sig-paren">(</span><em class="sig-param">value: str = ''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GraphicString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.GraphicString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.GraphicString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.GraphicString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 25</em><a class="headerlink" href="#x690.types.GraphicString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="x690.types.GraphicString.decode">
+<em class="property">classmethod </em><code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; x690.types.GraphicString<a class="headerlink" href="#x690.types.GraphicString.decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method takes a bytes object which contains the raw content octets
+of the object. That means, the octets <em>without</em> the type information
+and length.</p>
+<p>This function must be overridden by the concrete subclasses.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="x690.types.GraphicString.value">
@@ -300,6 +338,11 @@ this object. If not, raises a ValueError.</p>
 <dt id="x690.types.IA5String">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">IA5String</code><a class="headerlink" href="#x690.types.IA5String" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.IA5String.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.IA5String.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.IA5String.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 22</em><a class="headerlink" href="#x690.types.IA5String.TAG" title="Permalink to this definition">¶</a></dt>
@@ -316,6 +359,11 @@ this object. If not, raises a ValueError.</p>
 <dt id="x690.types.Integer">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Integer</code><span class="sig-paren">(</span><em class="sig-param">value: int = 0</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Integer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.Integer.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.Integer.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.Integer.SIGNED">
 <code class="sig-name descname">SIGNED</code><em class="property"> = True</em><a class="headerlink" href="#x690.types.Integer.SIGNED" title="Permalink to this definition">¶</a></dt>
@@ -347,6 +395,11 @@ and length.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Null</code><a class="headerlink" href="#x690.types.Null" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.Null.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.Null.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.Null.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 5</em><a class="headerlink" href="#x690.types.Null.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -374,6 +427,11 @@ this object. If not, raises a ValueError.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">NumericString</code><a class="headerlink" href="#x690.types.NumericString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.NumericString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.NumericString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.NumericString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 18</em><a class="headerlink" href="#x690.types.NumericString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -389,6 +447,11 @@ this object. If not, raises a ValueError.</p>
 <dt id="x690.types.ObjectDescriptor">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">ObjectDescriptor</code><a class="headerlink" href="#x690.types.ObjectDescriptor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.ObjectDescriptor.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.ObjectDescriptor.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.ObjectDescriptor.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 7</em><a class="headerlink" href="#x690.types.ObjectDescriptor.TAG" title="Permalink to this definition">¶</a></dt>
@@ -415,6 +478,11 @@ is a sub-item of another:</p>
 <span class="go">False</span>
 </pre></div>
 </div>
+<dl class="attribute">
+<dt id="x690.types.ObjectIdentifier.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.ObjectIdentifier.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.ObjectIdentifier.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 6</em><a class="headerlink" href="#x690.types.ObjectIdentifier.TAG" title="Permalink to this definition">¶</a></dt>
@@ -479,6 +547,11 @@ stram until we encounter a value below 127 and recombine them.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">OctetString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[str</em>, <em class="sig-param">bytes] = b''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.OctetString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.OctetString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.OctetString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.OctetString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 4</em><a class="headerlink" href="#x690.types.OctetString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -518,6 +591,11 @@ complex values may override this.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">PrintableString</code><a class="headerlink" href="#x690.types.PrintableString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.PrintableString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.PrintableString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.PrintableString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 19</em><a class="headerlink" href="#x690.types.PrintableString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -534,6 +612,11 @@ complex values may override this.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Real</code><a class="headerlink" href="#x690.types.Real" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.Real.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.Real.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.Real.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 9</em><a class="headerlink" href="#x690.types.Real.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -549,6 +632,11 @@ complex values may override this.</p>
 <dt id="x690.types.RelativeOid">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">RelativeOid</code><a class="headerlink" href="#x690.types.RelativeOid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.RelativeOid.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;]</em><a class="headerlink" href="#x690.types.RelativeOid.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.RelativeOid.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 13</em><a class="headerlink" href="#x690.types.RelativeOid.TAG" title="Permalink to this definition">¶</a></dt>
@@ -621,6 +709,11 @@ and length.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">T61String</code><span class="sig-paren">(</span><em class="sig-param">value: Union[str</em>, <em class="sig-param">bytes] = ''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.T61String" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.T61String.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.T61String.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.T61String.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 20</em><a class="headerlink" href="#x690.types.T61String.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -653,8 +746,13 @@ and length.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
 <p>The superclass for all supported types.</p>
 <dl class="attribute">
+<dt id="x690.types.Type.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.Type.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.Type.TAG">
-<code class="sig-name descname">TAG</code><em class="property"> = 0</em><a class="headerlink" href="#x690.types.Type.TAG" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">TAG</code><em class="property"> = -1</em><a class="headerlink" href="#x690.types.Type.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -675,19 +773,6 @@ and length.</p>
 of the object. That means, the octets <em>without</em> the type information
 and length.</p>
 <p>This function must be overridden by the concrete subclasses.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="x690.types.Type.from_bytes">
-<em class="property">classmethod </em><code class="sig-name descname">from_bytes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Type.from_bytes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given a bytes object, this method reads the type information and length
-and uses it to convert the bytes representation into a python object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>puresnmp.x690.exc.InvalidValueLength</strong> – If the packet-length does
-not match the expected length reported in the package header.</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
@@ -723,6 +808,11 @@ this object. If not, raises a ValueError.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UniversalString</code><a class="headerlink" href="#x690.types.UniversalString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.UniversalString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.UniversalString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.UniversalString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 28</em><a class="headerlink" href="#x690.types.UniversalString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -736,7 +826,7 @@ this object. If not, raises a ValueError.</p>
 
 <dl class="class">
 <dt id="x690.types.UnknownType">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UnknownType</code><span class="sig-paren">(</span><em class="sig-param">tag: int</em>, <em class="sig-param">value: bytes</em>, <em class="sig-param">typeinfo: Optional[x690.util.TypeInfo] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UnknownType" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UnknownType</code><span class="sig-paren">(</span><em class="sig-param">tag: int = -1</em>, <em class="sig-param">value: bytes = b''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UnknownType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <p>A fallback type for anything not in X.690.</p>
 <p>Instances of this class contain the raw information as parsed from the
@@ -750,8 +840,8 @@ details.</p></li>
 with <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> of this class).</p></li>
 </ul>
 <dl class="method">
-<dt id="x690.types.UnknownType.from_bytes">
-<em class="property">classmethod </em><code class="sig-name descname">from_bytes</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; x690.types.UnknownType<a class="headerlink" href="#x690.types.UnknownType.from_bytes" title="Permalink to this definition">¶</a></dt>
+<dt id="x690.types.UnknownType.decode">
+<em class="property">classmethod </em><code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; x690.types.UnknownType<a class="headerlink" href="#x690.types.UnknownType.decode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overrides typical conversion by removing type validation. As, by
 definition this class is used for unknown types, we cannot validate
 them.</p>
@@ -777,6 +867,11 @@ complex values may override this.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UtcTime</code><a class="headerlink" href="#x690.types.UtcTime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.UtcTime.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.UtcTime.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.UtcTime.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 23</em><a class="headerlink" href="#x690.types.UtcTime.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -792,6 +887,11 @@ complex values may override this.</p>
 <dt id="x690.types.Utf8String">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Utf8String</code><a class="headerlink" href="#x690.types.Utf8String" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.Utf8String.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.Utf8String.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.Utf8String.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 12</em><a class="headerlink" href="#x690.types.Utf8String.TAG" title="Permalink to this definition">¶</a></dt>
@@ -809,6 +909,11 @@ complex values may override this.</p>
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VideotexString</code><a class="headerlink" href="#x690.types.VideotexString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
+<dt id="x690.types.VideotexString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.VideotexString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="x690.types.VideotexString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 21</em><a class="headerlink" href="#x690.types.VideotexString.TAG" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -824,6 +929,11 @@ complex values may override this.</p>
 <dt id="x690.types.VisibleString">
 <em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VisibleString</code><a class="headerlink" href="#x690.types.VisibleString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
+<dl class="attribute">
+<dt id="x690.types.VisibleString.NATURE">
+<code class="sig-name descname">NATURE</code><em class="property"> = [&lt;TypeNature.PRIMITIVE: 'primitive'&gt;, &lt;TypeNature.CONSTRUCTED: 'constructed'&gt;]</em><a class="headerlink" href="#x690.types.VisibleString.NATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="attribute">
 <dt id="x690.types.VisibleString.TAG">
 <code class="sig-name descname">TAG</code><em class="property"> = 26</em><a class="headerlink" href="#x690.types.VisibleString.TAG" title="Permalink to this definition">¶</a></dt>
@@ -1048,11 +1158,63 @@ existing solutions.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-x690.version">
-<span id="x690-version-module"></span><h2>x690.version module<a class="headerlink" href="#module-x690.version" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="module-x690">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-x690" title="Permalink to this headline">¶</a></h2>
+<p>x690 is a library allowing to decode and encode values according to the ITU
+X.690 standard.</p>
+<p>For decoding, use the function <em>pop_tlv</em> provided by this module. When used
+as-is on a bytes object, it will return the first value in the blob and the
+remaining bytes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">x690</span> <span class="kn">import</span> <span class="n">pop_tlv</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">,</span> <span class="n">remainer</span> <span class="o">=</span> <span class="n">pop_tlv</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="go">Integer(1), b&quot;&quot;</span>
+</pre></div>
+</div>
+<p>For a stream of data with an unknown number of items, you can loop on the
+remaining bytes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">x690</span> <span class="kn">import</span> <span class="n">pop_tlv</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">item</span><span class="p">,</span> <span class="n">remainder</span> <span class="o">=</span> <span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">while</span> <span class="n">remainder</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">item</span><span class="p">,</span> <span class="n">remainder</span> <span class="o">=</span> <span class="n">pop_tlv</span><span class="p">(</span><span class="n">remainder</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you expect exactly one element, it is possible to pass the “strict”
+argument. This will raise an error if the stream contains any “junk” data.</p>
+<p>Finally, a x690 data-stream may contain various types. For this reason, the
+“pop_tlv” function is type-hinted to return a vague, imprecise type. If you
+<em>know</em> what your are decoding, you can pass the expected type into the
+function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">x690</span> <span class="kn">import</span> <span class="n">pop_tlv</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">x690.types</span> <span class="kn">import</span> <span class="n">Integer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop_tlv</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">enforce_type</span><span class="o">=</span><span class="n">Integer</span><span class="p">)</span>
+<span class="go">Integer(1)</span>
+</pre></div>
+</div>
+<p>This will do two things:</p>
+<ul class="simple">
+<li><p>It runs a type-check upon decoding and will raise a
+<a class="reference internal" href="#x690.exc.UnexpectedType" title="x690.exc.UnexpectedType"><code class="xref py py-exc docutils literal notranslate"><span class="pre">x690.exc.UnexpectedType</span></code></a> error if it does not match.</p></li>
+<li><p>Inform the type-checker of the return-type, improving type-checker output.</p></li>
+</ul>
+<dl class="function">
+<dt id="x690.pop_tlv">
+<code class="sig-prename descclassname">x690.</code><code class="sig-name descname">pop_tlv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#x690.pop_tlv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> object, inspects and parses the first octets (as
+many as required) to determine variable type (and corresponding Python
+class), and length. The class is then used to parse the <em>first</em> object in
+<code class="docutils literal notranslate"><span class="pre">data</span></code>.  <em>data</em> itself will not be modified. Instead, a new modified copy
+of <em>data</em> is returned alongside the parsed object. This new object is the
+remainder after popping off the first object.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x02\x01\x05\x11</span><span class="s1">&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop_tlv</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="go">(Integer(5), b&#39;\x11&#39;)</span>
+</pre></div>
+</div>
+<p>Note that in the example above, <code class="docutils literal notranslate"><span class="pre">\x11</span></code> is the remainder of the bytes
+object after popping of the integer object.</p>
+</dd></dl>
+
 </div>
 </div>
 
