@@ -83,10 +83,10 @@ class TypeInfo:
             TypeInfo(cls='universal', nature='constructed', tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
+        # pylint: disable=protected-access
 
         if isinstance(data, (bytes, bytearray)):
             data = int.from_bytes(data, "big")
-        # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError(
                 "Long identifier types are not yet " "implemented"
@@ -217,6 +217,7 @@ def decode_length(data):
         output = int.from_bytes([data0], "big")
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
+        # indefinite form
         output = -1
         data = data[1:]
     else:
