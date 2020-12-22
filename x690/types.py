@@ -212,14 +212,14 @@ class Type(Generic[TWrappedPyType]):
             self.raw_bytes = b""
         else:
             self._value = value
-            self.raw_bytes = self.encode_raw(value)
+            self.raw_bytes = self.encode_raw()
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        value = self.encode_raw(self._value)
+        value = self.encode_raw()
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
@@ -227,8 +227,8 @@ class Type(Generic[TWrappedPyType]):
         # pylint: disable=no-member
         return "%s(%r)" % (self.__class__.__name__, self._value)
 
-    def encode_raw(self, value: TWrappedPyType) -> bytes:
-        return b""
+    def encode_raw(self) -> bytes:
+        return self._value
 
     def pythonize(self) -> TWrappedPyType:
         """
@@ -283,9 +283,6 @@ class UnknownType(Type[bytes]):
             and self.tag == other.tag
         )
 
-    def encode_raw(self, value: bytes) -> bytes:
-        return value
-
     def pretty(self, depth: int = 0) -> str:
         wrapped = wrap(
             visible_octets(self._value), str(type(self)), depth
@@ -329,8 +326,8 @@ class Boolean(Type[bool]):
                 " it was %d" % data[1]
             )
 
-    def encode_raw(self, value: bool) -> bytes:
-        return b"\x01" if value else b"\x00"
+    def encode_raw(self) -> bytes:
+        return b"\x01" if self._value else b"\x00"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Boolean) and self._value == other._value
@@ -354,7 +351,7 @@ class Null(Type[None]):
     def decode_raw(data: bytes) -> None:
         return None
 
-    def encode_raw(self, value: None) -> bytes:
+    def encode_raw(self) -> bytes:
         return b"\x00"
 
     def __bytes__(self) -> bytes:
@@ -385,9 +382,6 @@ class OctetString(Type[bytes]):
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, OctetString) and self._value == other._value
-
-    def encode_raw(self, value: bytes) -> bytes:
-        return value
 
     def pretty(self, depth: int = 0) -> str:
         if self._value == b"":
@@ -426,8 +420,8 @@ class Sequence(Type[List[Type[Any]]]):
         super().__init__(items if items else [])
         self.iter_position = 0
 
-    def encode_raw(self, value: List[Type[Any]]) -> bytes:
-        items = [bytes(item) for item in value]
+    def encode_raw(self) -> bytes:
+        items = [bytes(item) for item in self._value]
         output = b"".join(items)
         return output
 
@@ -479,11 +473,11 @@ class Integer(Type[int]):
     def decode_raw(data: bytes) -> int:
         return int.from_bytes(data, "big", signed=Integer.SIGNED)
 
-    def encode_raw(self, value: int) -> bytes:
-        octets = [value & 0b11111111]
+    def encode_raw(self) -> bytes:
+        octets = [self._value & 0b11111111]
 
         # Append remaining octets for long integers.
-        remainder = value
+        remainder = self._value
         while remainder not in (0, -1):
             remainder = remainder >> 8
             octets.append(remainder & 0b11111111)
@@ -634,8 +628,8 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
             )
         return tuple(collapsed_identifiers)
 
-    def encode_raw(self, value: Tuple[int, ...]) -> bytes:
-        collapsed_identifiers = self.collapse_identifiers(value)
+    def encode_raw(self) -> bytes:
+        collapsed_identifiers = self.collapse_identifiers(self._value)
         if collapsed_identifiers == (0,):
             return b""
         return bytes(collapsed_identifiers)
@@ -807,11 +801,11 @@ class T61String(Type[str]):
             T61String.__INITIALISED = True
         return data.decode("t61")
 
-    def encode_raw(self, value: str) -> bytes:
+    def encode_raw(self) -> bytes:
         if not T61String.__INITIALISED:
             t61codec.register()
             T61String.__INITIALISED = True
-        return value.encode("t61")
+        return self._value.encode("t61")
 
 
 class VideotexString(Type[str]):
