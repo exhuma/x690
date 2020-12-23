@@ -477,10 +477,21 @@ class TestSequence(TestCase):
         )
         assert_bytes_equal(result, expected)
 
-    def test_decoding_simple(self):
-        result, _ = pop_tlv(
-            b"\x30\x0b" b"\x02\x01\x01" b"\x02\x01\x02" b"\x04\x03foo"
+    def test_raw_bytes_init(self):
+        """
+        After a normal init, the raw_bytes should be set
+        """
+        obj = Sequence(
+            [
+                Integer(1),
+                Integer(2),
+                OctetString("foo"),
+            ]
         )
+        self.assertEqual(obj.raw_bytes, b"\x02\x01\x01\x02\x01\x02\x04\x03foo")
+
+    def test_decoding_simple(self):
+        result, _ = pop_tlv(b"\x30\x0b\x02\x01\x01\x02\x01\x02\x04\x03foo")
         expected = Sequence(
             [
                 Integer(1),

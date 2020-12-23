@@ -54,6 +54,7 @@ from typing import Type as TypeType
 from typing import TypeVar, Union
 
 import t61codec
+from .exc import IncompleteDecoding, UnexpectedType
 
 from .util import (
     INDENT_STRING,
@@ -139,8 +140,7 @@ class Type(Generic[TWrappedPyType]):
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
-    DEFAULT_VALUE: TWrappedPyType
-    _value: TWrappedPyType
+    _value: Optional[TWrappedPyType]
     raw_bytes: bytes
     bounds: slice = slice(None)
 
@@ -211,15 +211,10 @@ class Type(Generic[TWrappedPyType]):
         return instance
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
+        self._value = value
         if value is None:
-            self._value = (
-                self.DEFAULT_VALUE()
-                if callable(self.DEFAULT_VALUE)
-                else self.DEFAULT_VALUE
-            )
             self.raw_bytes = b""
         else:
-            self._value = value
             self.raw_bytes = self.encode_raw()
 
     def __bytes__(self) -> bytes:  # pragma: no cover
@@ -236,10 +231,12 @@ class Type(Generic[TWrappedPyType]):
         return "%s(%r)" % (self.__class__.__name__, self.value)
 
     @property
-    def length(self):
+    def length(self) -> int:
         return len(self.raw_bytes[self.bounds])
 
     def encode_raw(self) -> bytes:
+        if self._value is None:
+            return b""
         return self._value
 
     def pythonize(self) -> TWrappedPyType:
@@ -274,7 +271,6 @@ class UnknownType(Type[bytes]):
       with ``__repr__`` of this class).
     """
 
-    DEFAULT_VALUE = b""
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
@@ -321,7 +317,6 @@ class UnknownType(Type[bytes]):
 class Boolean(Type[bool]):
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = False
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> bool:
@@ -346,7 +341,6 @@ class Boolean(Type[bool]):
 class Null(Type[None]):
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = None
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -383,7 +377,6 @@ class Null(Type[None]):
 class OctetString(Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = b""
 
     def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
@@ -429,6 +422,8 @@ class Sequence(Type[List[Type[Any]]]):
         return items
 
     def encode_raw(self) -> bytes:
+        if self._value is None:
+            return b""
         items = [bytes(item) for item in self._value]
         output = b"".join(items)
         return output
@@ -472,7 +467,6 @@ class Integer(Type[int]):
     SIGNED = True
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = 0
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
@@ -480,6 +474,8 @@ class Integer(Type[int]):
         return int.from_bytes(data, "big", signed=Integer.SIGNED)
 
     def encode_raw(self) -> bytes:
+        if self._value is None:
+            return b""
         octets = [self._value & 0b11111111]
 
         # Append remaining octets for long integers.
@@ -520,7 +516,6 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = tuple()
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -636,6 +631,8 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return tuple(collapsed_identifiers)
 
     def encode_raw(self) -> bytes:
+        if self._value is None:
+            return b""
         collapsed_identifiers = self.collapse_identifiers(self._value)
         if collapsed_identifiers == (0,):
             return b""
@@ -730,64 +727,53 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
 class ObjectDescriptor(Type[str]):
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class External(Type[bytes]):
     TAG = 0x08
-    DEFAULT_VALUE = b""
 
 
 class Real(Type[float]):
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = 0.0
 
 
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE: List[Type[Any]] = []
 
 
 class EmbeddedPdv(Type[bytes]):
     TAG = 0x0B
-    DEFAULT_VALUE = b""
 
 
 class Utf8String(Type[str]):
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class RelativeOid(Type[str]):
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = ""
 
 
 class Set(Type[bytes]):
     TAG = 0x11
-    DEFAULT_VALUE = b""
 
 
 class NumericString(Type[str]):
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class PrintableString(Type[str]):
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class T61String(Type[str]):
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
     __INITIALISED = False
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
@@ -817,25 +803,21 @@ class T61String(Type[str]):
 class VideotexString(Type[str]):
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class IA5String(Type[str]):
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class UtcTime(Type[datetime]):
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = datetime(1979, 1, 1, tzinfo=timezone.utc)
 
 
 class GeneralizedTime(Type[datetime]):
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = datetime(1979, 1, 1)
 
 
 class GraphicString(Type[str]):
@@ -846,7 +828,6 @@ class GraphicString(Type[str]):
     #       OctetString if needed
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
@@ -857,39 +838,32 @@ class GraphicString(Type[str]):
 class VisibleString(Type[str]):
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class GeneralString(Type[str]):
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class UniversalString(Type[str]):
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class CharacterString(Type[str]):
     TAG = 0x1D
-    DEFAULT_VALUE = ""
 
 
 class BmpString(Type[str]):
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
 
 
 class EOC(Type[bytes]):
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = b""
 
 
 class BitString(Type[str]):
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    DEFAULT_VALUE = ""
