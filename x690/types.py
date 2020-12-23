@@ -80,6 +80,7 @@ def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
     if not data[start_index:]:
         return Null(), 0
 
+    start_index = start_index or 0
     type_ = TypeInfo.from_bytes(data[start_index])
     data_slice, next_tlv = astuple(get_value_slice(data, start_index))
     try:
@@ -160,8 +161,8 @@ class Type(Generic[TWrappedPyType]):
         return self._value
 
     @staticmethod
-    def decode_raw(data: bytes) -> TWrappedPyType:
-        return data  # type: ignore
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
+        return data[slc]  # type: ignore
 
     @staticmethod
     def get(
@@ -203,7 +204,7 @@ class Type(Generic[TWrappedPyType]):
         This function must be overridden by the concrete subclasses.
         """
         slc = get_value_slice(data).bounds
-        output = cls.decode_raw(data[slc])
+        output = cls.decode_raw(data, slc)
         return cls(output)
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
@@ -314,8 +315,8 @@ class Boolean(Type[bool]):
     DEFAULT_VALUE = False
 
     @staticmethod
-    def decode_raw(data: bytes) -> bool:
-        return data != b"\x00"
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> bool:
+        return data[slc] != b"\x00"
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -348,7 +349,7 @@ class Null(Type[None]):
             )
 
     @staticmethod
-    def decode_raw(data: bytes) -> None:
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> None:
         return None
 
     def encode_raw(self) -> bytes:
@@ -407,14 +408,15 @@ class Sequence(Type[List[Type[Any]]]):
     TAG = 0x10
     value: List[Type[Any]] = []
 
-    @classmethod
-    def decode_raw(cls, data: bytes) -> List[Type[Any]]:
-        item, next_pos = decode(data, 0)
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> List[Type[Any]]:
+        item, next_pos = decode(data, slc.start)
         items = [item]
-        while next_pos < len(data):
+        end = slc.stop or len(data)
+        while next_pos < end:
             item, next_pos = decode(data, next_pos)
             items.append(item)
-        return cls(items)
+        return items
 
     def __init__(self, items: Optional[List[Type[Any]]] = None) -> None:
         super().__init__(items if items else [])
@@ -470,7 +472,8 @@ class Integer(Type[int]):
     DEFAULT_VALUE = 0
 
     @staticmethod
-    def decode_raw(data: bytes) -> int:
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
+        data = data[slc]
         return int.from_bytes(data, "big", signed=Integer.SIGNED)
 
     def encode_raw(self) -> bytes:
@@ -549,10 +552,11 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         output.reverse()
         return output
 
-    @classmethod
-    def decode_raw(cls, data: bytes) -> Tuple[int, ...]:
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> Tuple[int, ...]:
         # Special case for "empty" object identifiers which should be returned
         # as "0"
+        data = data[slc]
         if not data:
             return (0,)
 
@@ -795,7 +799,8 @@ class T61String(Type[str]):
         return isinstance(other, T61String) and self._value == other._value
 
     @staticmethod
-    def decode_raw(data: bytes) -> str:
+    def decode_raw(data: bytes, slc: slice = slice(None, None)) -> str:
+        data = data[slc]
         if not T61String.__INITIALISED:
             t61codec.register()
             T61String.__INITIALISED = True
@@ -843,7 +848,8 @@ class GraphicString(Type[str]):
     DEFAULT_VALUE = ""
 
     @staticmethod
-    def decode_raw(data: bytes) -> str:
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
+        data = data[slc]
         return data.decode("ascii")
 
 
