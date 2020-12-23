@@ -87,10 +87,9 @@ def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
     except KeyError:
         cls = UnknownType
 
-    value = cls.decode_raw(data[data_slice])
-    output = cls(value)
-    if isinstance(output, UnknownType):
-        output.tag = data[start_index]
+    output = cls.from_bytes(data, data_slice)
+    if cls is UnknownType:
+        output.tag = data[start_index]  # type: ignore
 
     return output, next_tlv
 
@@ -148,6 +147,7 @@ class Type(Generic[TWrappedPyType]):
     DEFAULT_VALUE: TWrappedPyType
     _value: TWrappedPyType
     raw_bytes: bytes
+    bounds: slice = slice(None)
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
         if cls.__name__ == "Type" and cls.TAG == -1:
@@ -157,7 +157,7 @@ class Type(Generic[TWrappedPyType]):
 
     @property
     def value(self) -> TWrappedPyType:
-        return self._value
+        return self._value or self.decode_raw(self.raw_bytes, self.bounds)
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
@@ -206,9 +206,22 @@ class Type(Generic[TWrappedPyType]):
         output = cls.decode_raw(data, slc)
         return cls(output)
 
+    @classmethod
+    def from_bytes(
+        cls, data: bytes, slc: slice = slice(None)
+    ) -> "Type[TWrappedPyType]":
+        instance = cls()
+        instance.raw_bytes = data
+        instance.bounds = slc
+        return instance
+
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
         if value is None:
-            self._value = self.DEFAULT_VALUE
+            self._value = (
+                self.DEFAULT_VALUE()
+                if callable(self.DEFAULT_VALUE)
+                else self.DEFAULT_VALUE
+            )
             self.raw_bytes = b""
         else:
             self._value = value
@@ -219,13 +232,17 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        value = self.encode_raw()
+        value = self.raw_bytes[self.bounds] or self.encode_raw()
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
         # pylint: disable=no-member
-        return "%s(%r)" % (self.__class__.__name__, self._value)
+        return "%s(%r)" % (self.__class__.__name__, self.value)
+
+    @property
+    def length(self):
+        return len(self.raw_bytes[self.bounds])
 
     def encode_raw(self) -> bytes:
         return self._value
@@ -235,7 +252,7 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance to an appropriate pure Python object.
         """
         # pylint: disable=no-member
-        return self._value
+        return self.value
 
     def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
@@ -267,25 +284,23 @@ class UnknownType(Type[bytes]):
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
         super().__init__(value)
-        self._value = value
         self.tag = tag
-        self.length = len(value)
 
     def __repr__(self) -> str:
         typeinfo = TypeInfo.from_bytes(self.tag)
         tinfo = f"{typeinfo.cls}/{typeinfo.nature}/{typeinfo.tag}"
-        return f"<{self.__class__.__name__} {self.tag} {self._value!r} {tinfo}>"
+        return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, UnknownType)
-            and self._value == other._value
+            and self.value == other.value
             and self.tag == other.tag
         )
 
     def pretty(self, depth: int = 0) -> str:
         wrapped = wrap(
-            visible_octets(self._value), str(type(self)), depth
+            visible_octets(self.value), str(type(self)), depth
         ).splitlines()
         if len(wrapped) > 15:
             line_width = len(wrapped[0])
@@ -330,7 +345,7 @@ class Boolean(Type[bool]):
         return b"\x01" if self._value else b"\x00"
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Boolean) and self._value == other._value
+        return isinstance(other, Boolean) and self.value == other.value
 
 
 class Null(Type[None]):
@@ -381,20 +396,20 @@ class OctetString(Type[bytes]):
         super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, OctetString) and self._value == other._value
+        return isinstance(other, OctetString) and self.value == other.value
 
     def pretty(self, depth: int = 0) -> str:
-        if self._value == b"":
+        if self.value == b"":
             return repr(self)
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = pop_tlv(self._value)[0]  # type: ignore
+            embedded = pop_tlv(self.value)[0]  # type: ignore
             if isinstance(embedded, UnknownType):
                 raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
-            wrapped = wrap(visible_octets(self._value), str(type(self)), depth)
+            wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
             return wrapped
 
 
@@ -405,10 +420,11 @@ class Sequence(Type[List[Type[Any]]]):
     """
 
     TAG = 0x10
-    value: List[Type[Any]] = []
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> List[Type[Any]]:
+        if not data or slc.start > len(data):
+            return []
         item, next_pos = decode(data, slc.start)
         items = [item]
         end = slc.stop or len(data)
@@ -429,23 +445,20 @@ class Sequence(Type[List[Type[Any]]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Sequence):
             return False
-        return self.raw_bytes == other.raw_bytes
+        return self.raw_bytes[self.bounds] == other.raw_bytes[other.bounds]
 
     def __repr__(self) -> str:
         item_repr = [item for item in self]
         return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
-        return len(self._value)
+        return len(self.value)
 
     def __iter__(self) -> Iterator[Type[Any]]:
-        if self._value:
-            yield from self._value
-        else:
-            return
+        yield from self.value
 
     def __getitem__(self, idx: int) -> Type[Any]:
-        return self._value[idx]
+        return self.value[idx]
 
     def pythonize(self) -> List[Type[Any]]:
         return [obj.pythonize() for obj in self]
@@ -454,8 +467,8 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.pretty`
         """
-        lines = [f"{self.__class__.__name__} with {len(self._value)} items:"]
-        for item in self._value:
+        lines = [f"{self.__class__.__name__} with {len(self.value)} items:"]
+        for item in self.value:
             prettified_item = item.pretty(depth)
             bullet = INDENT_STRING * depth + "⁃ "
             for line in prettified_item.splitlines():
@@ -497,7 +510,7 @@ class Integer(Type[int]):
         return bytes(octets)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Integer) and self._value == other._value
+        return isinstance(other, Integer) and self.value == other.value
 
 
 class ObjectIdentifier(Type[Tuple[int, ...]]):
@@ -516,7 +529,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
-    DEFAULT_VALUE = (0,)
+    DEFAULT_VALUE = tuple()
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -638,26 +651,24 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return bytes(collapsed_identifiers)
 
     def __int__(self) -> int:
-        if len(self._value) != 1:
+        if len(self.value) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
                 "converted to int. %r is not convertable" % self
             )
-        return self._value[0]
+        return self.value[0]
 
     def __str__(self) -> str:
-        return ".".join([str(_) for _ in self._value])
+        return ".".join([str(_) for _ in self.value])
 
     def __repr__(self) -> str:
-        return "ObjectIdentifier(%r)" % (self._value,)
+        return "ObjectIdentifier(%r)" % (self.value,)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, ObjectIdentifier) and self._value == other._value
-        )
+        return isinstance(other, ObjectIdentifier) and self.value == other.value
 
     def __len__(self) -> int:
-        return len(self._value)
+        return len(self.value)
 
     def __contains__(self, other: "ObjectIdentifier") -> bool:
         """
@@ -667,7 +678,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         # pylint: disable=invalid-name
 
-        a, b = other._value, self._value
+        a, b = other.value, self.value
 
         # if both have the same amount of identifiers, check for equality
         if len(a) == len(b):
@@ -700,17 +711,17 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        return self._value < other._value
+        return self.value < other.value
 
     def __hash__(self) -> int:
-        return hash(self._value)
+        return hash(self.value)
 
     def __add__(self, other: "ObjectIdentifier") -> "ObjectIdentifier":
-        nodes = self._value + other._value
+        nodes = self.value + other.value
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier((self._value[index],))
+        return ObjectIdentifier((self.value[index],))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
@@ -795,7 +806,7 @@ class T61String(Type[str]):
             super().__init__(T61String.decode_raw(value))
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, T61String) and self._value == other._value
+        return isinstance(other, T61String) and self.value == other.value
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None, None)) -> str:
