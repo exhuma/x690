@@ -38,7 +38,7 @@ Depending on type, you may also want to override certain methods. See
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
-from datetime import datetime, timezone
+from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
 from typing import (
