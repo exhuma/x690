@@ -71,7 +71,12 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TPopType = TypeVar("TPopType", bound=Any)
 
 
-def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
+def decode(
+    data: bytes,
+    start_index: int = 0,
+    enforce_type: Optional[TypeType[TPopType]] = None,
+    strict: bool = False,
+) -> Tuple["Type[Any]", int]:
     if start_index >= len(data):
         return Null(), 0
 
@@ -86,6 +91,19 @@ def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
     output = cls.from_bytes(data, data_slice)
     if cls is UnknownType:
         output.tag = data[start_index]  # type: ignore
+
+    if enforce_type and not isinstance(output, enforce_type):
+        raise UnexpectedType(
+            f"Unexpected decode result. Expected instance of type "
+            f"{enforce_type} but got {type(output)} instead"
+        )
+
+    if strict and next_tlv < len(data) - 1:
+        remainder = data[next_tlv:]
+        raise IncompleteDecoding(
+            f"Strict decoding still had {len(remainder)} remaining bytes!",
+            remainder=remainder,
+        )
 
     return output, next_tlv
 
@@ -112,21 +130,8 @@ def pop_tlv(
     Note that in the example above, ``\\x11`` is the remainder of the bytes
     object after popping of the integer object.
     """
-    value, next_tlv = decode(data, 0)
-
-    if enforce_type and not isinstance(value, enforce_type):
-        raise UnexpectedType(
-            f"Unexpected decode result. Expected instance of type "
-            f"{enforce_type} but got {type(value)} instead"
-        )
-
+    value, next_tlv = decode(data, 0, enforce_type, strict)
     remainder = data[next_tlv:]
-    if strict and remainder:
-        raise IncompleteDecoding(
-            f"Strict decoding still had {len(remainder)} remaining bytes!",
-            remainder=remainder,
-        )
-
     return value, remainder  # type: ignore
 
 
