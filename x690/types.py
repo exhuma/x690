@@ -433,10 +433,6 @@ class Sequence(Type[List[Type[Any]]]):
             items.append(item)
         return items
 
-    def __init__(self, items: Optional[List[Type[Any]]] = None) -> None:
-        super().__init__(items if items else [])
-        self.iter_position = 0
-
     def encode_raw(self) -> bytes:
         items = [bytes(item) for item in self._value]
         output = b"".join(items)
