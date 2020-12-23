@@ -40,14 +40,11 @@ Depending on type, you may also want to override certain methods. See
 
 from datetime import datetime, timezone
 from itertools import zip_longest
-from sys import byteorder
 from textwrap import indent
 from typing import (
     Any,
     Dict,
-    Generator,
     Generic,
-    Iterable,
     Iterator,
     List,
     Optional,
@@ -58,13 +55,11 @@ from typing import TypeVar, Union
 
 import t61codec
 
-from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (
     INDENT_STRING,
     TypeClass,
     TypeInfo,
     TypeNature,
-    decode_length,
     encode_length,
     get_value_slice,
     visible_octets,
