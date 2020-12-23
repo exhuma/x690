@@ -1,6 +1,5 @@
 # pylint: skip-file
 
-from dataclasses import astuple
 from unittest import TestCase
 
 import pytest
@@ -213,35 +212,35 @@ class TestLengthOctets(TestCase):
     def test_decode_length_at_index(self):
         data = b"foobar\x05"
         expected = 5
-        result, offset = astuple(decode_length(data, index=6))
+        result, offset = decode_length(data, index=6)
         self.assertEqual(result, expected)
         self.assertEqual(offset, 1)
 
     def test_decode_length_short(self):
         data = b"\x05"
         expected = 5
-        result, offset = astuple(decode_length(data))
+        result, offset = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(offset, 1)
 
     def test_decode_length_long(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
-        result, offset = astuple(decode_length(data))
+        result, offset = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(offset, 3)
 
     def test_decode_length_longer(self):
         data = bytes([0x81, 0xA4])
         expected = 164
-        result, offset = astuple(decode_length(data))
+        result, offset = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(offset, 2)
 
     def test_decode_length_indefinite(self):
         data = bytes([0x80])
         expected = -1
-        result, offset = astuple(decode_length(data))
+        result, offset = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(offset, -1)
 
@@ -311,12 +310,12 @@ class TestGithubIssue23(TestCase):
     def test_decode(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
-        result, offset = astuple(decode_length(data))
+        result, offset = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(offset, 3)
 
     def test_symmetry(self):
-        result, _ = astuple(decode_length(encode_length(435)))
+        result, _ = decode_length(encode_length(435))
         self.assertEqual(result, 435)
 
 
@@ -345,7 +344,7 @@ def test_wrap():
     ],
 )
 def test_value_slice(data, slc, next_index):
-    res_slc, res_next_index = astuple(get_value_slice(data))
+    res_slc, res_next_index = get_value_slice(data)
     assert res_slc == slc
     assert res_next_index == next_index
 
@@ -361,6 +360,6 @@ def test_value_slice_indexed(data, slc, next_index):
     """
     We should be able to fetch a value slice starting at a given index
     """
-    res_slc, res_next_index = astuple(get_value_slice(data, 7))
+    res_slc, res_next_index = get_value_slice(data, 7)
     assert res_slc == slc
     assert data[next_index:] == b"end-padding"

@@ -5,7 +5,7 @@ Utility functions for working with the X.690 and related standards.
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type as TypeType, Any, NamedTuple
 
 from .exc import X690Error
 
@@ -39,14 +39,12 @@ class TypeNature(str, Enum):
     CONSTRUCTED = "constructed"
 
 
-@dataclass
-class LengthInfo:
+class LengthInfo(NamedTuple):
     length: int
     offset: int
 
 
-@dataclass
-class ValueMetaData:
+class ValueMetaData(NamedTuple):
     bounds: slice
     next_value_index: int
 
@@ -195,14 +193,14 @@ def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
     The function returns both a slice at which a value can be found, and the
     index at which the next value can be found.
     """
-    length_info = decode_length(data, index + 1)
-    if length_info.length == -1:
+    length, offset = decode_length(data, index + 1)
+    if length == -1:
         start = index + 2
         end = data.find(b"\x00\x00", index)
         nex_index = end + 2
     else:
-        start = index + 1 + length_info.offset
-        end = index + 1 + length_info.offset + length_info.length
+        start = index + 1 + offset
+        end = index + 1 + offset + length
         nex_index = end
     value_slice = slice(start, end)
     if end > len(data):

@@ -38,7 +38,6 @@ Depending on type, you may also want to override certain methods. See
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
-from dataclasses import astuple
 from datetime import datetime, timezone
 from itertools import zip_longest
 from sys import byteorder
@@ -82,7 +81,7 @@ def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
 
     start_index = start_index or 0
     type_ = TypeInfo.from_bytes(data[start_index])
-    data_slice, next_tlv = astuple(get_value_slice(data, start_index))
+    data_slice, next_tlv = get_value_slice(data, start_index)
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
     except KeyError:
