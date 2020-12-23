@@ -76,7 +76,7 @@ TPopType = TypeVar("TPopType", bound=Any)
 
 
 def decode(data: bytes, start_index: int = 0) -> Tuple["Type[Any]", int]:
-    if not data[start_index:]:
+    if start_index >= len(data):
         return Null(), 0
 
     start_index = start_index or 0
