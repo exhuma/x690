@@ -9,9 +9,9 @@ This module contains the encoding/decoding logic for data types as defined in
 Each type is made available via a registry dictionary on :py:class:`~.Type` and
 can be retrieved via :py:meth:`~.Type.get`.
 
-Additionally, given a :py:class:`bytes` object, the :py:func:`~.pop_tlv`
+Additionally, given a :py:class:`bytes` object, the :py:func:`~.decode`
 function can be used to parse the bytes object and return a typed instance
-from it. See :py:func:`~.pop_tlv` for details about it's behaviour!
+from it. See :py:func:`~.decode` for details about it's behaviour!
 
 .. note::
     The individual type classes in this module do not contain any additional
@@ -122,45 +122,6 @@ def decode(
         )
 
     return output, next_tlv  # type: ignore
-
-
-def pop_tlv(
-    data: bytes,
-    enforce_type: Optional[TypeType[TPopType]] = None,
-    strict: bool = False,
-) -> Tuple["TPopType", bytes]:
-    """
-    Converts a X.690 bytes object into a Python instance and a remainder of
-    unconsumed bytes.
-
-    This function delegates to :py:func:`.decode`
-
-    For performance, you should refrain from using ``pop_tlv`` as it creates
-    copies of the bytes objects to create the "remainder" bytes. When using
-    ``pop_tlv`` on large data-sets this consumes a large amount of memory.
-
-    Using :py:func:`.decode` the same result can be achieved without hogging
-    memory.
-
-    ``pop_tlv`` exists for backwards compatibility.
-
-    Example::
-
-        >>> data = b'\\x02\\x01\\x05\\x11'
-        >>> pop_tlv(data)
-        (Integer(5), b'\\x11')
-
-    Note that in the example above, ``\\x11`` is the remainder of the bytes
-    object after popping of the integer object.
-    """
-    warn(
-        "Use x690.decode() instead of x690.pop_tlv()!",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    value, next_tlv = decode(data, 0, enforce_type, strict)
-    remainder = data[next_tlv:]
-    return value, remainder  # type: ignore
 
 
 class Type(Generic[TWrappedPyType]):
@@ -496,7 +457,7 @@ class OctetString(Type[bytes]):
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = pop_tlv(self.value)[0]  # type: ignore
+            embedded = decode(self.value)[0]
             if isinstance(embedded, UnknownType):
                 raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
