@@ -209,6 +209,14 @@ class Type(Generic[TWrappedPyType]):
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
+
+        >>> Integer.decode_raw(b"\\x05")
+        5
+
+        :param data: A data-block containing the byte-information
+        :param slc: A slice of the data-block that contains the exact
+            raw-bytes.
+        :return: The value that should be wrapped by the current x690 type.
         """
         return data[slc]  # type: ignore
 
