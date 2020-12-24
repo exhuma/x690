@@ -26,7 +26,7 @@ New types should define the following 3 class-variables:
 
 **TYPECLASS**
     A value from ``x690.util.TypeClass``
-**TypeNature**
+**NATURE**
     A value from ``x690.util.TypeNature``
 **TAG**
     A numerical identifier for the type
@@ -38,13 +38,9 @@ x690). The nature should be "primitive" for simple values and "constructed" for
 composed types. The tag is free to choose as long as you don't overlap with an
 existing type.
 
-To support **decoding**, the class must implement a ``decode(data: bytes) ->
-YourType`` function. The contents of ``data`` will be the raw bytes excluding
-the type information.
-
-To support **encoding**, the class must implement the ``__bytes__(self) ->
-bytes`` method. This should return the raw-bytes without type-information.
-Wrapping with the appropriate type-information is handled by the library.
+To convert raw-bytes into a Python object, override ``x690.Type.decode_raw``
+and conversely also ``x690.Type.encode_raw``. Refer to the docstrings for more
+details.
 
 
 Reverse Engineering Bytes
@@ -64,7 +60,7 @@ any documentation, you can write the following loop::
     print(value.pretty())
 
     while nxt < len(data):
-        value, nxt = pop_tlv(data, nxt)
+        value, nxt = decode(data, nxt)
         print(value.pretty())
 
 This should get you started.
@@ -116,7 +112,7 @@ Encoding of a composite value using Sequence
 Decoding from bytes
 ~~~~~~~~~~~~~~~~~~~
 
-Decode bytes by calling ``x690.types.pop_tlv`` on your byte data. This will
+Decode bytes by calling ``x690.types.decode`` on your byte data. This will
 return a tuple where the first value contains the decoded object, and the
 second one will contain any remaining bytes which were not decoded.
 
@@ -124,7 +120,7 @@ second one will contain any remaining bytes which were not decoded.
 
     >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, nxt = x690.pop_tlv(data)
+    >>> decoded, nxt = x690.decode(data)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
     >>> nxt
@@ -148,7 +144,7 @@ This does of course only work if you know the type in advance.
     >>> import x690
     >>> import x690.types as t
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, nxt = x690.pop_tlv(data, enforce_type=t.Sequence)
+    >>> decoded, nxt = x690.decode(data, enforce_type=t.Sequence)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
     >>> nxt
@@ -160,7 +156,7 @@ Strict Decoding
 
 .. versionadded:: 0.3.0
 
-When decoding using ``pop_tlv`` and you don't expect any remaining bytes, use
+When decoding using ``decode`` and you don't expect any remaining bytes, use
 ``strict=True`` which will raise ``x690.exc.IncompleteDecoding`` if there's any
 remaining data.
 
@@ -168,7 +164,7 @@ remaining data.
 
     >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes'
-    >>> decoded, nxt = x690.pop_tlv(data, strict=True)
+    >>> decoded, nxt = x690.decode(data, strict=True)
     Traceback (most recent call last):
       ...
     x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!
