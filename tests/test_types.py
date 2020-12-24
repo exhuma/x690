@@ -16,7 +16,7 @@ from x690.types import (
     T61String,
     Type,
     UnknownType,
-    pop_tlv,
+    decode,
 )
 from x690.util import TypeInfo
 
@@ -37,20 +37,20 @@ class TestBoolean(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding_false(self):
-        result, _ = pop_tlv(b"\x01\x01\x00")
+        result, _ = decode(b"\x01\x01\x00")
         expected = Boolean(False)
         self.assertEqual(result, expected)
 
     def test_decoding_true(self):
-        result, _ = pop_tlv(b"\x01\x01\x01")
+        result, _ = decode(b"\x01\x01\x01")
         expected = Boolean(True)
         self.assertEqual(result, expected)
 
-        result, _ = pop_tlv(b"\x01\x01\x02")
+        result, _ = decode(b"\x01\x01\x02")
         expected = Boolean(True)
         self.assertEqual(result, expected)
 
-        result, _ = pop_tlv(b"\x01\x01\xff")
+        result, _ = decode(b"\x01\x01\xff")
         expected = Boolean(True)
         self.assertEqual(result, expected)
 
@@ -76,7 +76,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        oid = ObjectIdentifier(1, 3, 6, 1, 2, 1)
+        oid = ObjectIdentifier((1, 3, 6, 1, 2, 1))
         result = bytes(oid)
         expected = b"\x06\x05\x2b\x06\x01\x02\x01"
         assert_bytes_equal(result, expected)
@@ -85,23 +85,23 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        expected = ObjectIdentifier(1, 3, 6, 1, 2, 1)
-        result, _ = pop_tlv(b"\x06\x05\x2b\x06\x01\x02\x01")
+        expected = ObjectIdentifier((1, 3, 6, 1, 2, 1))
+        result, _ = decode(b"\x06\x05\x2b\x06\x01\x02\x01")
         self.assertEqual(result, expected)
 
     def test_decoding_zero(self):
         """
         A simple OID with the top-level ID '0'
         """
-        expected = ObjectIdentifier(0)
-        result, _ = pop_tlv(b"\x06\x00")
+        expected = ObjectIdentifier((0,))
+        result, _ = decode(b"\x06\x00")
         self.assertEqual(result, expected)
 
     def test_encoding_zero(self):
         """
         A simple OID with the top-level ID '0'
         """
-        oid = ObjectIdentifier(0)
+        oid = ObjectIdentifier((0,))
         result = bytes(oid)
         expected = b"\x06\x00"
         self.assertEqual(result, expected)
@@ -111,7 +111,7 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the encoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        oid = ObjectIdentifier(1, 3, 6, 8072)
+        oid = ObjectIdentifier((1, 3, 6, 8072))
         result = bytes(oid)
         expected = b"\x06\x04\x2b\x06\xbf\x08"
         assert_bytes_equal(result, expected)
@@ -121,8 +121,8 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the decoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        expected = ObjectIdentifier(1, 3, 6, 8072)
-        result, _ = pop_tlv(b"\x06\x04\x2b\x06\xbf\x08")
+        expected = ObjectIdentifier((1, 3, 6, 8072))
+        result, _ = decode(b"\x06\x04\x2b\x06\xbf\x08")
         self.assertEqual(result, expected)
 
     def test_encode_large_value(self):
@@ -137,7 +137,7 @@ class TestObjectIdentifier(TestCase):
 
     def test_fromstring(self):
         result = ObjectIdentifier.from_string("1.2.3")
-        expected = ObjectIdentifier(1, 2, 3)
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_fromstring_leading_dot(self):
@@ -146,21 +146,21 @@ class TestObjectIdentifier(TestCase):
         string input.
         """
         result = ObjectIdentifier.from_string(".1.2.3")
-        expected = ObjectIdentifier(1, 2, 3)
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = ObjectIdentifier(1, 2, 3).pythonize()
-        expected = "1.2.3"
+        result = ObjectIdentifier((1, 2, 3)).pythonize()
+        expected = (1, 2, 3)
         self.assertEqual(result, expected)
 
     def test_str(self):
-        result = str(ObjectIdentifier(1, 2, 3))
+        result = str(ObjectIdentifier([1, 2, 3]))
         expected = "1.2.3"
         self.assertEqual(result, expected)
 
     def test_encode_root(self):
-        result = bytes(ObjectIdentifier(1))
+        result = bytes(ObjectIdentifier([1]))
         expected = b"\x06\x01\x01"
         assert_bytes_equal(result, expected)
 
@@ -169,7 +169,7 @@ class TestObjectIdentifier(TestCase):
         Using "." to denote the root OID is common. We should allow this.
         """
         result = ObjectIdentifier.from_string(".")
-        expected = ObjectIdentifier(1)
+        expected = ObjectIdentifier((1,))
         self.assertEqual(result, expected)
 
     def test_containment_a(self):
@@ -213,12 +213,12 @@ class TestObjectIdentifier(TestCase):
         self.assertFalse(a in b)
 
     def test_create_by_iterable(self):
-        result = ObjectIdentifier(["1", "2", "3"])
-        expected = ObjectIdentifier(1, 2, 3)
+        result = ObjectIdentifier((1, 2, 3))
+        expected = ObjectIdentifier((1, 2, 3))
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(ObjectIdentifier(["1", "2", "3"]))
+        result = repr(ObjectIdentifier((1, 2, 3)))
         expected = "ObjectIdentifier((1, 2, 3))"
         self.assertEqual(result, expected)
 
@@ -226,8 +226,8 @@ class TestObjectIdentifier(TestCase):
         """
         Test hash function and that it makes sense.
         """
-        result = hash(ObjectIdentifier(["1", "2", "3"]))
-        expected = hash(ObjectIdentifier(1, 2, 3))
+        result = hash(ObjectIdentifier((1, 2, 3)))
+        expected = hash(ObjectIdentifier((1, 2, 3)))
         self.assertEqual(result, expected)
 
     def test_non_containment_f(self):
@@ -235,8 +235,8 @@ class TestObjectIdentifier(TestCase):
         This case showed up during development of bulk operations. Throwing it
         into the unit tests to ensure proper containment checks.
         """
-        a = ObjectIdentifier(1, 3, 6, 1, 2, 1, 2, 2, 1, 22)
-        b = ObjectIdentifier(1, 3, 6, 1, 2, 1, 2, 2, 1, 10, 38)
+        a = ObjectIdentifier([1, 3, 6, 1, 2, 1, 2, 2, 1, 22])
+        b = ObjectIdentifier([1, 3, 6, 1, 2, 1, 2, 2, 1, 10, 38])
         self.assertNotIn(a, b, "%s should not be in %s" % (a, b))
         self.assertNotIn(b, a, "%s should not be in %s" % (b, a))
 
@@ -244,7 +244,7 @@ class TestObjectIdentifier(TestCase):
         """
         OIDs with one node should have a length of 1
         """
-        obj = ObjectIdentifier(1)
+        obj = ObjectIdentifier([1])
         self.assertEqual(len(obj), 1)
 
     def test_length_ge1(self):
@@ -252,12 +252,12 @@ class TestObjectIdentifier(TestCase):
         OIDs with more than one node should have a length equal to the number
         of nodes.
         """
-        obj = ObjectIdentifier(1, 2, 3)
+        obj = ObjectIdentifier([1, 2, 3])
         self.assertEqual(len(obj), 3)
 
     def test_inequalitites(self):
-        a = ObjectIdentifier(1, 2, 3)
-        b = ObjectIdentifier(1, 2, 4)
+        a = ObjectIdentifier([1, 2, 3])
+        b = ObjectIdentifier([1, 2, 4])
         self.assertTrue(a < b)
         self.assertFalse(b < a)
         self.assertFalse(a < a)
@@ -266,15 +266,15 @@ class TestObjectIdentifier(TestCase):
         self.assertFalse(b > b)
 
     def test_concatenation(self):
-        a = ObjectIdentifier(1, 2, 3)
-        b = ObjectIdentifier(4, 5, 6)
-        expected = ObjectIdentifier(1, 2, 3, 4, 5, 6)
+        a = ObjectIdentifier([1, 2, 3])
+        b = ObjectIdentifier([4, 5, 6])
+        expected = ObjectIdentifier([1, 2, 3, 4, 5, 6])
         result = a + b
         self.assertEqual(result, expected)
 
     def test_item_access(self):
-        a = ObjectIdentifier(1, 2, 3)
-        expected = ObjectIdentifier(2)
+        a = ObjectIdentifier((1, 2, 3))
+        expected = ObjectIdentifier((2,))
         result = a[1]
         self.assertEqual(result, expected)
 
@@ -287,7 +287,7 @@ class TestInteger(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding(self):
-        result, _ = pop_tlv(b"\x02\x01\x0a")
+        result, _ = decode(b"\x02\x01\x0a")
         expected = Integer(10)
         self.assertEqual(result, expected)
 
@@ -298,7 +298,7 @@ class TestInteger(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding_large_value(self):
-        result, _ = pop_tlv(b"\x02\x04\x72\x0b\x8c\x3f")
+        result, _ = decode(b"\x02\x04\x72\x0b\x8c\x3f")
         expected = Integer(1913359423)
         self.assertEqual(result, expected)
 
@@ -309,17 +309,17 @@ class TestInteger(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding_zero(self):
-        result, _ = pop_tlv(b"\x02\x01\x00")
+        result, _ = decode(b"\x02\x01\x00")
         expected = Integer(0)
         self.assertEqual(result, expected)
 
     def test_decoding_minus_one(self):
-        result, _ = pop_tlv(b"\x02\x01\xff")
+        result, _ = decode(b"\x02\x01\xff")
         expected = Integer(-1)
         self.assertEqual(result, expected)
 
     def test_decoding_minus_large_value(self):
-        result, _ = pop_tlv(b"\x02\x04\x8d\xf4\x73\xc1")
+        result, _ = decode(b"\x02\x04\x8d\xf4\x73\xc1")
         expected = Integer(-1913359423)
         self.assertEqual(result, expected)
 
@@ -416,7 +416,7 @@ class TestOctetString(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding(self):
-        result, _ = pop_tlv(b"\x04\x05hello")
+        result, _ = decode(b"\x04\x05hello")
         expected = OctetString("hello")
         self.assertEqual(result, expected)
 
@@ -428,8 +428,8 @@ class TestOctetString(TestCase):
     def test_decoding_indef_length(self):
         data_def = b"\x04\x0bhello-world"
         data_indef = b"\x04\x80hello-world\x00\x00"
-        result_def, _ = pop_tlv(data_def)
-        result_indef, _ = pop_tlv(data_indef)
+        result_def, _ = decode(data_def)
+        result_indef, _ = decode(data_indef)
         assert result_def == result_indef
 
 
@@ -441,7 +441,7 @@ class TestT61String(TestCase):
         assert_bytes_equal(result, expected)
 
     def test_decoding(self):
-        result, _ = pop_tlv(b"\x14\x07hello \xe0")
+        result, _ = decode(b"\x14\x07hello \xe0")
         expected = T61String("hello Ω")
         self.assertEqual(result, expected)
 
@@ -461,7 +461,7 @@ class TestT61String(TestCase):
 class TestSequence(TestCase):
     def test_encoding(self):
         value = Sequence(
-            OctetString("hello"), ObjectIdentifier(1, 3, 6), Integer(100)
+            [OctetString("hello"), ObjectIdentifier([1, 3, 6]), Integer(100)]
         )
         result = bytes(value)
         expected = (
@@ -472,24 +472,37 @@ class TestSequence(TestCase):
                 ]
             )
             + bytes(OctetString("hello"))
-            + bytes(ObjectIdentifier(1, 3, 6))
+            + bytes(ObjectIdentifier([1, 3, 6]))
             + bytes(Integer(100))
         )
         assert_bytes_equal(result, expected)
 
-    def test_decoding_simple(self):
-        result, _ = pop_tlv(
-            b"\x30\x0b" b"\x02\x01\x01" b"\x02\x01\x02" b"\x04\x03foo"
+    def test_raw_bytes_init(self):
+        """
+        After a normal init, the raw_bytes should be set
+        """
+        obj = Sequence(
+            [
+                Integer(1),
+                Integer(2),
+                OctetString("foo"),
+            ]
         )
+        self.assertEqual(obj.raw_bytes, b"\x02\x01\x01\x02\x01\x02\x04\x03foo")
+
+    def test_decoding_simple(self):
+        result, _ = decode(b"\x30\x0b\x02\x01\x01\x02\x01\x02\x04\x03foo")
         expected = Sequence(
-            Integer(1),
-            Integer(2),
-            OctetString("foo"),
+            [
+                Integer(1),
+                Integer(2),
+                OctetString("foo"),
+            ]
         )
         self.assertEqual(result, expected)
 
     def test_decoding_recursive(self):
-        result, _ = pop_tlv(
+        result, _ = decode(
             b"\x30\x13"
             b"\x02\x01\x01"
             b"\x02\x01\x02"
@@ -499,42 +512,48 @@ class TestSequence(TestCase):
             b"\x02\x01\x02"
         )
         expected = Sequence(
-            Integer(1),
-            Integer(2),
-            OctetString("foo"),
-            Sequence(
+            [
                 Integer(1),
                 Integer(2),
-            ),
+                OctetString("foo"),
+                Sequence(
+                    [
+                        Integer(1),
+                        Integer(2),
+                    ]
+                ),
+            ]
         )
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = Sequence(Integer(1), Sequence(OctetString("123"))).pythonize()
+        result = Sequence(
+            [Integer(1), Sequence([OctetString("123")])]
+        ).pythonize()
         expected = [1, [b"123"]]
         self.assertEqual(result, expected)
 
     def test_iteration(self):
         data = Sequence(
-            Integer(1), Sequence(OctetString("123")), OctetString(b"foo")
+            [Integer(1), Sequence([OctetString("123")]), OctetString(b"foo")]
         )
         result = [item for item in data]
         expected = [
             Integer(1),
-            Sequence(OctetString("123")),
+            Sequence([OctetString("123")]),
             OctetString(b"foo"),
         ]
         self.assertEqual(result, expected)
 
     def test_indexing(self):
-        data = Sequence(Integer(1), OctetString(b"foo"))
+        data = Sequence([Integer(1), OctetString(b"foo")])
         result = data[1]
         expected = OctetString(b"foo")
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(Sequence(Integer(10)))
-        expected = "Sequence(Integer(10))"
+        result = repr(Sequence([Integer(10)]))
+        expected = "Sequence([Integer(10)])"
         self.assertEqual(result, expected)
 
     def test_length_empty(self):
@@ -543,7 +562,7 @@ class TestSequence(TestCase):
         self.assertEqual(result, expected)
 
     def test_length_nonempty(self):
-        result = len(Sequence(Integer(1), Integer(2)))
+        result = len(Sequence([Integer(1), Integer(2)]))
         expected = 2
         self.assertEqual(result, expected)
 
@@ -569,7 +588,7 @@ class TestNull(TestCase):
 
     def test_decode_null(self):
         expected = Null()
-        result = Null.decode("\x05\x00\x00")
+        result = Null.decode(b"\x05\x00\x00")
         self.assertEqual(result, expected)
 
     def test_repr(self):
@@ -580,34 +599,34 @@ class TestNull(TestCase):
 
 class TestUnknownType(TestCase):
     def test_null_from_bytes(self):
-        result, _ = pop_tlv(b"")
+        result, _ = decode(b"")
         expected = Null()
         self.assertEqual(result, expected)
 
     def test_decoding(self):
-        result, _ = pop_tlv(b"\x99\x01\x0a")
-        expected = UnknownType(0x99, b"\x0a")
+        result, _ = decode(b"\x99\x01\x0a")
+        expected = UnknownType(b"\x0a", 0x99)
         self.assertEqual(result, expected)
 
     def test_encoding(self):
-        result = bytes(UnknownType(0x99, b"\x0a"))
-        expected = b"\x99\x01\x0a"
+        result = bytes(UnknownType(b"\x0a", 0x99))
+        expected = b"\xb9\x01\x0a"
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(UnknownType(99, b"abc"))
+        result = repr(UnknownType(b"abc", 99))
         typeinfo = TypeInfo("application", "constructed", 3)
         expected = "<UnknownType 99 b'abc' application/constructed/3>"
         self.assertEqual(result, expected)
 
     def test_decoding_indef_length(self):
-        data = bytearray(bytes(UnknownType(0x99, b"some-data")))
+        data = bytearray(bytes(UnknownType(b"some-data", 0x99)))
         data_def = bytes(data)
         data[1] = 0x80
         data.extend([0x00, 0x00])
         data_indef = bytes(data)
-        result_def, _ = pop_tlv(data_def)
-        result_indef, _ = pop_tlv(data_indef)
+        result_def, _ = decode(data_def)
+        result_indef, _ = decode(data_indef)
         assert result_def == result_indef
 
 
@@ -617,44 +636,38 @@ class TestAllTypes(TestCase):
     """
 
     def test_tlv_null(self):
-        result = pop_tlv(b"")
-        expected = (Null(), b"")
+        result = decode(b"")
+        expected = (Null(), 0)
         self.assertEqual(result, expected)
 
     def test_tlv_simple(self):
-        result = pop_tlv(bytes([2, 1, 0]))
-        expected = (Integer(0), b"")
+        result = decode(bytes([2, 1, 0]))
+        expected = (Integer(0), 3)
         self.assertEqual(result, expected)
 
     def test_tlv_unknown_type(self):
-        result = pop_tlv(bytes([254, 1, 0]))
-        expected = (UnknownType(254, b"\x00"), b"")
+        result, next_index = decode(bytes([254, 1, 0]))
+        expected = UnknownType(b"\x00", 254)
+        self.assertEqual(next_index, 3)
         self.assertEqual(result, expected)
-        self.assertEqual(result[0].tag, 254)
-        self.assertEqual(result[0].length, 1)
-        self.assertEqual(result[0].value, b"\x00")
+        self.assertEqual(result.tag, 254)
+        self.assertEqual(result.length, 1)
+        self.assertEqual(result.value, b"\x00")
 
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
             Integer.validate(bytes([0b00111110]))
 
     def test_null_from_bytes(self):
-        result, _ = pop_tlv(b"")
+        result, _ = decode(b"")
         expected = Null()
         self.assertEqual(result, expected)
 
-    def test_repr(self):
-        obj = Type()
-        obj.value = 10
-        result = repr(obj)
-        expected = "Type(10)"
-        self.assertEqual(result, expected)
-
     def test_childof(self):
-        a = ObjectIdentifier(1, 2, 3)
-        b = ObjectIdentifier(1, 2, 3, 1)
-        c = ObjectIdentifier(1, 2, 4)
-        d = ObjectIdentifier(1)
+        a = ObjectIdentifier([1, 2, 3])
+        b = ObjectIdentifier([1, 2, 3, 1])
+        c = ObjectIdentifier([1, 2, 4])
+        d = ObjectIdentifier([1])
         self.assertTrue(b.childof(a))
         self.assertFalse(a.childof(b))
         self.assertTrue(a.childof(a))
@@ -664,10 +677,10 @@ class TestAllTypes(TestCase):
         self.assertTrue(c.childof(d))
 
     def test_parentdf(self):
-        a = ObjectIdentifier(1, 2, 3)
-        b = ObjectIdentifier(1, 2, 3, 1)
-        c = ObjectIdentifier(1, 2, 4)
-        d = ObjectIdentifier(1)
+        a = ObjectIdentifier([1, 2, 3])
+        b = ObjectIdentifier([1, 2, 3, 1])
+        c = ObjectIdentifier([1, 2, 4])
+        d = ObjectIdentifier([1])
         self.assertFalse(b.parentof(a))
         self.assertTrue(a.parentof(b))
         self.assertTrue(a.parentof(a))
@@ -751,15 +764,22 @@ def test_pretty_octetstrings_raw():
 def test_enforcing_types():
     data = bytes(OctetString(b"foo"))
     with pytest.raises(UnexpectedType):
-        pop_tlv(data, enforce_type=Integer)
+        decode(data, enforce_type=Integer)
 
 
 def test_incomplete_decoding():
     """
-    When calling pop_tlv in strict mode we want to raise an exception on
+    When calling decode in strict mode we want to raise an exception on
     unconsumed bytes.
     """
     data = bytes(OctetString(b"Hello")) + b"junk-bytes"
     with pytest.raises(IncompleteDecoding) as exc:
-        pop_tlv(data, strict=True)
+        decode(data, strict=True)
     assert exc.value.remainder == b"junk-bytes"
+
+
+@pytest.mark.parametrize("cls", Type.all())
+def test_repr(cls):
+    obj = cls()
+    result = repr(obj)
+    assert cls.__name__ in result

@@ -9,9 +9,9 @@ This module contains the encoding/decoding logic for data types as defined in
 Each type is made available via a registry dictionary on :py:class:`~.Type` and
 can be retrieved via :py:meth:`~.Type.get`.
 
-Additionally, given a :py:class:`bytes` object, the :py:func:`~.pop_tlv`
+Additionally, given a :py:class:`bytes` object, the :py:func:`~.decode`
 function can be used to parse the bytes object and return a typed instance
-from it. See :py:func:`~.pop_tlv` for details about it's behaviour!
+from it. See :py:func:`~.decode` for details about it's behaviour!
 
 .. note::
     The individual type classes in this module do not contain any additional
@@ -29,17 +29,58 @@ Subclassing is enough.
 
 By default, a new type which does not override any methods will have it's value
 reported as bytes objects. You may want to override at least
-:py:meth:`~.Type.pythonize` to expose the value to users of the library as pure
-Python objects.
+:py:meth:`~.Type.decode_raw` to convert the raw-bytes into your own data-type.
 
-Depending on type, you may also want to override certain methods. See
-:py:class:`~.Sequence` and :py:class:`~.Integer` for more complex examples.
+Example
+-------
+
+Let's assume you want to decode/encode a "Person" object with a first-name,
+last-name and age. Let's also assume it will be an application-specific type of
+a "constructed" nature with our application-local tag 1. Let's further assume
+that the value will be a UTF-8 encoded JSON string inside the x690 stream.
+
+We specify the metadata as class-level variables ``TYPECLASS``, ``NATURE`` and
+``TAG``. The decoding is handled by implementing a static-method
+``decode_raw`` which gets the data-object containing the value and a slice
+defining at which position the data is located. The encoding is handled by
+implementing the instance-method ``encode_raw``. The instance contains the
+Python value in ``self.pyvalue``.
+
+So we can implement this as follows (including a named-tuple as our local
+type):
+
+.. code-block:: python
+
+    from typing import NamedTuple
+    from x690.types import Type
+    from json import loads, dumps
+
+    class Person(NamedTuple):
+        first_name: str
+        last_name: str
+        age: int
+
+    class PersonType(Type[Person]):
+        TYPECLASS = TypeClass.APPLICATION
+        NATURE = [TypeNature.CONSTRUCTED]
+        TAG = 1
+
+        @staticmethod
+        def decode_raw(data: bytes, slc: slice = slice(None)) -> Person:
+            values = loads(data[slc].decode("utf8"))
+            return Person(
+                values["first_name"], values["last_name"], values["age"]
+            )
+
+        def encode_raw(self) -> bytes:
+            return dumps(self.pyvalue._asdict()).encode("utf8")
+
+
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 
-from dataclasses import astuple
-from datetime import datetime, timezone
+from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
@@ -54,71 +95,74 @@ from .util import (
     TypeClass,
     TypeInfo,
     TypeNature,
-    decode_length,
     encode_length,
+    get_value_slice,
     visible_octets,
     wrap,
 )
 
-TWrappedPyType = TypeVar("TWrappedPyType")
+TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 
 
-def pop_tlv(
+def decode(
     data: bytes,
+    start_index: int = 0,
     enforce_type: Optional[TypeType[TPopType]] = None,
     strict: bool = False,
-) -> Tuple["TPopType", bytes]:
+) -> Tuple[Union["TPopType", "Null"], int]:
     """
-    Given a :py:class:`bytes` object, inspects and parses the first octets (as
-    many as required) to determine variable type (and corresponding Python
-    class), and length. The class is then used to parse the *first* object in
-    ``data``.  *data* itself will not be modified. Instead, a new modified copy
-    of *data* is returned alongside the parsed object. This new object is the
-    remainder after popping off the first object.
+    Convert a X.690 bytes object into a Python instance, and the location of
+    the next object.
+
+    Given a :py:class:`bytes` object and any start-index, inspects and parses
+    the octets starting at the given index (as many as required) to determine
+    variable type (and corresponding Python class), and length. That class is
+    then used to parse the object located in ``data`` at the given index. The
+    location of the start of the next (subsequent) object is also determined.
+
+    The return value is a tuple with the decoded object and the start-index
+    of the next object.
 
     Example::
 
         >>> data = b'\\x02\\x01\\x05\\x11'
-        >>> pop_tlv(data)
-        (Integer(5), b'\\x11')
-
-    Note that in the example above, ``\\x11`` is the remainder of the bytes
-    object after popping of the integer object.
+        >>> decode(data)
+        (Integer(5), 3)
+        >>> data = b'some-skippable-bytes\\x02\\x01\\x05\\x11'
+        >>> decode(data, 20)
+        (Integer(5), 23)
     """
-    if not data:
-        return Null(), b""  # type: ignore
+    if start_index >= len(data):
+        return Null(), 0
 
-    type_ = TypeInfo.from_bytes(data[0])
-    length, remainder = astuple(decode_length(data[1:]))
-
-    if length == -1:
-        eob = data.find(b"\x00\x00")
-        chunk, remainder = data[2:eob], data[eob + 4 :]
-    else:
-        chunk, remainder = remainder[:length], remainder[length:]
+    start_index = start_index or 0
+    type_ = TypeInfo.from_bytes(data[start_index])
 
     try:
         cls = Type.get(type_.cls, type_.tag, type_.nature)
-        value = cls.decode(chunk)
     except KeyError:
-        # Add context information
-        value = UnknownType.decode(chunk)
-        value.tag = data[0]
+        cls = UnknownType
 
-    if enforce_type and not isinstance(value, enforce_type):
+    data_slice, next_tlv = get_value_slice(data, start_index)
+    output = cls.from_bytes(data, data_slice)
+    if cls is UnknownType:
+        output.tag = data[start_index]  # type: ignore
+
+    if enforce_type and not isinstance(output, enforce_type):
         raise UnexpectedType(
             f"Unexpected decode result. Expected instance of type "
-            f"{enforce_type} but got {type(value)} instead"
+            f"{enforce_type} but got {type(output)} instead"
         )
 
-    if strict and remainder:
+    if strict and next_tlv < len(data) - 1:
+        remainder = data[next_tlv:]
         raise IncompleteDecoding(
             f"Strict decoding still had {len(remainder)} remaining bytes!",
             remainder=remainder,
         )
 
-    return value, remainder  # type: ignore
+    return output, next_tlv  # type: ignore
 
 
 class Type(Generic[TWrappedPyType]):
@@ -126,11 +170,26 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
+    __slots__ = ["pyvalue"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
+
+    #: The x690 type-class (universal, application or context)
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
+
+    #: The x690 "private/constructed" information
     NATURE = [TypeNature.CONSTRUCTED]
+
+    #: The x690 identifier for the type
     TAG: int = -1
-    value: TWrappedPyType
+
+    #: The decoded (or to-be encoded) Python value
+    pyvalue: Optional[TWrappedPyType]
+
+    #: The byte representation of "pyvalue" without metadata-header
+    raw_bytes: bytes
+
+    #: The location of the value within "raw_bytes"
+    bounds: slice = slice(None)
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
         if cls.__name__ == "Type" and cls.TAG == -1:
@@ -138,10 +197,38 @@ class Type(Generic[TWrappedPyType]):
         for nature in cls.NATURE:
             Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
+    @property
+    def value(self) -> TWrappedPyType:
+        """
+        Returns the value as a pure Python type
+        """
+        return self.pyvalue or self.decode_raw(self.raw_bytes, self.bounds)
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        >>> Integer.decode_raw(b"\\x05")
+        5
+
+        :param data: A data-block containing the byte-information
+        :param slc: A slice of the data-block that contains the exact
+            raw-bytes.
+        :return: The value that should be wrapped by the current x690 type.
+        """
+        return data[slc]  # type: ignore
+
     @staticmethod
     def get(
         typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
     ) -> TypeType["Type[Any]"]:
+        """
+        Retrieve a Python class by x690 type information
+
+        Classes can be registered by subclassing :py:class:`x690.types.Type`
+        """
         cls = Type.__registry[(typeclass, typeid, nature)]
         return cls
 
@@ -158,7 +245,8 @@ class Type(Generic[TWrappedPyType]):
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
         """
-        # TODO: Making this function return a boolean instead of raising an exception would make the code potentially more readable.
+        # TODO: Making this function return a boolean instead of raising an
+        #       exception would make the code potentially more readable.
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError(
@@ -177,29 +265,81 @@ class Type(Generic[TWrappedPyType]):
 
         This function must be overridden by the concrete subclasses.
         """
-        raise NotImplementedError("Decoding is not yet implemented on %s" % cls)
+        slc = get_value_slice(data).bounds
+        output = cls.decode_raw(data, slc)
+        return cls(output)
+
+    @classmethod
+    def from_bytes(
+        cls, data: bytes, slc: slice = slice(None)
+    ) -> "Type[TWrappedPyType]":
+        """
+        Creates a new :py:class:`x690.types.Type` instance from raw-bytes
+        (without type nor length bytes)
+
+        >>> Integer.from_bytes(b"\\x01")
+        Integer(1)
+        >>> OctetString.from_bytes(b"hello-world")
+        OctetString(b'hello-world')
+        >>> Boolean.from_bytes(b"\\x00")
+        Boolean(False)
+        """
+        instance = cls()
+        instance.raw_bytes = data
+        instance.bounds = slc
+        return instance
+
+    def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
+        self.pyvalue = value
+        if value is None:
+            self.raw_bytes = b""
+        else:
+            self.raw_bytes = self.encode_raw()
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        raise NotImplementedError("Not yet implemented")
+        value = self.raw_bytes[self.bounds] or self.encode_raw()
+        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
+        return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
-        # pylint: disable=no-member
         return "%s(%r)" % (self.__class__.__name__, self.value)
+
+    @property
+    def length(self) -> int:
+        """
+        Return the x690 byte-length of this instance
+        """
+        return len(self.raw_bytes[self.bounds])
+
+    def encode_raw(self) -> bytes:
+        """
+        Convert this instance into raw x690 bytes (excluding the type and
+        length header)
+
+        >>> Integer(5).encode_raw()
+        b'\\x05'
+        >>> Boolean(True).encode_raw()
+        b'\\x01'
+        """
+        if self.pyvalue is None:
+            return b""
+        return self.pyvalue
 
     def pythonize(self) -> TWrappedPyType:
         """
         Convert this instance to an appropriate pure Python object.
         """
-        # pylint: disable=no-member
         return self.value
 
     def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
         Returns a readable representation (possibly multiline) of the value.
+
+        The value is indented by *depth* levels of indentation
 
         By default this simply returns the string representation. But more
         complex values may override this.
@@ -222,21 +362,15 @@ class UnknownType(Type[bytes]):
       with ``__repr__`` of this class).
     """
 
-    value = b""
+    TAG = 0x99
 
-    def __init__(self, tag: int = -1, value: bytes = b"") -> None:
-        self.value = value
+    def __init__(self, value: bytes = b"", tag: int = -1) -> None:
+        super().__init__(value)
         self.tag = tag
-        self.length = len(value)
-        self.typeinfo = TypeInfo.from_bytes(tag)
-
-    def __bytes__(self) -> bytes:
-        return bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self) -> str:
-        tinfo = (
-            f"{self.typeinfo.cls}/{self.typeinfo.nature}/{self.typeinfo.tag}"
-        )
+        typeinfo = TypeInfo.from_bytes(self.tag)
+        tinfo = f"{typeinfo.cls}/{typeinfo.nature}/{typeinfo.tag}"
         return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
@@ -246,18 +380,12 @@ class UnknownType(Type[bytes]):
             and self.tag == other.tag
         )
 
-    @classmethod
-    def decode(cls, data: bytes) -> "UnknownType":
-        """
-        Overrides typical conversion by removing type validation. As, by
-        definition this class is used for unknown types, we cannot validate
-        them.
-        """
-        if not data:
-            return UnknownType()
-        return UnknownType(value=data)
-
     def pretty(self, depth: int = 0) -> str:
+        """
+        Returns a prettified string with *depth* levels of indentation
+
+        See :py:meth:`~.Type.pretty`
+        """
         wrapped = wrap(
             visible_octets(self.value), str(type(self)), depth
         ).splitlines()
@@ -267,13 +395,14 @@ class UnknownType(Type[bytes]):
                 line_width - 2
             )
             wrapped = wrapped[:10] + ["┊%s┊" % sniptext] + wrapped[-5:]
+        typeinfo = TypeInfo.from_bytes(self.tag)
         lines = [
             "Unknown Type",
             f"  │ Tag:       {self.tag}",
             "  │ Type Info:",
-            f"  │  │ Class: {self.typeinfo.cls}",
-            f"  │  │ Nature: {self.typeinfo.nature}",
-            f"  │  │ Tag: {self.typeinfo.tag}",
+            f"  │  │ Class: {typeinfo.cls}",
+            f"  │  │ Nature: {typeinfo.nature}",
+            f"  │  │ Tag: {typeinfo.tag}",
         ] + wrapped
         return indent(
             "\n".join(lines),
@@ -284,14 +413,22 @@ class UnknownType(Type[bytes]):
 class Boolean(Type[bool]):
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
-    value = False
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Boolean":
-        return Boolean(data != b"\x00")
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> bool:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
+        return data[slc] != b"\x00"
 
     @classmethod
     def validate(cls, data: bytes) -> None:
+        """
+        Overrides :py:meth:`.Type.validate`
+        """
         super().validate(data)
         if data[1] != 1:
             raise ValueError(
@@ -299,11 +436,11 @@ class Boolean(Type[bool]):
                 " it was %d" % data[1]
             )
 
-    def __init__(self, value: bool = False) -> None:
-        self.value = value
-
-    def __bytes__(self) -> bytes:
-        return bytes([1, 1, int(self.value)])
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        return b"\x01" if self.pyvalue else b"\x00"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Boolean) and self.value == other.value
@@ -313,11 +450,11 @@ class Null(Type[None]):
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
 
-    def __init__(self) -> None:
-        self.value = None
-
     @classmethod
     def validate(cls, data: bytes) -> None:
+        """
+        Overrides :py:meth:`.Type.validate`
+        """
         super().validate(data)
         if data[1] != 0:
             raise ValueError(
@@ -325,15 +462,29 @@ class Null(Type[None]):
                 "was %d" % data[1]
             )
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Null":
-        return Null()
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> None:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
+        # pylint: disable=unused-argument
+        return None
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        # pylint: disable=no-self-use
+        return b"\x00"
 
     def __bytes__(self) -> bytes:
         return b"\x05\x00"
 
     def __eq__(self, other: object) -> bool:
-        return type(self) == type(other)
+        return isinstance(other, Null) and self.value == other.value
 
     def __repr__(self) -> str:
         return "Null()"
@@ -348,39 +499,27 @@ class Null(Type[None]):
 class OctetString(Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = b""
-
-    @classmethod
-    def decode(cls, data: bytes) -> "OctetString":
-        return cls(data)
 
     def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
-            self.value = value.encode("ascii")
-        else:
-            self.value = value
-        self.length = encode_length(len(self.value))
-
-    def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
-        return bytes(tinfo) + self.length + self.value
+            value = value.encode("ascii")
+        super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, OctetString) and self.value == other.value
 
-    def pythonize(self) -> bytes:
-        """
-        Convert this object in an appropriate python object
-        """
-        return self.value
-
     def pretty(self, depth: int = 0) -> str:
+        """
+        Returns a prettified string with *depth* levels of indentation
+
+        See :py:meth:`~.Type.pretty`
+        """
         if self.value == b"":
             return repr(self)
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = pop_tlv(self.value)[0]  # type: ignore
+            embedded = decode(self.value)[0]
             if isinstance(embedded, UnknownType):
                 raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
@@ -396,52 +535,67 @@ class Sequence(Type[List[Type[Any]]]):
     """
 
     TAG = 0x10
-    value: List[Type[Any]] = []
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Sequence":
-        value: Any
-        output = []
-        while data:
-            value, data = pop_tlv(data)
-            output.append(value)
-        return Sequence(*output)
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> List[Type[Any]]:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
 
-    def __init__(self, *items: Type[Any]) -> None:
-        self.items = items
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
+        if not data or slc.start > len(data):
+            return []
+        item, next_pos = decode(data, slc.start)
+        items: List[Type[Any]] = [item]
+        end = slc.stop or len(data)
+        while next_pos < end:
+            item, next_pos = decode(data, next_pos)
+            items.append(item)
+        return items
 
-    def __bytes__(self) -> bytes:
-        items = [bytes(item) for item in self]
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        if self.pyvalue is None:
+            return b""
+        items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
-        length = encode_length(len(output))
-        tinfo = TypeInfo(TypeClass.UNIVERSAL, self.NATURE[0], Sequence.TAG)
-        return bytes(tinfo) + length + output
+        return output
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Sequence) and self.items == other.items
+        if not isinstance(other, Sequence):
+            return False
+        return self.raw_bytes[self.bounds] == other.raw_bytes[other.bounds]
 
     def __repr__(self) -> str:
-        item_repr = [repr(item) for item in self]
-        return "Sequence(%s)" % ", ".join(item_repr)
+        item_repr = list(self)
+        return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
-        return len(self.items)
+        return len(self.value)
 
     def __iter__(self) -> Iterator[Type[Any]]:
-        return iter(self.items)
+        yield from self.value
 
     def __getitem__(self, idx: int) -> Type[Any]:
-        return self.items[idx]
+        return self.value[idx]
 
     def pythonize(self) -> List[Type[Any]]:
+        """
+        Overrides :py:meth:`~.Type.pythonize`
+        """
         return [obj.pythonize() for obj in self]
 
     def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
-        Overrides :py:meth:`.Type.pretty`
+        Returns a prettified string with *depth* levels of indentation
+
+        See :py:meth:`~.Type.pretty`
         """
-        lines = [f"{self.__class__.__name__} with {len(self.items)} items:"]
-        for item in self.items:
+        lines = [f"{self.__class__.__name__} with {len(self.value)} items:"]
+        for item in self.value:
             prettified_item = item.pretty(depth)
             bullet = INDENT_STRING * depth + "⁃ "
             for line in prettified_item.splitlines():
@@ -454,20 +608,28 @@ class Integer(Type[int]):
     SIGNED = True
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
-    value = 0
 
-    @classmethod
-    def decode(cls, data: bytes) -> "Integer":
-        return cls(int.from_bytes(data, "big", signed=cls.SIGNED))
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
 
-    def __init__(self, value: int = 0) -> None:
-        self.value = value
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
+        data = data[slc]
+        return int.from_bytes(data, "big", signed=Integer.SIGNED)
 
-    def __bytes__(self) -> bytes:
-        octets = [self.value & 0b11111111]
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        if self.pyvalue is None:
+            return b""
+        octets = [self.pyvalue & 0b11111111]
 
         # Append remaining octets for long integers.
-        remainder = self.value
+        remainder = self.pyvalue
         while remainder not in (0, -1):
             remainder = remainder >> 8
             octets.append(remainder & 0b11111111)
@@ -482,32 +644,28 @@ class Integer(Type[int]):
             or (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0)
         ):
             del octets[0]
-
-        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
-        return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
+        return bytes(octets)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Integer) and self.value == other.value
 
 
-class ObjectIdentifier(Type[str]):
+class ObjectIdentifier(Type[Tuple[int, ...]]):
     """
     Represents an OID.
 
     Instances of this class support containment checks to determine if one OID
     is a sub-item of another::
 
-        >>> ObjectIdentifier(1, 2, 3, 4, 5) in ObjectIdentifier(1, 2, 3)
+        >>> ObjectIdentifier((1, 2, 3, 4, 5)) in ObjectIdentifier((1, 2, 3))
         True
 
-        >>> ObjectIdentifier(1, 2, 4, 5, 6) in ObjectIdentifier(1, 2, 3)
+        >>> ObjectIdentifier((1, 2, 4, 5, 6)) in ObjectIdentifier((1, 2, 3))
         False
     """
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
-    value = ""
-    identifiers: Tuple[int, ...]
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -542,12 +700,19 @@ class ObjectIdentifier(Type[str]):
         output.reverse()
         return output
 
-    @classmethod
-    def decode(cls, data: bytes) -> "ObjectIdentifier":
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> Tuple[int, ...]:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
         # Special case for "empty" object identifiers which should be returned
         # as "0"
+        data = data[slc]
         if not data:
-            return ObjectIdentifier(0)
+            return (0,)
 
         # unpack the first byte into first and second sub-identifiers.
         data0 = data[0]
@@ -556,18 +721,19 @@ class ObjectIdentifier(Type[str]):
 
         remaining = iter(data[1:])
 
-        for char in remaining:
+        for node in remaining:
             # Each node can only contain values from 0-127. Other values need
             # to be combined.
-            if char > 127:
+            if node > 127:
                 collapsed_value = ObjectIdentifier.decode_large_value(
-                    char, remaining
+                    node, remaining
                 )
                 output.append(collapsed_value)
                 continue
-            output.append(char)
+            output.append(node)
 
-        return ObjectIdentifier(*output)
+        instance = tuple(output)
+        return instance
 
     @staticmethod
     def from_string(value: str) -> "ObjectIdentifier":
@@ -576,21 +742,30 @@ class ObjectIdentifier(Type[str]):
         """
 
         if value == ".":
-            return ObjectIdentifier(1)
+            return ObjectIdentifier((1,))
 
         if value.startswith("."):
             value = value[1:]
 
-        identifiers = [int(ident, 10) for ident in value.split(".")]
-        return ObjectIdentifier(*identifiers)
+        identifiers = tuple(int(ident, 10) for ident in value.split("."))
+        return ObjectIdentifier(identifiers)
 
-    def __init__(self, *identifiers: int) -> None:
-        # pylint: disable=line-too-long
+    def collapse_identifiers(
+        self, identifiers: Tuple[int, ...]
+    ) -> Tuple[int, ...]:
+        """
+        Meld the first two octets into one octet as defined by x.690
 
-        # If the user hands in an iterable, instead of positional arguments,
-        # make sure we unpack it
-        if len(identifiers) == 1 and not isinstance(identifiers[0], int):
-            identifiers = [int(ident) for ident in identifiers[0]]
+        In x.690 ObjectIdentifiers are a sequence of numbers. In the
+        byte-representation the first two of those numbers are stored in the
+        first byte.
+
+        This function takes a "human-readable" OID tuple and returns a new
+        tuple with the first two elements merged (collapsed) together.
+        """
+        # pylint: disable=no-self-use
+        if len(identifiers) == 0:
+            return tuple()
 
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
@@ -601,9 +776,6 @@ class ObjectIdentifier(Type[str]):
                 identifiers[2:],
             )
             first_output = (40 * first) + second
-        elif len(identifiers) == 0:
-            self.identifiers = tuple()
-            return
         else:
             first_output = identifiers[0]
             rest = tuple()
@@ -619,45 +791,43 @@ class ObjectIdentifier(Type[str]):
             else:
                 exploded_high_values.append(char)
 
-        self.identifiers = tuple(identifiers)
         collapsed_identifiers = [first_output]
         for subidentifier in rest:
             collapsed_identifiers.extend(
                 ObjectIdentifier.encode_large_value(subidentifier)
             )
-        self.__collapsed_identifiers = tuple(collapsed_identifiers)
-        self.length = encode_length(len(self.__collapsed_identifiers))
+        return tuple(collapsed_identifiers)
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        if self.pyvalue is None:
+            return b""
+        collapsed_identifiers = self.collapse_identifiers(self.pyvalue)
+        if collapsed_identifiers == (0,):
+            return b""
+        return bytes(collapsed_identifiers)
 
     def __int__(self) -> int:
-        if len(self.identifiers) != 1:
+        if len(self.value) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
                 "converted to int. %r is not convertable" % self
             )
-        return self.identifiers[0]
+        return self.value[0]
 
     def __str__(self) -> str:
-        return ".".join([str(_) for _ in self.identifiers])
-
-    def __bytes__(self) -> bytes:
-        output = bytes([self.TAG])
-        if self.__collapsed_identifiers == (0,):
-            output += b"\x00"
-        else:
-            output += self.length + bytes(self.__collapsed_identifiers)
-        return output
+        return ".".join([str(_) for _ in self.value])
 
     def __repr__(self) -> str:
-        return "ObjectIdentifier(%r)" % (self.identifiers,)
+        return "ObjectIdentifier(%r)" % (self.value,)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, ObjectIdentifier)
-            and self.__collapsed_identifiers == other.__collapsed_identifiers
-        )
+        return isinstance(other, ObjectIdentifier) and self.value == other.value
 
     def __len__(self) -> int:
-        return len(self.identifiers)
+        return len(self.value)
 
     def __contains__(self, other: "ObjectIdentifier") -> bool:
         """
@@ -667,7 +837,7 @@ class ObjectIdentifier(Type[str]):
         """
         # pylint: disable=invalid-name
 
-        a, b = other.identifiers, self.identifiers
+        a, b = other.value, self.value
 
         # if both have the same amount of identifiers, check for equality
         if len(a) == len(b):
@@ -700,20 +870,17 @@ class ObjectIdentifier(Type[str]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        return self.identifiers < other.identifiers
+        return self.value < other.value
 
     def __hash__(self) -> int:
-        return hash(self.identifiers)
+        return hash(self.value)
 
     def __add__(self, other: "ObjectIdentifier") -> "ObjectIdentifier":
-        nodes = self.identifiers + other.identifiers
-        return ObjectIdentifier(*nodes)
+        nodes = self.value + other.value
+        return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier(self.identifiers[index])
-
-    def pythonize(self) -> str:
-        return ".".join([str(_) for _ in self.identifiers])
+        return ObjectIdentifier((self.value[index],))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
@@ -731,116 +898,108 @@ class ObjectIdentifier(Type[str]):
 class ObjectDescriptor(Type[str]):
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class External(Type[bytes]):
     TAG = 0x08
-    value = b""
 
 
 class Real(Type[float]):
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
-    value = 0.0
 
 
 class Enumerated(Type[List[Any]]):
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
-    value: List[Any] = []
 
 
 class EmbeddedPdv(Type[bytes]):
     TAG = 0x0B
-    value = b""
 
 
 class Utf8String(Type[str]):
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class RelativeOid(Type[str]):
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
-    value = ""
 
 
 class Set(Type[bytes]):
     TAG = 0x11
-    value = b""
 
 
 class NumericString(Type[str]):
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class PrintableString(Type[str]):
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class T61String(Type[str]):
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
     __INITIALISED = False
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
-        if not T61String.__INITIALISED:
-            t61codec.register()
-            self.__INITIALISED = True
         if isinstance(value, str):
-            self.value = value
+            super().__init__(value)
         else:
-            self.value = value.decode("t61")
-        self.length = encode_length(len(self.value))
-
-    def __bytes__(self) -> bytes:
-        tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
-        return bytes(tinfo) + self.length + self.value.encode("t61")
+            super().__init__(T61String.decode_raw(value))
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, T61String) and self.value == other.value
 
-    @classmethod
-    def decode(cls, data: bytes) -> "T61String":
-        return cls(data)
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None, None)) -> str:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
 
-    def pythonize(self) -> str:
+        Overrides :py:meth:`~.Type.decode_raw`
         """
-        Convert this object in an appropriate python object
+        data = data[slc]
+        if not T61String.__INITIALISED:
+            t61codec.register()
+            T61String.__INITIALISED = True
+        return data.decode("t61")
+
+    def encode_raw(self) -> bytes:
         """
-        return self.value
+        Overrides :py:meth:`.Type.encode_raw`
+        """
+        if not T61String.__INITIALISED:
+            t61codec.register()
+            T61String.__INITIALISED = True
+        if self.pyvalue is None:
+            return b""
+        return self.pyvalue.encode("t61")
 
 
 class VideotexString(Type[str]):
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class IA5String(Type[str]):
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class UtcTime(Type[datetime]):
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = datetime(1979, 1, 1, tzinfo=timezone.utc)
 
 
 class GeneralizedTime(Type[datetime]):
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = datetime(1979, 1, 1)
 
 
 class GraphicString(Type[str]):
@@ -851,52 +1010,48 @@ class GraphicString(Type[str]):
     #       OctetString if needed
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
-    @classmethod
-    def decode(cls, data: bytes) -> "GraphicString":  # pragma: no cover
-        return GraphicString(data.decode("ascii"))
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
 
-    def __init__(self, value: str = "") -> None:
-        self.value = value
+        Overrides :py:meth:`~.Type.decode_raw`
+        """
+        data = data[slc]
+        return data.decode("ascii")
 
 
 class VisibleString(Type[str]):
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class GeneralString(Type[str]):
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class UniversalString(Type[str]):
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class CharacterString(Type[str]):
     TAG = 0x1D
-    value = ""
 
 
 class BmpString(Type[str]):
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
 
 
 class EOC(Type[bytes]):
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
-    value = b""
 
 
 class BitString(Type[str]):
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    value = ""
