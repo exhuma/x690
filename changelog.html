@@ -34,6 +34,46 @@
             
   <div class="section" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="alpha-0">
+<h2>0.5.0-alpha.0<a class="headerlink" href="#alpha-0" title="Permalink to this headline">¶</a></h2>
+<p>This release focussed on performance (both memory and CPU) in order to decode
+large x690 documents.</p>
+<p>As it goes with performance, a fair amount of refactoring was needed and the
+external API could not be guaranteed easily. And as we’re still on the 0.x
+branch, the backwards-compatibility was dropped in favor of cleaner code.</p>
+<p>It is flagged as “alpha” until I feel confident that the new changes have not
+introduced breaking bugs.</p>
+<ul class="simple">
+<li><p><strong>Replaced</strong> <code class="docutils literal notranslate"><span class="pre">x690.pop_tlv</span></code> has been replaced by <code class="docutils literal notranslate"><span class="pre">x690.decode</span></code>.
+This no longer copies data in-memory and therefore no longer returns the
+“remaining” data-bytes. Instead it returns the position of the next
+data-block. <code class="docutils literal notranslate"><span class="pre">decode</span></code> also takes an additional argument to define where to
+start decoding data from.</p></li>
+<li><p><strong>changed</strong> <code class="docutils literal notranslate"><span class="pre">ObjectIdentifier</span></code> has been aligned to the existing types and
+no longer use <code class="docutils literal notranslate"><span class="pre">*args</span></code> to initialise instances. Instead of
+<code class="docutils literal notranslate"><span class="pre">ObjectIdentifier(1,</span> <span class="pre">2,</span> <span class="pre">3)</span></code> you must now write <code class="docutils literal notranslate"><span class="pre">Sequence((1,</span> <span class="pre">2,</span> <span class="pre">3))</span></code></p></li>
+<li><p><strong>changed</strong> <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> has been aligned to the existing types and no longer
+use <code class="docutils literal notranslate"><span class="pre">*args</span></code> to initialise instances. Instead of <code class="docutils literal notranslate"><span class="pre">Sequence(a,</span> <span class="pre">b,</span> <span class="pre">c)</span></code> you
+must now write <code class="docutils literal notranslate"><span class="pre">Sequence([a,</span> <span class="pre">b,</span> <span class="pre">c])</span></code></p></li>
+<li><p><strong>changed</strong> <code class="docutils literal notranslate"><span class="pre">UnknownType</span></code> has been aligned to the existing types. It now
+takes the value as <em>first</em> argument instead of second. Instead of
+<code class="docutils literal notranslate"><span class="pre">UnknownType(99,</span> <span class="pre">b&quot;abc&quot;)</span></code> you must now write <code class="docutils literal notranslate"><span class="pre">UnknownType(b&quot;abc&quot;,</span> <span class="pre">99)</span></code>.</p></li>
+<li><p><strong>changed</strong> Subclasses of <code class="docutils literal notranslate"><span class="pre">x690.Type</span></code> must now override the
+<code class="docutils literal notranslate"><span class="pre">Type.decode_raw</span></code> method if the data is needed in another type that
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p></li>
+<li><p><strong>changed</strong> Subclasses of <code class="docutils literal notranslate"><span class="pre">x690.Type</span></code> must now override the
+<code class="docutils literal notranslate"><span class="pre">Type.encode_raw</span></code> method if the python-value is a non-bytes object.</p></li>
+<li><p>dataclasses in have been replaced with named-tuples for increased performance.</p></li>
+<li><p>An instance can now be creted from raw-bytes (excluding the type and length
+header bytes) by calling <code class="docutils literal notranslate"><span class="pre">Type.from_bytes(...)</span></code> (by using the class of the
+appropriate type!).</p></li>
+<li><p>New function <code class="docutils literal notranslate"><span class="pre">x690.util.get_value_slice</span></code> can be used to find the location
+of the raw-bytes of a value at any given location. The location must however
+be the <em>start</em> of an x690 “TLV” block. This will return the slice of the
+value location (The “V” part excluding the “TL” part) and the location of the
+next value-block.</p></li>
+</ul>
+</div>
 <div class="section" id="id1">
 <h2>0.4.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
