@@ -44,7 +44,7 @@ We specify the metadata as class-level variables ``TYPECLASS``, ``NATURE`` and
 ``decode_raw`` which gets the data-object containing the value and a slice
 defining at which position the data is located. The encoding is handled by
 implementing the instance-method ``encode_raw``. The instance contains the
-Python value in ``self._value``.
+Python value in ``self.pyvalue``.
 
 So we can implement this as follows (including a named-tuple as our local
 type):
@@ -73,7 +73,7 @@ type):
             )
 
         def encode_raw(self) -> bytes:
-            return dumps(self._value._asdict()).encode("utf8")
+            return dumps(self.pyvalue._asdict()).encode("utf8")
 
 
 """
@@ -171,12 +171,12 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["_value"]
+    __slots__ = ["pyvalue"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
     NATURE = [TypeNature.CONSTRUCTED]
     TAG: int = -1
-    _value: Optional[TWrappedPyType]
+    pyvalue: Optional[TWrappedPyType]
     raw_bytes: bytes
     bounds: slice = slice(None)
 
@@ -191,7 +191,7 @@ class Type(Generic[TWrappedPyType]):
         """
         Returns the value as a pure Python type
         """
-        return self._value or self.decode_raw(self.raw_bytes, self.bounds)
+        return self.pyvalue or self.decode_raw(self.raw_bytes, self.bounds)
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
@@ -270,7 +270,7 @@ class Type(Generic[TWrappedPyType]):
         return instance
 
     def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
-        self._value = value
+        self.pyvalue = value
         if value is None:
             self.raw_bytes = b""
         else:
@@ -305,9 +305,9 @@ class Type(Generic[TWrappedPyType]):
         >>> Boolean(True).encode_raw()
         b'\\x01'
         """
-        if self._value is None:
+        if self.pyvalue is None:
             return b""
-        return self._value
+        return self.pyvalue
 
     def pythonize(self) -> TWrappedPyType:
         """
@@ -420,7 +420,7 @@ class Boolean(Type[bool]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        return b"\x01" if self._value else b"\x00"
+        return b"\x01" if self.pyvalue else b"\x00"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Boolean) and self.value == other.value
@@ -538,9 +538,9 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self._value is None:
+        if self.pyvalue is None:
             return b""
-        items = [bytes(item) for item in self._value]
+        items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
         return output
 
@@ -604,12 +604,12 @@ class Integer(Type[int]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self._value is None:
+        if self.pyvalue is None:
             return b""
-        octets = [self._value & 0b11111111]
+        octets = [self.pyvalue & 0b11111111]
 
         # Append remaining octets for long integers.
-        remainder = self._value
+        remainder = self.pyvalue
         while remainder not in (0, -1):
             remainder = remainder >> 8
             octets.append(remainder & 0b11111111)
@@ -782,9 +782,9 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self._value is None:
+        if self.pyvalue is None:
             return b""
-        collapsed_identifiers = self.collapse_identifiers(self._value)
+        collapsed_identifiers = self.collapse_identifiers(self.pyvalue)
         if collapsed_identifiers == (0,):
             return b""
         return bytes(collapsed_identifiers)
@@ -957,9 +957,9 @@ class T61String(Type[str]):
         if not T61String.__INITIALISED:
             t61codec.register()
             T61String.__INITIALISED = True
-        if self._value is None:
+        if self.pyvalue is None:
             return b""
-        return self._value.encode("t61")
+        return self.pyvalue.encode("t61")
 
 
 class VideotexString(Type[str]):
