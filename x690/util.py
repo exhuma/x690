@@ -5,7 +5,9 @@ Utility functions for working with the X.690 and related standards.
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
+
+from .exc import X690Error
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
@@ -37,10 +39,14 @@ class TypeNature(str, Enum):
     CONSTRUCTED = "constructed"
 
 
-@dataclass
-class LengthValue:
+class LengthInfo(NamedTuple):
     length: int
-    value: bytes
+    offset: int
+
+
+class ValueMetaData(NamedTuple):
+    bounds: slice
+    next_value_index: int
 
 
 @dataclass
@@ -49,7 +55,7 @@ class TypeInfo:
     Decoded structure for an X.690 "type" octet. Example::
 
         >>> TypeInfo.from_bytes(b'\\x30')
-        TypeInfo(cls='universal', nature='constructed', tag=16)
+        TypeInfo(cls=<TypeClass.UNIVERSAL: 'universal'>, nature=<TypeNature.CONSTRUCTED: 'constructed'>, tag=16)
 
     The structure contains 3 fields:
 
@@ -80,7 +86,7 @@ class TypeInfo:
         instance::
 
             >>> TypeInfo.from_bytes(b'\\x30')
-            TypeInfo(cls='universal', nature='constructed', tag=16)
+            TypeInfo(cls=<TypeClass.UNIVERSAL: 'universal'>, nature=<TypeNature.CONSTRUCTED: 'constructed'>, tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
         # pylint: disable=protected-access
@@ -179,35 +185,64 @@ def encode_length(value):
     return bytes(output)
 
 
-def decode_length(data):
-    # type: ( bytes ) -> LengthValue
+def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
+    """
+    Helper method to extract lightweight information about value locations in
+    a data-stream.
+
+    The function returns both a slice at which a value can be found, and the
+    index at which the next value can be found.
+    """
+    length, offset = decode_length(data, index + 1)
+    if length == -1:
+        start = index + 2
+        end = data.find(b"\x00\x00", index)
+        nex_index = end + 2
+    else:
+        start = index + 1 + offset
+        end = index + 1 + offset + length
+        nex_index = end
+    value_slice = slice(start, end)
+    if end > len(data):
+        raise X690Error(
+            "Invalid Slice %r (data length=%r)" % (value_slice, len(data))
+        )
+    return ValueMetaData(value_slice, nex_index)
+
+
+def decode_length(data, index=0):
+    # type: ( bytes, int ) -> LengthInfo
     """
     Given a bytes object, which starts with the length information of a TLV
-    value, returns a namedtuple with the length and the remaining bytes. So,
-    given a TLV value, this function takes the "LV" part as input, parses the
-    length information and returns the length plus the remaining "V" part
-    (including any subsequent bytes).
+    value, returns a namedtuple with the length and the number of bytes which
+    contained the length information. So, given a TLV value, this function
+    takes the "LV" part as input, parses the length information and returns
+    the length plus the number of bytes which need to be skipped to arrive at
+    the beginning of the value.
 
     For values which are longer than 127 bytes, the length must be encoded into
     an unknown amount of "length" bytes. This function reads as many bytes as
-    needed for the length. The return value contains the parsed length in
-    number of bytes, and the remaining data bytes which follow the length
-    bytes.
+    needed for the length. Consuming bytes for the value must therefore start
+    after the bytes containing the length info. The second value returned
+    from this function includes this information.
+
+    The second argument (*index*) tells the function at which position to
+    look for the length information.
 
     Examples::
 
         >>> # length > 127, consume multiple length bytes
         >>> decode_length(b'\\x81\\xc8...')
-        LengthValue(length=200, value=b'...')
+        LengthInfo(length=200, offset=2)
 
         >>> # length <= 127, consume one length byte
         >>> decode_length(b'\\x10...')
-        LengthValue(length=16, value=b'...')
+        LengthInfo(length=16, offset=1)
 
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    data0 = data[0]
+    data0 = data[index]
     if data0 == 0b11111111:
         # reserved
         raise NotImplementedError("This is a reserved case in X690")
@@ -215,18 +250,18 @@ def decode_length(data):
     if data0 & 0b10000000 == 0:
         # definite short form
         output = int.from_bytes([data0], "big")
-        data = data[1:]
+        offset = 1
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
         output = -1
-        data = data[1:]
+        offset = -1
     else:
         # definite long form
         num_octets = int.from_bytes([data0 ^ 0b10000000], "big")
-        value_octets = data[1 : 1 + num_octets]
+        value_octets = data[index + 1 : index + num_octets + 1]
         output = int.from_bytes(value_octets, "big")
-        data = data[num_octets + 1 :]
-    return LengthValue(output, data)
+        offset = num_octets + 1
+    return LengthInfo(output, offset)
 
 
 def visible_octets(data):
@@ -243,7 +278,7 @@ def visible_octets(data):
     Example::
 
         >>> from os import urandom
-        >>> print(visible_octets(urandom(40)))
+        >>> print(visible_octets(urandom(40)))  # doctest: +SKIP
         99 1f 56 a9 25 50 f7 9b  95 7e ff 80 16 14 88 c5   ..V.%P...~......
         f3 b4 83 d4 89 b2 34 b4  71 4e 5a 69 aa 9f 1d f8   ......4.qNZi....
         1d 33 f9 8e f1 b9 12 e9                            .3......

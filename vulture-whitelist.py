@@ -32,4 +32,5 @@ x690.types.VisibleString
 x690.types.Type.__init_subclass__
 
 x690.util.TypeInfo._raw_value
+x690.util.ValueMetaData.next_value_index
 x690.util.visible_octets

@@ -56,15 +56,15 @@ returns a prettyfied string.
 If you are confronted with a bytes-object encoded using X.690 but don't have
 any documentation, you can write the following loop::
 
-    from x690 import pop_tlv
+    from x690 import decode
 
     data = open("mydatafile.bin", "rb").read()
 
-    value, remaining_bytes = pop_tlv(data)
+    value, nxt = decode(data)
     print(value.pretty())
 
-    while remaining_bytes:
-        value, remaining_bytes = pop_tlv(remaining_bytes)
+    while nxt < len(data):
+        value, nxt = pop_tlv(data, nxt)
         print(value.pretty())
 
 This should get you started.
@@ -124,11 +124,11 @@ second one will contain any remaining bytes which were not decoded.
 
     >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, remaining_bytes = x690.pop_tlv(data)
+    >>> decoded, nxt = x690.pop_tlv(data)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
-    >>> remaining_bytes
-    b''
+    >>> nxt
+    11
 
 
 Type-Hinting & Enforcing
@@ -148,11 +148,11 @@ This does of course only work if you know the type in advance.
     >>> import x690
     >>> import x690.types as t
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, remaining_bytes = x690.pop_tlv(data, enforce_type=t.Sequence)
+    >>> decoded, nxt = x690.pop_tlv(data, enforce_type=t.Sequence)
     >>> decoded
     Sequence(Integer(12), Integer(12), Integer(12))
-    >>> remaining_bytes
-    b''
+    >>> nxt
+    11
 
 
 Strict Decoding
@@ -168,7 +168,7 @@ remaining data.
 
     >>> import x690
     >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes'
-    >>> decoded, remaining_bytes = x690.pop_tlv(data, strict=True)
+    >>> decoded, nxt = x690.pop_tlv(data, strict=True)
     Traceback (most recent call last):
       ...
     x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!

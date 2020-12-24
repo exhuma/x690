@@ -1,8 +1,12 @@
+from itertools import zip_longest
+
+
 def assert_bytes_equal(a, b):
     # type: (Union[bytes, bytearray], Union[bytes, bytearray]) -> None
     """
     Helper method to compare bytes with more helpful output.
     """
+    __tracebackhide__ = True
 
     def is_bytes(x):
         # type: (Union[bytes, bytearray]) -> bool
