@@ -55,7 +55,7 @@ class TypeInfo:
     Decoded structure for an X.690 "type" octet. Example::
 
         >>> TypeInfo.from_bytes(b'\\x30')
-        TypeInfo(cls='universal', nature='constructed', tag=16)
+        TypeInfo(cls=<TypeClass.UNIVERSAL: 'universal'>, nature=<TypeNature.CONSTRUCTED: 'constructed'>, tag=16)
 
     The structure contains 3 fields:
 
@@ -86,7 +86,7 @@ class TypeInfo:
         instance::
 
             >>> TypeInfo.from_bytes(b'\\x30')
-            TypeInfo(cls='universal', nature='constructed', tag=16)
+            TypeInfo(cls=<TypeClass.UNIVERSAL: 'universal'>, nature=<TypeNature.CONSTRUCTED: 'constructed'>, tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
         # pylint: disable=protected-access
@@ -278,7 +278,7 @@ def visible_octets(data):
     Example::
 
         >>> from os import urandom
-        >>> print(visible_octets(urandom(40)))
+        >>> print(visible_octets(urandom(40)))  # doctest: +SKIP
         99 1f 56 a9 25 50 f7 9b  95 7e ff 80 16 14 88 c5   ..V.%P...~......
         f3 b4 83 d4 89 b2 34 b4  71 4e 5a 69 aa 9f 1d f8   ......4.qNZi....
         1d 33 f9 8e f1 b9 12 e9                            .3......

@@ -29,11 +29,53 @@ Subclassing is enough.
 
 By default, a new type which does not override any methods will have it's value
 reported as bytes objects. You may want to override at least
-:py:meth:`~.Type.pythonize` to expose the value to users of the library as pure
-Python objects.
+:py:meth:`~.Type.decode_raw` to convert the raw-bytes into your own data-type.
 
-Depending on type, you may also want to override certain methods. See
-:py:class:`~.Sequence` and :py:class:`~.Integer` for more complex examples.
+Example
+-------
+
+Let's assume you want to decode/encode a "Person" object with a first-name,
+last-name and age. Let's also assume it will be an application-specific type of
+a "constructed" nature with our application-local tag 1. Let's further assume
+that the value will be a UTF-8 encoded JSON string inside the x690 stream.
+
+We specify the metadata as class-level variables ``TYPECLASS``, ``NATURE`` and
+``TAG``. The decoding is handled by implementing a static-method
+``decode_raw`` which gets the data-object containing the value and a slice
+defining at which position the data is located. The encoding is handled by
+implementing the instance-method ``encode_raw``. The instance contains the
+Python value in ``self._value``.
+
+So we can implement this as follows (including a named-tuple as our local
+type):
+
+.. code-block:: python
+
+    from typing import NamedTuple
+    from x690.types import Type
+    from json import loads, dumps
+
+    class Person(NamedTuple):
+        first_name: str
+        last_name: str
+        age: int
+
+    class PersonType(Type[Person]):
+        TYPECLASS = TypeClass.APPLICATION
+        NATURE = [TypeNature.CONSTRUCTED]
+        TAG = 1
+
+        @staticmethod
+        def decode_raw(data: bytes, slc: slice = slice(None)) -> Person:
+            values = loads(data[slc].decode("utf8"))
+            return Person(
+                values["first_name"], values["last_name"], values["age"]
+            )
+
+        def encode_raw(self) -> bytes:
+            return dumps(self._value._asdict()).encode("utf8")
+
+
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
@@ -89,8 +131,8 @@ def decode(
         >>> decode(data)
         (Integer(5), 3)
         >>> data = b'some-skippable-bytes\\x02\\x01\\x05\\x11'
-        >>> decode(data, 10)
-        (Integer(5), 13)
+        >>> decode(data, 20)
+        (Integer(5), 23)
     """
     if start_index >= len(data):
         return Null(), 0
@@ -215,11 +257,11 @@ class Type(Generic[TWrappedPyType]):
         Creates a new :py:class:`x690.types.Type` instance from raw-bytes
         (without type nor length bytes)
 
-        >>> Integer.from_bytes(b"\x01")
+        >>> Integer.from_bytes(b"\\x01")
         Integer(1)
         >>> OctetString.from_bytes(b"hello-world")
-        OctetString(b"hello-world")
-        >>> Boolean.from_bytes(b"\x00")
+        OctetString(b'hello-world')
+        >>> Boolean.from_bytes(b"\\x00")
         Boolean(False)
         """
         instance = cls()
@@ -259,9 +301,9 @@ class Type(Generic[TWrappedPyType]):
         length header)
 
         >>> Integer(5).encode_raw()
-        b"\x05"
+        b'\\x05'
         >>> Boolean(True).encode_raw()
-        b"\x01"
+        b'\\x01'
         """
         if self._value is None:
             return b""
