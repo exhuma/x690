@@ -1,6 +1,49 @@
 Changelog
 =========
 
+0.5.0-alpha.0
+-------------
+
+This release focussed on performance (both memory and CPU) in order to decode
+large x690 documents.
+
+As it goes with performance, a fair amount of refactoring was needed and the
+external API could not be guaranteed easily. And as we're still on the 0.x
+branch, the backwards-compatibility was dropped in favor of cleaner code.
+
+It is flagged as "alpha" until I feel confident that the new changes have not
+introduced breaking bugs.
+
+
+* **Replaced** ``x690.pop_tlv`` has been replaced by ``x690.decode``.
+  This no longer copies data in-memory and therefore no longer returns the
+  "remaining" data-bytes. Instead it returns the position of the next
+  data-block. ``decode`` also takes an additional argument to define where to
+  start decoding data from.
+* **changed** ``ObjectIdentifier`` has been aligned to the existing types and
+  no longer use ``*args`` to initialise instances. Instead of
+  ``ObjectIdentifier(1, 2, 3)`` you must now write ``Sequence((1, 2, 3))``
+* **changed** ``Sequence`` has been aligned to the existing types and no longer
+  use ``*args`` to initialise instances. Instead of ``Sequence(a, b, c)`` you
+  must now write ``Sequence([a, b, c])``
+* **changed** ``UnknownType`` has been aligned to the existing types. It now
+  takes the value as *first* argument instead of second. Instead of
+  ``UnknownType(99, b"abc")`` you must now write ``UnknownType(b"abc", 99)``.
+* **changed** Subclasses of ``x690.Type`` must now override the
+  ``Type.decode_raw`` method if the data is needed in another type that
+  ``bytes``.
+* **changed** Subclasses of ``x690.Type`` must now override the
+  ``Type.encode_raw`` method if the python-value is a non-bytes object.
+* dataclasses in have been replaced with named-tuples for increased performance.
+* An instance can now be creted from raw-bytes (excluding the type and length
+  header bytes) by calling ``Type.from_bytes(...)`` (by using the class of the
+  appropriate type!).
+* New function ``x690.util.get_value_slice`` can be used to find the location
+  of the raw-bytes of a value at any given location. The location must however
+  be the *start* of an x690 "TLV" block. This will return the slice of the
+  value location (The "V" part excluding the "TL" part) and the location of the
+  next value-block.
+
 0.4.0
 -----
 
