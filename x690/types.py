@@ -86,9 +86,8 @@ from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
 from typing import Type as TypeType
 from typing import TypeVar, Union
-from warnings import warn
 
-import t61codec
+import t61codec  # type: ignore
 
 from .exc import IncompleteDecoding, UnexpectedType
 from .util import (
@@ -102,7 +101,7 @@ from .util import (
     wrap,
 )
 
-TWrappedPyType = TypeVar("TWrappedPyType")
+TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 
 
@@ -173,11 +172,23 @@ class Type(Generic[TWrappedPyType]):
 
     __slots__ = ["pyvalue"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
+
+    #: The x690 type-class (universal, application or context)
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
+
+    #: The x690 "private/constructed" information
     NATURE = [TypeNature.CONSTRUCTED]
+
+    #: The x690 identifier for the type
     TAG: int = -1
+
+    #: The decoded (or to-be encoded) Python value
     pyvalue: Optional[TWrappedPyType]
+
+    #: The byte representation of "pyvalue" without metadata-header
     raw_bytes: bytes
+
+    #: The location of the value within "raw_bytes"
     bounds: slice = slice(None)
 
     def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
@@ -226,7 +237,8 @@ class Type(Generic[TWrappedPyType]):
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
         """
-        # TODO: Making this function return a boolean instead of raising an exception would make the code potentially more readable.
+        # TODO: Making this function return a boolean instead of raising an
+        #       exception would make the code potentially more readable.
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError(
@@ -527,7 +539,7 @@ class Sequence(Type[List[Type[Any]]]):
         if not data or slc.start > len(data):
             return []
         item, next_pos = decode(data, slc.start)
-        items = [item]
+        items: List[Type[Any]] = [item]
         end = slc.stop or len(data)
         while next_pos < end:
             item, next_pos = decode(data, next_pos)
