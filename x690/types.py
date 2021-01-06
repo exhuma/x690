@@ -306,7 +306,13 @@ class Type(Generic[TWrappedPyType]):
         return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
-        return "%s(%r)" % (self.__class__.__name__, self.value)
+        try:
+            repr_value = repr(self.value)
+        except Exception as exc:
+            repr_value = (
+                f"<error in {self.__class__.__name__}.__repr__(): {exc}>"
+            )
+        return "%s(%s)" % (self.__class__.__name__, repr_value)
 
     @property
     def length(self) -> int:
