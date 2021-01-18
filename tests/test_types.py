@@ -76,7 +76,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        oid = ObjectIdentifier((1, 3, 6, 1, 2, 1))
+        oid = ObjectIdentifier("1.3.6.1.2.1")
         result = bytes(oid)
         expected = b"\x06\x05\x2b\x06\x01\x02\x01"
         assert_bytes_equal(result, expected)
@@ -85,7 +85,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with no identifier above 127
         """
-        expected = ObjectIdentifier((1, 3, 6, 1, 2, 1))
+        expected = ObjectIdentifier("1.3.6.1.2.1")
         result, _ = decode(b"\x06\x05\x2b\x06\x01\x02\x01")
         self.assertEqual(result, expected)
 
@@ -93,7 +93,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with the top-level ID '0'
         """
-        expected = ObjectIdentifier((0,))
+        expected = ObjectIdentifier()
         result, _ = decode(b"\x06\x00")
         self.assertEqual(result, expected)
 
@@ -101,7 +101,7 @@ class TestObjectIdentifier(TestCase):
         """
         A simple OID with the top-level ID '0'
         """
-        oid = ObjectIdentifier((0,))
+        oid = ObjectIdentifier()
         result = bytes(oid)
         expected = b"\x06\x00"
         self.assertEqual(result, expected)
@@ -111,7 +111,7 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the encoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        oid = ObjectIdentifier((1, 3, 6, 8072))
+        oid = ObjectIdentifier("1.3.6.8072")
         result = bytes(oid)
         expected = b"\x06\x04\x2b\x06\xbf\x08"
         assert_bytes_equal(result, expected)
@@ -121,7 +121,7 @@ class TestObjectIdentifier(TestCase):
         If a sub-identifier has a value bigger than 127, the decoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        expected = ObjectIdentifier((1, 3, 6, 8072))
+        expected = ObjectIdentifier("1.3.6.8072")
         result, _ = decode(b"\x06\x04\x2b\x06\xbf\x08")
         self.assertEqual(result, expected)
 
@@ -136,8 +136,8 @@ class TestObjectIdentifier(TestCase):
         self.assertEqual(result, expected)
 
     def test_fromstring(self):
-        result = ObjectIdentifier.from_string("1.2.3")
-        expected = ObjectIdentifier((1, 2, 3))
+        result = ObjectIdentifier("1.2.3")
+        expected = ObjectIdentifier("1.2.3")
         self.assertEqual(result, expected)
 
     def test_fromstring_leading_dot(self):
@@ -145,89 +145,81 @@ class TestObjectIdentifier(TestCase):
         A leading dot represents the "root" node. This should be allowed as
         string input.
         """
-        result = ObjectIdentifier.from_string(".1.2.3")
-        expected = ObjectIdentifier((1, 2, 3))
+        result = ObjectIdentifier(".1.2.3")
+        expected = ObjectIdentifier("1.2.3")
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = ObjectIdentifier((1, 2, 3)).pythonize()
-        expected = (1, 2, 3)
+        result = ObjectIdentifier("1.2.3").pythonize()
+        expected = "1.2.3"
         self.assertEqual(result, expected)
 
     def test_str(self):
-        result = str(ObjectIdentifier([1, 2, 3]))
+        result = str(ObjectIdentifier("1.2.3"))
         expected = "1.2.3"
         self.assertEqual(result, expected)
 
     def test_encode_root(self):
-        result = bytes(ObjectIdentifier([1]))
+        result = bytes(ObjectIdentifier("1"))
         expected = b"\x06\x01\x01"
         assert_bytes_equal(result, expected)
 
-    def test_construct_root_from_string(self):
-        """
-        Using "." to denote the root OID is common. We should allow this.
-        """
-        result = ObjectIdentifier.from_string(".")
-        expected = ObjectIdentifier((1,))
-        self.assertEqual(result, expected)
-
     def test_containment_a(self):
-        a = ObjectIdentifier.from_string("1.2.3.4")
-        b = ObjectIdentifier.from_string("1.2.3")
+        a = ObjectIdentifier("1.2.3.4")
+        b = ObjectIdentifier("1.2.3")
         self.assertTrue(a in b)
 
     def test_containment_b(self):
-        a = ObjectIdentifier.from_string("1.2.3.4")
-        b = ObjectIdentifier.from_string("1.2.3.4")
+        a = ObjectIdentifier("1.2.3.4")
+        b = ObjectIdentifier("1.2.3.4")
         self.assertTrue(a in b)
 
     def test_containment_c(self):
-        a = ObjectIdentifier.from_string("1.3.6.1.2.1.1.1.0")
-        b = ObjectIdentifier.from_string("1.3.6.1.2.1")
+        a = ObjectIdentifier("1.3.6.1.2.1.1.1.0")
+        b = ObjectIdentifier("1.3.6.1.2.1")
         self.assertTrue(a in b)
 
     def test_non_containment_a(self):
-        a = ObjectIdentifier.from_string("1.2.3")
-        b = ObjectIdentifier.from_string("1.2.3.4")
+        a = ObjectIdentifier("1.2.3")
+        b = ObjectIdentifier("1.2.3.4")
         self.assertFalse(a in b)
 
     def test_non_containment_b(self):
-        a = ObjectIdentifier.from_string("1.2.3.5")
-        b = ObjectIdentifier.from_string("1.2.3.4")
+        a = ObjectIdentifier("1.2.3.5")
+        b = ObjectIdentifier("1.2.3.4")
         self.assertFalse(a in b)
 
     def test_non_containment_c(self):
-        a = ObjectIdentifier.from_string("1.2.3.4")
-        b = ObjectIdentifier.from_string("1.2.3.5")
+        a = ObjectIdentifier("1.2.3.4")
+        b = ObjectIdentifier("1.2.3.5")
         self.assertFalse(a in b)
 
     def test_non_containment_d(self):
-        a = ObjectIdentifier.from_string("1.3.6.1.2.1.25.1.1.0")
-        b = ObjectIdentifier.from_string("1.3.6.1.2.1.1.9")
+        a = ObjectIdentifier("1.3.6.1.2.1.25.1.1.0")
+        b = ObjectIdentifier("1.3.6.1.2.1.1.9")
         self.assertFalse(a in b)
 
     def test_non_containment_e(self):
-        a = ObjectIdentifier.from_string("1.3.6.1.2.13")
-        b = ObjectIdentifier.from_string("1.3.6.1.2.1")
+        a = ObjectIdentifier("1.3.6.1.2.13")
+        b = ObjectIdentifier("1.3.6.1.2.1")
         self.assertFalse(a in b)
 
     def test_create_by_iterable(self):
-        result = ObjectIdentifier((1, 2, 3))
-        expected = ObjectIdentifier((1, 2, 3))
+        result = ObjectIdentifier("1.2.3")
+        expected = ObjectIdentifier("1.2.3")
         self.assertEqual(result, expected)
 
     def test_repr(self):
-        result = repr(ObjectIdentifier((1, 2, 3)))
-        expected = "ObjectIdentifier((1, 2, 3))"
+        result = repr(ObjectIdentifier("1.2.3"))
+        expected = "ObjectIdentifier('1.2.3')"
         self.assertEqual(result, expected)
 
     def test_hash(self):
         """
         Test hash function and that it makes sense.
         """
-        result = hash(ObjectIdentifier((1, 2, 3)))
-        expected = hash(ObjectIdentifier((1, 2, 3)))
+        result = hash(ObjectIdentifier("1.2.3"))
+        expected = hash(ObjectIdentifier("1.2.3"))
         self.assertEqual(result, expected)
 
     def test_non_containment_f(self):
@@ -235,8 +227,8 @@ class TestObjectIdentifier(TestCase):
         This case showed up during development of bulk operations. Throwing it
         into the unit tests to ensure proper containment checks.
         """
-        a = ObjectIdentifier([1, 3, 6, 1, 2, 1, 2, 2, 1, 22])
-        b = ObjectIdentifier([1, 3, 6, 1, 2, 1, 2, 2, 1, 10, 38])
+        a = ObjectIdentifier("1.3.6.1.2.1.2.2.1.22")
+        b = ObjectIdentifier("1.3.6.1.2.1.2.2.1.10.38")
         self.assertNotIn(a, b, "%s should not be in %s" % (a, b))
         self.assertNotIn(b, a, "%s should not be in %s" % (b, a))
 
@@ -244,7 +236,7 @@ class TestObjectIdentifier(TestCase):
         """
         OIDs with one node should have a length of 1
         """
-        obj = ObjectIdentifier([1])
+        obj = ObjectIdentifier("1")
         self.assertEqual(len(obj), 1)
 
     def test_length_ge1(self):
@@ -252,12 +244,12 @@ class TestObjectIdentifier(TestCase):
         OIDs with more than one node should have a length equal to the number
         of nodes.
         """
-        obj = ObjectIdentifier([1, 2, 3])
+        obj = ObjectIdentifier("1.2.3")
         self.assertEqual(len(obj), 3)
 
     def test_inequalitites(self):
-        a = ObjectIdentifier([1, 2, 3])
-        b = ObjectIdentifier([1, 2, 4])
+        a = ObjectIdentifier("1.2.3")
+        b = ObjectIdentifier("1.2.4")
         self.assertTrue(a < b)
         self.assertFalse(b < a)
         self.assertFalse(a < a)
@@ -266,15 +258,15 @@ class TestObjectIdentifier(TestCase):
         self.assertFalse(b > b)
 
     def test_concatenation(self):
-        a = ObjectIdentifier([1, 2, 3])
-        b = ObjectIdentifier([4, 5, 6])
-        expected = ObjectIdentifier([1, 2, 3, 4, 5, 6])
+        a = ObjectIdentifier("1.2.3")
+        b = ObjectIdentifier("4.5.6")
+        expected = ObjectIdentifier("1.2.3.4.5.6")
         result = a + b
         self.assertEqual(result, expected)
 
     def test_item_access(self):
-        a = ObjectIdentifier((1, 2, 3))
-        expected = ObjectIdentifier((2,))
+        a = ObjectIdentifier("1.2.3")
+        expected = ObjectIdentifier("2")
         result = a[1]
         self.assertEqual(result, expected)
 
@@ -461,7 +453,7 @@ class TestT61String(TestCase):
 class TestSequence(TestCase):
     def test_encoding(self):
         value = Sequence(
-            [OctetString("hello"), ObjectIdentifier([1, 3, 6]), Integer(100)]
+            [OctetString("hello"), ObjectIdentifier("1.3.6"), Integer(100)]
         )
         result = bytes(value)
         expected = (
@@ -472,7 +464,7 @@ class TestSequence(TestCase):
                 ]
             )
             + bytes(OctetString("hello"))
-            + bytes(ObjectIdentifier([1, 3, 6]))
+            + bytes(ObjectIdentifier("1.3.6"))
             + bytes(Integer(100))
         )
         assert_bytes_equal(result, expected)
@@ -664,10 +656,10 @@ class TestAllTypes(TestCase):
         self.assertEqual(result, expected)
 
     def test_childof(self):
-        a = ObjectIdentifier([1, 2, 3])
-        b = ObjectIdentifier([1, 2, 3, 1])
-        c = ObjectIdentifier([1, 2, 4])
-        d = ObjectIdentifier([1])
+        a = ObjectIdentifier("1.2.3")
+        b = ObjectIdentifier("1.2.3.1")
+        c = ObjectIdentifier("1.2.4")
+        d = ObjectIdentifier("1")
         self.assertTrue(b.childof(a))
         self.assertFalse(a.childof(b))
         self.assertTrue(a.childof(a))
@@ -677,10 +669,10 @@ class TestAllTypes(TestCase):
         self.assertTrue(c.childof(d))
 
     def test_parentdf(self):
-        a = ObjectIdentifier([1, 2, 3])
-        b = ObjectIdentifier([1, 2, 3, 1])
-        c = ObjectIdentifier([1, 2, 4])
-        d = ObjectIdentifier([1])
+        a = ObjectIdentifier("1.2.3")
+        b = ObjectIdentifier("1.2.3.1")
+        c = ObjectIdentifier("1.2.4")
+        d = ObjectIdentifier("1")
         self.assertFalse(b.parentof(a))
         self.assertTrue(a.parentof(b))
         self.assertTrue(a.parentof(a))

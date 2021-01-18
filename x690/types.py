@@ -656,22 +656,33 @@ class Integer(Type[int]):
         return isinstance(other, Integer) and self.value == other.value
 
 
-class ObjectIdentifier(Type[Tuple[int, ...]]):
+class ObjectIdentifier(Type[str]):
     """
     Represents an OID.
 
     Instances of this class support containment checks to determine if one OID
     is a sub-item of another::
 
-        >>> ObjectIdentifier((1, 2, 3, 4, 5)) in ObjectIdentifier((1, 2, 3))
+        >>> ObjectIdentifier("1.2.3.4.5") in ObjectIdentifier("1.2.3")
         True
 
-        >>> ObjectIdentifier((1, 2, 4, 5, 6)) in ObjectIdentifier((1, 2, 3))
+        >>> ObjectIdentifier("1.2.4.5.6") in ObjectIdentifier("1.2.3")
         False
     """
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
+
+    def __init__(self, value: Optional[str] = None) -> None:
+        if value and value.startswith("."):
+            value = value[1:]
+        super().__init__(value)
+
+    @property
+    def nodes(self) -> Tuple[int, ...]:
+        if not self.value:
+            return tuple()
+        return tuple(int(n) for n in self.value.split("."))
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -707,7 +718,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return output
 
     @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> Tuple[int, ...]:
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
@@ -718,7 +729,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         # as "0"
         data = data[slc]
         if not data:
-            return (0,)
+            return ""
 
         # unpack the first byte into first and second sub-identifiers.
         data0 = data[0]
@@ -738,23 +749,8 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
                 continue
             output.append(node)
 
-        instance = tuple(output)
+        instance = ".".join([str(n) for n in output])
         return instance
-
-    @staticmethod
-    def from_string(value: str) -> "ObjectIdentifier":
-        """
-        Create an OID from a string
-        """
-
-        if value == ".":
-            return ObjectIdentifier((1,))
-
-        if value.startswith("."):
-            value = value[1:]
-
-        identifiers = tuple(int(ident, 10) for ident in value.split("."))
-        return ObjectIdentifier(identifiers)
 
     def collapse_identifiers(
         self, identifiers: Tuple[int, ...]
@@ -810,21 +806,22 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         if self.pyvalue is None:
             return b""
-        collapsed_identifiers = self.collapse_identifiers(self.pyvalue)
+        collapsed_identifiers = self.collapse_identifiers(self.nodes)
         if collapsed_identifiers == (0,):
             return b""
         return bytes(collapsed_identifiers)
 
     def __int__(self) -> int:
-        if len(self.value) != 1:
+        nodes = self.nodes
+        if len(nodes) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
                 "converted to int. %r is not convertable" % self
             )
-        return self.value[0]
+        return nodes[0]
 
     def __str__(self) -> str:
-        return ".".join([str(_) for _ in self.value])
+        return self.value
 
     def __repr__(self) -> str:
         return "ObjectIdentifier(%r)" % (self.value,)
@@ -833,7 +830,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return isinstance(other, ObjectIdentifier) and self.value == other.value
 
     def __len__(self) -> int:
-        return len(self.value)
+        return len(self.nodes)
 
     def __contains__(self, other: "ObjectIdentifier") -> bool:
         """
@@ -843,7 +840,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         # pylint: disable=invalid-name
 
-        a, b = other.value, self.value
+        a, b = other.nodes, self.nodes
 
         # if both have the same amount of identifiers, check for equality
         if len(a) == len(b):
@@ -876,17 +873,18 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        return self.value < other.value
+        a, b = self.nodes, other.nodes
+        return a < b
 
     def __hash__(self) -> int:
         return hash(self.value)
 
     def __add__(self, other: "ObjectIdentifier") -> "ObjectIdentifier":
-        nodes = self.value + other.value
+        nodes = ".".join([self.value, other.value])
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier((self.value[index],))
+        return ObjectIdentifier(str(self.nodes[index]))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
