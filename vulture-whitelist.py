@@ -18,7 +18,6 @@ x690.types.IA5String
 x690.types.NumericString
 x690.types.ObjectDescriptor
 x690.types.ObjectIdentifier.childof
-x690.types.ObjectIdentifier.from_string
 x690.types.ObjectIdentifier.parentof
 x690.types.PrintableString
 x690.types.Real
