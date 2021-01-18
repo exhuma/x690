@@ -89,7 +89,7 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import IncompleteDecoding, UnexpectedType
+from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (
     INDENT_STRING,
     TypeClass,
@@ -284,7 +284,13 @@ class Type(Generic[TWrappedPyType]):
         >>> Boolean.from_bytes(b"\\x00")
         Boolean(False)
         """
-        instance = cls()
+        try:
+            instance = cls()
+        except TypeError as exc:
+            raise X690Error(
+                "Custom types must have a no-arg constructor allowing "
+                "'None' as value. Custom type %r does not support this!" % cls
+            ) from exc
         instance.raw_bytes = data
         instance.bounds = slc
         return instance
