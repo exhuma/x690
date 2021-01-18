@@ -131,7 +131,7 @@ type):</p>
 </div>
 <dl class="class">
 <dt id="x690.types.BitString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BitString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.BitString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BitString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.BitString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.BitString.NATURE">
@@ -148,11 +148,16 @@ type):</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.BitString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.BitString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.BitString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.BmpString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BmpString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.BmpString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">BmpString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.BmpString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.BmpString.NATURE">
@@ -169,11 +174,16 @@ type):</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.BmpString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.BmpString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.BmpString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Boolean">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Boolean</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Boolean" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Boolean</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Boolean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Boolean.NATURE">
@@ -204,6 +214,11 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Boolean.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Boolean.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Boolean.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="method">
 <dt id="x690.types.Boolean.validate">
 <em class="property">classmethod </em><code class="sig-name descname">validate</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#x690.types.Boolean.validate" title="Permalink to this definition">¶</a></dt>
@@ -214,7 +229,7 @@ pure Python type</p>
 
 <dl class="class">
 <dt id="x690.types.CharacterString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">CharacterString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.CharacterString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">CharacterString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.CharacterString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.CharacterString.TAG">
@@ -226,11 +241,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.CharacterString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.CharacterString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.CharacterString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.EOC">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">EOC</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.EOC" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">EOC</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.EOC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.EOC.NATURE">
@@ -247,11 +267,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.EOC.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.EOC.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.EOC.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.EmbeddedPdv">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">EmbeddedPdv</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.EmbeddedPdv" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">EmbeddedPdv</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.EmbeddedPdv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.EmbeddedPdv.TAG">
@@ -263,11 +288,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.EmbeddedPdv.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.EmbeddedPdv.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.EmbeddedPdv.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Enumerated">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Enumerated</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Enumerated" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Enumerated</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Enumerated" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Enumerated.NATURE">
@@ -284,11 +314,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Enumerated.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Enumerated.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Enumerated.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.External">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">External</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.External" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">External</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.External" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.External.TAG">
@@ -300,11 +335,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.External.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.External.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.External.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.GeneralString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GeneralString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GeneralString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.GeneralString.NATURE">
@@ -321,11 +361,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.GeneralString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.GeneralString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.GeneralString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.GeneralizedTime">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralizedTime</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GeneralizedTime" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GeneralizedTime</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GeneralizedTime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.GeneralizedTime.NATURE">
@@ -342,11 +387,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.GeneralizedTime.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.GeneralizedTime.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.GeneralizedTime.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.GraphicString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GraphicString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GraphicString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">GraphicString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.GraphicString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.GraphicString.NATURE">
@@ -371,11 +421,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.GraphicString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.GraphicString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.GraphicString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.IA5String">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">IA5String</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.IA5String" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">IA5String</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.IA5String" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.IA5String.NATURE">
@@ -392,11 +447,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.IA5String.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.IA5String.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.IA5String.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Integer">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Integer</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Integer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Integer</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Integer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Integer.NATURE">
@@ -415,7 +475,7 @@ pure Python type</p>
 
 <dl class="method">
 <dt id="x690.types.Integer.decode_raw">
-<em class="property">static </em><code class="sig-name descname">decode_raw</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em>, <em class="sig-param">slc: slice = slice(None</em>, <em class="sig-param">None</em>, <em class="sig-param">None)</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#x690.types.Integer.decode_raw" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">decode_raw</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em>, <em class="sig-param">slc: slice = slice(None</em>, <em class="sig-param">None</em>, <em class="sig-param">None)</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#x690.types.Integer.decode_raw" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts the raw byte-value (without type &amp; length header) into a
 pure Python type</p>
 <p>Overrides <a class="reference internal" href="#x690.types.Type.decode_raw" title="x690.types.Type.decode_raw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decode_raw()</span></code></a></p>
@@ -432,11 +492,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Integer.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Integer.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Integer.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Null">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Null</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Null" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Null</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Null" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Null.NATURE">
@@ -460,11 +525,20 @@ pure Python type</p>
 <dt id="x690.types.Null.encode_raw">
 <code class="sig-name descname">encode_raw</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bytes<a class="headerlink" href="#x690.types.Null.encode_raw" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overrides <a class="reference internal" href="#x690.types.Type.encode_raw" title="x690.types.Type.encode_raw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Type.encode_raw()</span></code></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Null</span><span class="p">()</span><span class="o">.</span><span class="n">encode_raw</span><span class="p">()</span>
+<span class="go">b&#39;\x00&#39;</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="x690.types.Null.pyvalue">
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Null.pyvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="x690.types.Null.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Null.raw_bytes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -477,7 +551,7 @@ pure Python type</p>
 
 <dl class="class">
 <dt id="x690.types.NumericString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">NumericString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.NumericString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">NumericString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.NumericString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.NumericString.NATURE">
@@ -494,11 +568,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.NumericString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.NumericString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.NumericString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.ObjectDescriptor">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">ObjectDescriptor</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.ObjectDescriptor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">ObjectDescriptor</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.ObjectDescriptor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.ObjectDescriptor.NATURE">
@@ -515,19 +594,24 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.ObjectDescriptor.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.ObjectDescriptor.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.ObjectDescriptor.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.ObjectIdentifier">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">ObjectIdentifier</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.ObjectIdentifier" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">ObjectIdentifier</code><span class="sig-paren">(</span><em class="sig-param">value: Union[str</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.ObjectIdentifier" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <p>Represents an OID.</p>
 <p>Instances of this class support containment checks to determine if one OID
 is a sub-item of another:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span> <span class="ow">in</span> <span class="n">ObjectIdentifier</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.2.3.4.5&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.2.3&quot;</span><span class="p">)</span>
 <span class="go">True</span>
 
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span> <span class="ow">in</span> <span class="n">ObjectIdentifier</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.2.4.5.6&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.2.3&quot;</span><span class="p">)</span>
 <span class="go">False</span>
 </pre></div>
 </div>
@@ -556,6 +640,12 @@ byte-representation the first two of those numbers are stored in the
 first byte.</p>
 <p>This function takes a “human-readable” OID tuple and returns a new
 tuple with the first two elements merged (collapsed) together.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collapse_identifiers</span><span class="p">()</span>
+<span class="go">(43, 6, 1, 4, 1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">()</span><span class="o">.</span><span class="n">collapse_identifiers</span><span class="p">()</span>
+<span class="go">()</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -568,7 +658,7 @@ stram until we encounter a value below 127 and recombine them.</p>
 
 <dl class="method">
 <dt id="x690.types.ObjectIdentifier.decode_raw">
-<em class="property">static </em><code class="sig-name descname">decode_raw</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.ObjectIdentifier.decode_raw" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">decode_raw</code><span class="sig-paren">(</span><em class="sig-param">data: bytes</em>, <em class="sig-param">slc: slice = slice(None</em>, <em class="sig-param">None</em>, <em class="sig-param">None)</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#x690.types.ObjectIdentifier.decode_raw" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts the raw byte-value (without type &amp; length header) into a
 pure Python type</p>
 <p>Overrides <a class="reference internal" href="#x690.types.Type.decode_raw" title="x690.types.Type.decode_raw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decode_raw()</span></code></a></p>
@@ -587,9 +677,15 @@ pure Python type</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="x690.types.ObjectIdentifier.from_string">
-<em class="property">static </em><code class="sig-name descname">from_string</code><span class="sig-paren">(</span><em class="sig-param">value: str</em><span class="sig-paren">)</span> &#x2192; x690.types.ObjectIdentifier<a class="headerlink" href="#x690.types.ObjectIdentifier.from_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create an OID from a string</p>
+<dt id="x690.types.ObjectIdentifier.nodes">
+<em class="property">property </em><code class="sig-name descname">nodes</code><a class="headerlink" href="#x690.types.ObjectIdentifier.nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the numerical nodes for this instance as tuple</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.2.3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">nodes</span>
+<span class="go">(1, 2, 3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ObjectIdentifier</span><span class="p">()</span><span class="o">.</span><span class="n">nodes</span>
+<span class="go">()</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -603,11 +699,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.ObjectIdentifier.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.ObjectIdentifier.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.ObjectIdentifier.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.OctetString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">OctetString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[str</em>, <em class="sig-param">bytes] = b''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.OctetString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">OctetString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[str</em>, <em class="sig-param">bytes</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = b''</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.OctetString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.OctetString.NATURE">
@@ -631,11 +732,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.OctetString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.OctetString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.OctetString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.PrintableString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">PrintableString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.PrintableString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">PrintableString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.PrintableString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.PrintableString.NATURE">
@@ -652,11 +758,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.PrintableString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.PrintableString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.PrintableString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Real">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Real</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Real" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Real</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Real" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Real.NATURE">
@@ -673,11 +784,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Real.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Real.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Real.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.RelativeOid">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">RelativeOid</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.RelativeOid" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">RelativeOid</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.RelativeOid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.RelativeOid.NATURE">
@@ -694,11 +810,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.RelativeOid.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.RelativeOid.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.RelativeOid.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Sequence">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Sequence</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Sequence" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Sequence</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Sequence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <p>Represents an X.690 sequence type. Instances of this class are iterable and
 indexable.</p>
@@ -739,11 +860,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Sequence.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Sequence.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Sequence.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Set">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Set</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Set" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Set</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Set" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Set.TAG">
@@ -753,6 +879,11 @@ pure Python type</p>
 <dl class="attribute">
 <dt id="x690.types.Set.pyvalue">
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Set.pyvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="x690.types.Set.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Set.raw_bytes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -790,11 +921,16 @@ pure Python type</p>
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.T61String.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.T61String.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.T61String.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Type">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Type</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Type" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Type</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
 <p>The superclass for all supported types.</p>
 <dl class="attribute">
@@ -864,10 +1000,13 @@ raw-bytes.</p></li>
 <code class="sig-name descname">encode_raw</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bytes<a class="headerlink" href="#x690.types.Type.encode_raw" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert this instance into raw x690 bytes (excluding the type and
 length header)</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Integer</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">encode_raw</span><span class="p">()</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Integer</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">encode_raw</span><span class="p">()</span>
 <span class="go">b&#39;\x05&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Boolean</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">encode_raw</span><span class="p">()</span>
 <span class="go">b&#39;\x01&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Type</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">UNINITIALISED</span><span class="p">)</span><span class="o">.</span><span class="n">encode_raw</span><span class="p">()</span>
+<span class="go">b&#39;&#39;</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -923,7 +1062,7 @@ complex values may override this.</p>
 
 <dl class="attribute">
 <dt id="x690.types.Type.raw_bytes">
-<code class="sig-name descname">raw_bytes</code><em class="property"> = None</em><a class="headerlink" href="#x690.types.Type.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Type.raw_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>The byte representation of “pyvalue” without metadata-header</p>
 </dd></dl>
 
@@ -942,9 +1081,15 @@ this object. If not, raises a ValueError.</p>
 
 </dd></dl>
 
+<dl class="data">
+<dt id="x690.types.UNINITIALISED">
+<code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UNINITIALISED</code><em class="property"> = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><a class="headerlink" href="#x690.types.UNINITIALISED" title="Permalink to this definition">¶</a></dt>
+<dd><p>sentinel value for uninitialised objects (used for lazy decoding)</p>
+</dd></dl>
+
 <dl class="class">
 <dt id="x690.types.UniversalString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UniversalString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UniversalString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UniversalString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UniversalString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.UniversalString.NATURE">
@@ -959,6 +1104,11 @@ this object. If not, raises a ValueError.</p>
 <dl class="attribute">
 <dt id="x690.types.UniversalString.pyvalue">
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.UniversalString.pyvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="x690.types.UniversalString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.UniversalString.raw_bytes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -995,11 +1145,16 @@ with <code class="docutils literal notranslate"><span class="pre">__repr__</span
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.UnknownType.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.UnknownType.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.UnknownType.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.UtcTime">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UtcTime</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UtcTime" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">UtcTime</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.UtcTime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.UtcTime.NATURE">
@@ -1016,11 +1171,16 @@ with <code class="docutils literal notranslate"><span class="pre">__repr__</span
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.UtcTime.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.UtcTime.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.UtcTime.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.Utf8String">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Utf8String</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Utf8String" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">Utf8String</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.Utf8String" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.Utf8String.NATURE">
@@ -1037,11 +1197,16 @@ with <code class="docutils literal notranslate"><span class="pre">__repr__</span
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.Utf8String.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.Utf8String.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.Utf8String.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.VideotexString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VideotexString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.VideotexString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VideotexString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.VideotexString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.VideotexString.NATURE">
@@ -1058,11 +1223,16 @@ with <code class="docutils literal notranslate"><span class="pre">__repr__</span
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.VideotexString.pyvalue" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="x690.types.VideotexString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.VideotexString.raw_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="x690.types.VisibleString">
-<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VisibleString</code><span class="sig-paren">(</span><em class="sig-param">value: Optional[TWrappedPyType] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.VisibleString" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">x690.types.</code><code class="sig-name descname">VisibleString</code><span class="sig-paren">(</span><em class="sig-param">value: Union[TWrappedPyType</em>, <em class="sig-param">x690.types._SENTINEL_UNINITIALISED] = &lt;x690.types._SENTINEL_UNINITIALISED object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#x690.types.VisibleString" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#x690.types.Type" title="x690.types.Type"><code class="xref py py-class docutils literal notranslate"><span class="pre">x690.types.Type</span></code></a></p>
 <dl class="attribute">
 <dt id="x690.types.VisibleString.NATURE">
@@ -1077,6 +1247,11 @@ with <code class="docutils literal notranslate"><span class="pre">__repr__</span
 <dl class="attribute">
 <dt id="x690.types.VisibleString.pyvalue">
 <code class="sig-name descname">pyvalue</code><a class="headerlink" href="#x690.types.VisibleString.pyvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="x690.types.VisibleString.raw_bytes">
+<code class="sig-name descname">raw_bytes</code><a class="headerlink" href="#x690.types.VisibleString.raw_bytes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
