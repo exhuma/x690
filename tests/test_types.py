@@ -5,7 +5,7 @@ from unittest import TestCase
 
 import pytest
 
-from x690.exc import IncompleteDecoding, UnexpectedType
+from x690.exc import IncompleteDecoding, UnexpectedType, X690Error
 from x690.types import (
     Boolean,
     Integer,
@@ -71,6 +71,39 @@ class TestObjectIdentifier(TestCase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
+
+    def test_uncollapsible_head(self):
+        """
+        OIDs need to be "collapsed" when converting to bytes. This requires the
+        first two positions to be "small-enough"
+        """
+        with pytest.raises(ValueError) as exc:
+            ObjectIdentifier("200.200")
+        exc.match("Unable to collapse.*too large")
+
+    def test_to_int(self):
+        """
+        An object-identifier of one node should be convertible to int
+        """
+        result = int(ObjectIdentifier("42"))
+        assert result == 42
+
+    def test_to_int_multiple(self):
+        """
+        An object-identifier of multiple node should not be convertible to int
+        """
+        with pytest.raises(ValueError) as exc:
+            int(ObjectIdentifier("1.2.3"))
+        exc.match("one node.*3 nodes")
+
+    def test_raw_encoding_empty(self):
+        """
+        An empty object-identifier should be encodable
+        """
+        result = ObjectIdentifier().encode_raw()
+        assert result == b""
+        result = ObjectIdentifier(b"").encode_raw()
+        assert result == b""
 
     def test_simple_encoding(self):
         """
@@ -272,6 +305,10 @@ class TestObjectIdentifier(TestCase):
 
 
 class TestInteger(TestCase):
+    def test_encode_empty(self):
+        result = Integer().encode_raw()
+        assert result == b""
+
     def test_encoding(self):
         value = Integer(100)
         result = bytes(value)
@@ -426,6 +463,10 @@ class TestOctetString(TestCase):
 
 
 class TestT61String(TestCase):
+    def test_encode_empty(self):
+        result = T61String().encode_raw()
+        assert result == b""
+
     def test_encoding(self):
         value = T61String("hello Ω")
         result = bytes(value)
@@ -451,6 +492,23 @@ class TestT61String(TestCase):
 
 
 class TestSequence(TestCase):
+    def test_encode_raw(self):
+        data = b"\x04\x05hello\x06\x02+\x06\x02\x01d"
+        result = Sequence.decode_raw(data)
+        expected = [
+            OctetString(b"hello"),
+            ObjectIdentifier("1.3.6"),
+            Integer(100),
+        ]
+        assert result == expected
+
+    def test_encode_raw_empty(self):
+        result = Sequence().encode_raw()
+        assert result == b""
+
+    def test_eq_instancecheck(self):
+        assert Sequence() != object()
+
     def test_encoding(self):
         value = Sequence(
             [OctetString("hello"), ObjectIdentifier("1.3.6"), Integer(100)]
@@ -714,3 +772,21 @@ def test_repr(cls):
     obj = cls()
     result = repr(obj)
     assert cls.__name__ in result
+
+
+def test_helpful_noarg_error():
+    """
+    Custom types with no "no-arg" constructor lead to cryptic errors if not
+    dealt with. Ensure the error-message is somewhat helpful.
+    """
+
+    class Foo(Type[str]):
+        def __init__(self, value: str) -> None:
+            """
+            This enforces *value* which breaks lazy-decoding
+            """
+            super().__init__(value)
+
+    with pytest.raises(X690Error) as exc:
+        Foo.from_bytes(b"hello")
+    exc.match("no-arg.*None")

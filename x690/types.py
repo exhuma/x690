@@ -170,7 +170,7 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue"]
+    __slots__ = ["pyvalue", "raw_bytes"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -314,12 +314,7 @@ class Type(Generic[TWrappedPyType]):
         return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
-        try:
-            repr_value = repr(self.value)
-        except Exception as exc:
-            repr_value = (
-                f"<error in {self.__class__.__name__}.__repr__(): {exc}>"
-            )
+        repr_value = repr(self.value)
         return "%s(%s)" % (self.__class__.__name__, repr_value)
 
     @property
@@ -338,6 +333,8 @@ class Type(Generic[TWrappedPyType]):
         b'\\x05'
         >>> Boolean(True).encode_raw()
         b'\\x01'
+        >>> Type(None).encode_raw()
+        b''
         """
         if self.pyvalue is None:
             return b""
@@ -490,6 +487,9 @@ class Null(Type[None]):
     def encode_raw(self) -> bytes:
         """
         Overrides :py:meth:`.Type.encode_raw`
+
+        >>> Null().encode_raw()
+        b'\\x00'
         """
         # pylint: disable=no-self-use
         return b"\x00"
@@ -541,8 +541,6 @@ class OctetString(Type[bytes]):
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
             embedded = decode(self.value)[0]
-            if isinstance(embedded, UnknownType):
-                raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
@@ -565,9 +563,10 @@ class Sequence(Type[List[Type[Any]]]):
 
         Overrides :py:meth:`~.Type.decode_raw`
         """
-        if not data[slc] or slc.start > len(data):
+        start_index = slc.start or 0
+        if not data[slc] or start_index > len(data):
             return []
-        item, next_pos = decode(data, slc.start)
+        item, next_pos = decode(data, start_index)
         items: List[Type[Any]] = [item]
         end = slc.stop or len(data)
         while next_pos < end:
@@ -695,6 +694,14 @@ class ObjectIdentifier(Type[str]):
 
     @property
     def nodes(self) -> Tuple[int, ...]:
+        """
+        Returns the numerical nodes for this instance as tuple
+
+        >>> ObjectIdentifier("1.2.3").nodes
+        (1, 2, 3)
+        >>> ObjectIdentifier().nodes
+        ()
+        """
         if not self.value:
             return tuple()
         return tuple(int(n) for n in self.value.split("."))
@@ -767,9 +774,7 @@ class ObjectIdentifier(Type[str]):
         instance = ".".join([str(n) for n in output])
         return instance
 
-    def collapse_identifiers(
-        self, identifiers: Tuple[int, ...]
-    ) -> Tuple[int, ...]:
+    def collapse_identifiers(self) -> Tuple[int, ...]:
         """
         Meld the first two octets into one octet as defined by x.690
 
@@ -779,8 +784,14 @@ class ObjectIdentifier(Type[str]):
 
         This function takes a "human-readable" OID tuple and returns a new
         tuple with the first two elements merged (collapsed) together.
+
+        >>> ObjectIdentifier("1.3.6.1.4.1").collapse_identifiers()
+        (43, 6, 1, 4, 1)
+        >>> ObjectIdentifier().collapse_identifiers()
+        ()
         """
         # pylint: disable=no-self-use
+        identifiers = self.nodes
         if len(identifiers) == 0:
             return tuple()
 
@@ -821,17 +832,25 @@ class ObjectIdentifier(Type[str]):
         """
         if self.pyvalue is None:
             return b""
-        collapsed_identifiers = self.collapse_identifiers(self.nodes)
-        if collapsed_identifiers == (0,):
+        collapsed_identifiers = self.collapse_identifiers()
+        if collapsed_identifiers == ():
             return b""
-        return bytes(collapsed_identifiers)
+        try:
+            output = bytes(collapsed_identifiers)
+        except ValueError as exc:
+            raise ValueError(
+                "Unable to collapse %r. First two octets are too large!"
+                % (self.nodes,)
+            ) from exc
+        return output
 
     def __int__(self) -> int:
         nodes = self.nodes
         if len(nodes) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
-                "converted to int. %r is not convertable" % self
+                "converted to int. %r is not convertable. It has %d nodes."
+                % (self, len(self))
             )
         return nodes[0]
 
@@ -993,7 +1012,7 @@ class T61String(Type[str]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if not T61String.__INITIALISED:
+        if not T61String.__INITIALISED:  # pragma: no cover
             t61codec.register()
             T61String.__INITIALISED = True
         if self.pyvalue is None:

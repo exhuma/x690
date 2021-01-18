@@ -69,12 +69,13 @@ def test_pretty_octetstrings_raw():
         )
     assert result == expected
 
+
 def test_long_bytes_snip():
     """
     If a value has large amounts of data, we want to cut if to avoid drowning
     out the console output
     """
-    value = UnknownType(1000*b"x")
+    value = UnknownType(1000 * b"x")
     result = value.pretty()
     assert len(result.splitlines()) < 50
     assert "more lines" in result
