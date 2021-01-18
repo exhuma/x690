@@ -1,6 +1,9 @@
 Pure Python `X.690`_ implementation
 ===================================
 
+.. image:: https://github.com/exhuma/x690/workflows/Testing/badge.svg?branch=main
+    :alt: Code Style
+
 .. image:: https://github.com/exhuma/x690/workflows/Build%20&%20Publish%20Docs/badge.svg?branch=main
     :alt: Build & Publish Docs
 

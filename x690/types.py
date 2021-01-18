@@ -89,7 +89,7 @@ from typing import TypeVar, Union
 
 import t61codec  # type: ignore
 
-from .exc import IncompleteDecoding, UnexpectedType
+from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (
     INDENT_STRING,
     TypeClass,
@@ -103,6 +103,16 @@ from .util import (
 
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
+
+
+class _SENTINEL_UNINITIALISED:
+    """
+    Helper for specific sentinel values
+    """
+
+
+#: sentinel value for uninitialised objects (used for lazy decoding)
+UNINITIALISED = _SENTINEL_UNINITIALISED()
 
 
 def decode(
@@ -170,7 +180,7 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue"]
+    __slots__ = ["pyvalue", "raw_bytes"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -183,7 +193,7 @@ class Type(Generic[TWrappedPyType]):
     TAG: int = -1
 
     #: The decoded (or to-be encoded) Python value
-    pyvalue: Optional[TWrappedPyType]
+    pyvalue: Union[TWrappedPyType, _SENTINEL_UNINITIALISED]
 
     #: The byte representation of "pyvalue" without metadata-header
     raw_bytes: bytes
@@ -202,7 +212,9 @@ class Type(Generic[TWrappedPyType]):
         """
         Returns the value as a pure Python type
         """
-        return self.pyvalue or self.decode_raw(self.raw_bytes, self.bounds)
+        if not isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return self.pyvalue
+        return self.decode_raw(self.raw_bytes, self.bounds)
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
@@ -245,8 +257,6 @@ class Type(Generic[TWrappedPyType]):
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
         """
-        # TODO: Making this function return a boolean instead of raising an
-        #       exception would make the code potentially more readable.
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError(
@@ -284,14 +294,24 @@ class Type(Generic[TWrappedPyType]):
         >>> Boolean.from_bytes(b"\\x00")
         Boolean(False)
         """
-        instance = cls()
+        try:
+            instance = cls()
+        except TypeError as exc:
+            raise X690Error(
+                "Custom types must have a no-arg constructor allowing "
+                "x690.types.UNINITIALISED as value. Custom type %r does not "
+                "support this!" % cls
+            ) from exc
         instance.raw_bytes = data
         instance.bounds = slc
         return instance
 
-    def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
         self.pyvalue = value
-        if value is None:
+        if value is UNINITIALISED:
             self.raw_bytes = b""
         else:
             self.raw_bytes = self.encode_raw()
@@ -306,7 +326,8 @@ class Type(Generic[TWrappedPyType]):
         return bytes(tinfo) + encode_length(len(value)) + value
 
     def __repr__(self) -> str:
-        return "%s(%r)" % (self.__class__.__name__, self.value)
+        repr_value = repr(self.value)
+        return "%s(%s)" % (self.__class__.__name__, repr_value)
 
     @property
     def length(self) -> int:
@@ -320,12 +341,15 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance into raw x690 bytes (excluding the type and
         length header)
 
+        >>> import x690.types as t
         >>> Integer(5).encode_raw()
         b'\\x05'
         >>> Boolean(True).encode_raw()
         b'\\x01'
+        >>> Type(t.UNINITIALISED).encode_raw()
+        b''
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return self.pyvalue
 
@@ -365,7 +389,7 @@ class UnknownType(Type[bytes]):
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
-        super().__init__(value)
+        super().__init__(value or UNINITIALISED)
         self.tag = tag
 
     def __repr__(self) -> str:
@@ -476,6 +500,9 @@ class Null(Type[None]):
     def encode_raw(self) -> bytes:
         """
         Overrides :py:meth:`.Type.encode_raw`
+
+        >>> Null().encode_raw()
+        b'\\x00'
         """
         # pylint: disable=no-self-use
         return b"\x00"
@@ -500,9 +527,18 @@ class OctetString(Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
-    def __init__(self, value: Union[str, bytes] = b"") -> None:
+    def __init__(
+        self, value: Union[str, bytes, _SENTINEL_UNINITIALISED] = b""
+    ) -> None:
         if isinstance(value, str):
             value = value.encode("ascii")
+
+        # The custom init allows us to pass in str instances instead of only
+        # bytes. We still need to pass down "None" if need to detect
+        # "not-yet-decoded" values
+        if not value:
+            value = UNINITIALISED
+
         super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
@@ -520,8 +556,6 @@ class OctetString(Type[bytes]):
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
             embedded = decode(self.value)[0]
-            if isinstance(embedded, UnknownType):
-                raise TypeError("UnknownType should not be prettified here")
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
@@ -544,9 +578,10 @@ class Sequence(Type[List[Type[Any]]]):
 
         Overrides :py:meth:`~.Type.decode_raw`
         """
-        if not data or slc.start > len(data):
+        start_index = slc.start or 0
+        if not data[slc] or start_index > len(data):
             return []
-        item, next_pos = decode(data, slc.start)
+        item, next_pos = decode(data, start_index)
         items: List[Type[Any]] = [item]
         end = slc.stop or len(data)
         while next_pos < end:
@@ -558,7 +593,7 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
@@ -609,8 +644,8 @@ class Integer(Type[int]):
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
 
-    @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
+    @classmethod
+    def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> int:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
@@ -618,13 +653,13 @@ class Integer(Type[int]):
         Overrides :py:meth:`~.Type.decode_raw`
         """
         data = data[slc]
-        return int.from_bytes(data, "big", signed=Integer.SIGNED)
+        return int.from_bytes(data, "big", signed=cls.SIGNED)
 
     def encode_raw(self) -> bytes:
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         octets = [self.pyvalue & 0b11111111]
 
@@ -650,22 +685,47 @@ class Integer(Type[int]):
         return isinstance(other, Integer) and self.value == other.value
 
 
-class ObjectIdentifier(Type[Tuple[int, ...]]):
+class ObjectIdentifier(Type[str]):
     """
     Represents an OID.
 
     Instances of this class support containment checks to determine if one OID
     is a sub-item of another::
 
-        >>> ObjectIdentifier((1, 2, 3, 4, 5)) in ObjectIdentifier((1, 2, 3))
+        >>> ObjectIdentifier("1.2.3.4.5") in ObjectIdentifier("1.2.3")
         True
 
-        >>> ObjectIdentifier((1, 2, 4, 5, 6)) in ObjectIdentifier((1, 2, 3))
+        >>> ObjectIdentifier("1.2.4.5.6") in ObjectIdentifier("1.2.3")
         False
     """
 
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
+
+    def __init__(
+        self, value: Union[str, _SENTINEL_UNINITIALISED] = UNINITIALISED
+    ) -> None:
+        if (
+            not isinstance(value, _SENTINEL_UNINITIALISED)
+            and value
+            and value.startswith(".")
+        ):
+            value = value[1:]
+        super().__init__(value)
+
+    @property
+    def nodes(self) -> Tuple[int, ...]:
+        """
+        Returns the numerical nodes for this instance as tuple
+
+        >>> ObjectIdentifier("1.2.3").nodes
+        (1, 2, 3)
+        >>> ObjectIdentifier().nodes
+        ()
+        """
+        if not self.value:
+            return tuple()
+        return tuple(int(n) for n in self.value.split("."))
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
@@ -701,7 +761,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return output
 
     @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> Tuple[int, ...]:
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
@@ -712,7 +772,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         # as "0"
         data = data[slc]
         if not data:
-            return (0,)
+            return ""
 
         # unpack the first byte into first and second sub-identifiers.
         data0 = data[0]
@@ -732,27 +792,10 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
                 continue
             output.append(node)
 
-        instance = tuple(output)
+        instance = ".".join([str(n) for n in output])
         return instance
 
-    @staticmethod
-    def from_string(value: str) -> "ObjectIdentifier":
-        """
-        Create an OID from a string
-        """
-
-        if value == ".":
-            return ObjectIdentifier((1,))
-
-        if value.startswith("."):
-            value = value[1:]
-
-        identifiers = tuple(int(ident, 10) for ident in value.split("."))
-        return ObjectIdentifier(identifiers)
-
-    def collapse_identifiers(
-        self, identifiers: Tuple[int, ...]
-    ) -> Tuple[int, ...]:
+    def collapse_identifiers(self) -> Tuple[int, ...]:
         """
         Meld the first two octets into one octet as defined by x.690
 
@@ -762,8 +805,14 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
 
         This function takes a "human-readable" OID tuple and returns a new
         tuple with the first two elements merged (collapsed) together.
+
+        >>> ObjectIdentifier("1.3.6.1.4.1").collapse_identifiers()
+        (43, 6, 1, 4, 1)
+        >>> ObjectIdentifier().collapse_identifiers()
+        ()
         """
         # pylint: disable=no-self-use
+        identifiers = self.nodes
         if len(identifiers) == 0:
             return tuple()
 
@@ -802,23 +851,32 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
-        collapsed_identifiers = self.collapse_identifiers(self.pyvalue)
-        if collapsed_identifiers == (0,):
+        collapsed_identifiers = self.collapse_identifiers()
+        if collapsed_identifiers == ():
             return b""
-        return bytes(collapsed_identifiers)
+        try:
+            output = bytes(collapsed_identifiers)
+        except ValueError as exc:
+            raise ValueError(
+                "Unable to collapse %r. First two octets are too large!"
+                % (self.nodes,)
+            ) from exc
+        return output
 
     def __int__(self) -> int:
-        if len(self.value) != 1:
+        nodes = self.nodes
+        if len(nodes) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
-                "converted to int. %r is not convertable" % self
+                "converted to int. %r is not convertable. It has %d nodes."
+                % (self, len(self))
             )
-        return self.value[0]
+        return nodes[0]
 
     def __str__(self) -> str:
-        return ".".join([str(_) for _ in self.value])
+        return self.value
 
     def __repr__(self) -> str:
         return "ObjectIdentifier(%r)" % (self.value,)
@@ -827,7 +885,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return isinstance(other, ObjectIdentifier) and self.value == other.value
 
     def __len__(self) -> int:
-        return len(self.value)
+        return len(self.nodes)
 
     def __contains__(self, other: "ObjectIdentifier") -> bool:
         """
@@ -837,7 +895,7 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         """
         # pylint: disable=invalid-name
 
-        a, b = other.value, self.value
+        a, b = other.nodes, self.nodes
 
         # if both have the same amount of identifiers, check for equality
         if len(a) == len(b):
@@ -870,17 +928,18 @@ class ObjectIdentifier(Type[Tuple[int, ...]]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        return self.value < other.value
+        a, b = self.nodes, other.nodes
+        return a < b
 
     def __hash__(self) -> int:
         return hash(self.value)
 
     def __add__(self, other: "ObjectIdentifier") -> "ObjectIdentifier":
-        nodes = self.value + other.value
+        nodes = ".".join([self.value, other.value])
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier((self.value[index],))
+        return ObjectIdentifier(str(self.nodes[index]))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
@@ -949,7 +1008,7 @@ class T61String(Type[str]):
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
         if isinstance(value, str):
-            super().__init__(value)
+            super().__init__(value or UNINITIALISED)
         else:
             super().__init__(T61String.decode_raw(value))
 
@@ -974,10 +1033,10 @@ class T61String(Type[str]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if not T61String.__INITIALISED:
+        if not T61String.__INITIALISED:  # pragma: no cover
             t61codec.register()
             T61String.__INITIALISED = True
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return self.pyvalue.encode("t61")
 
