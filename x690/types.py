@@ -202,7 +202,9 @@ class Type(Generic[TWrappedPyType]):
         """
         Returns the value as a pure Python type
         """
-        return self.pyvalue or self.decode_raw(self.raw_bytes, self.bounds)
+        if self.pyvalue is not None:
+            return self.pyvalue
+        return self.decode_raw(self.raw_bytes, self.bounds)
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
@@ -377,7 +379,7 @@ class UnknownType(Type[bytes]):
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
-        super().__init__(value)
+        super().__init__(value or None)
         self.tag = tag
 
     def __repr__(self) -> str:
