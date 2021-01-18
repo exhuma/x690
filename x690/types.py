@@ -621,8 +621,8 @@ class Integer(Type[int]):
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
 
-    @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
+    @classmethod
+    def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> int:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
@@ -630,7 +630,7 @@ class Integer(Type[int]):
         Overrides :py:meth:`~.Type.decode_raw`
         """
         data = data[slc]
-        return int.from_bytes(data, "big", signed=Integer.SIGNED)
+        return int.from_bytes(data, "big", signed=cls.SIGNED)
 
     def encode_raw(self) -> bytes:
         """
