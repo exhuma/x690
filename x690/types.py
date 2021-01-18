@@ -966,7 +966,7 @@ class T61String(Type[str]):
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
         if isinstance(value, str):
-            super().__init__(value)
+            super().__init__(value or None)
         else:
             super().__init__(T61String.decode_raw(value))
 
