@@ -563,7 +563,7 @@ class Sequence(Type[List[Type[Any]]]):
 
         Overrides :py:meth:`~.Type.decode_raw`
         """
-        if not data or slc.start > len(data):
+        if not data[slc] or slc.start > len(data):
             return []
         item, next_pos = decode(data, slc.start)
         items: List[Type[Any]] = [item]
