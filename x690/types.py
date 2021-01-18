@@ -257,8 +257,6 @@ class Type(Generic[TWrappedPyType]):
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
         """
-        # TODO: Making this function return a boolean instead of raising an
-        #       exception would make the code potentially more readable.
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError(
