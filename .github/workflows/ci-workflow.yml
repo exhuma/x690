@@ -34,11 +34,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: [3.8]
-
+    needs: [test]
     steps:
     - uses: actions/checkout@v1
     - name: Build distribution
