@@ -692,67 +692,6 @@ def test_noarg_constructor(cls):
     assert isinstance(instance, cls)
 
 
-@pytest.mark.parametrize("cls", Type.all())
-def test_pretty(cls):
-    """
-    Calling "pretty" on classes should always return a string
-    """
-    result = cls().pretty()
-    assert isinstance(result, str)
-
-
-def test_pretty_octetstrings():
-    """
-    OctetStrings should display any wrapped/embedded value
-    """
-    embedded = Integer(10)
-    data = OctetString(bytes(embedded))
-    result = data.pretty()
-    if sys.version_info < (3, 7):
-        expected = (
-            "┌────────────────────────────────────┐\n"
-            "│ Embedded in x690.types.OctetString │\n"
-            "├────────────────────────────────────┤\n"
-            "│ Integer(10)                        │\n"
-            "└────────────────────────────────────┘"
-        )
-    else:
-        expected = (
-            "┌──────────────────────────────────────────────┐\n"
-            "│ Embedded in <class 'x690.types.OctetString'> │\n"
-            "├──────────────────────────────────────────────┤\n"
-            "│ Integer(10)                                  │\n"
-            "└──────────────────────────────────────────────┘"
-        )
-
-    assert result == expected
-
-
-def test_pretty_octetstrings_raw():
-    """
-    OctetStrings should display a "hexdump" for values
-    """
-    data = OctetString(b"hello-world")
-    result = data.pretty()
-    if sys.version_info < (3, 7):
-        expected = (
-            "┌────────────────────────────────────────────────────────────────┐\n"
-            "│ x690.types.OctetString                                         │\n"
-            "├────────────────────────────────────────────────────────────────┤\n"
-            "│ 68 65 6c 6c 6f 2d 77 6f  72 6c 64                  hello-world │\n"
-            "└────────────────────────────────────────────────────────────────┘"
-        )
-    else:
-        expected = (
-            "┌────────────────────────────────────────────────────────────────┐\n"
-            "│ <class 'x690.types.OctetString'>                               │\n"
-            "├────────────────────────────────────────────────────────────────┤\n"
-            "│ 68 65 6c 6c 6f 2d 77 6f  72 6c 64                  hello-world │\n"
-            "└────────────────────────────────────────────────────────────────┘"
-        )
-    assert result == expected
-
-
 def test_enforcing_types():
     data = bytes(OctetString(b"foo"))
     with pytest.raises(UnexpectedType):
