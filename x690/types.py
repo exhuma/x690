@@ -515,6 +515,13 @@ class OctetString(Type[bytes]):
     def __init__(self, value: Union[str, bytes] = b"") -> None:
         if isinstance(value, str):
             value = value.encode("ascii")
+
+        # The custom init allows us to pass in str instances instead of only
+        # bytes. We still need to pass down "None" if need to detect
+        # "not-yet-decoded" values
+        if not value:
+            value = None
+
         super().__init__(value)
 
     def __eq__(self, other: object) -> bool:
