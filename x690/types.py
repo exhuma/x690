@@ -105,6 +105,16 @@ TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 
 
+class _SENTINEL_UNINITIALISED:
+    """
+    Helper for specific sentinel values
+    """
+
+
+#: sentinel value for uninitialised objects (used for lazy decoding)
+UNINITIALISED = _SENTINEL_UNINITIALISED()
+
+
 def decode(
     data: bytes,
     start_index: int = 0,
@@ -183,7 +193,7 @@ class Type(Generic[TWrappedPyType]):
     TAG: int = -1
 
     #: The decoded (or to-be encoded) Python value
-    pyvalue: Optional[TWrappedPyType]
+    pyvalue: Union[TWrappedPyType, _SENTINEL_UNINITIALISED]
 
     #: The byte representation of "pyvalue" without metadata-header
     raw_bytes: bytes
@@ -202,7 +212,7 @@ class Type(Generic[TWrappedPyType]):
         """
         Returns the value as a pure Python type
         """
-        if self.pyvalue is not None:
+        if not isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return self.pyvalue
         return self.decode_raw(self.raw_bytes, self.bounds)
 
@@ -291,15 +301,19 @@ class Type(Generic[TWrappedPyType]):
         except TypeError as exc:
             raise X690Error(
                 "Custom types must have a no-arg constructor allowing "
-                "'None' as value. Custom type %r does not support this!" % cls
+                "x690.types.UNINITIALISED as value. Custom type %r does not "
+                "support this!" % cls
             ) from exc
         instance.raw_bytes = data
         instance.bounds = slc
         return instance
 
-    def __init__(self, value: Optional[TWrappedPyType] = None) -> None:
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
         self.pyvalue = value
-        if value is None:
+        if value is UNINITIALISED:
             self.raw_bytes = b""
         else:
             self.raw_bytes = self.encode_raw()
@@ -329,14 +343,15 @@ class Type(Generic[TWrappedPyType]):
         Convert this instance into raw x690 bytes (excluding the type and
         length header)
 
+        >>> import x690.types as t
         >>> Integer(5).encode_raw()
         b'\\x05'
         >>> Boolean(True).encode_raw()
         b'\\x01'
-        >>> Type(None).encode_raw()
+        >>> Type(t.UNINITIALISED).encode_raw()
         b''
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return self.pyvalue
 
@@ -376,7 +391,7 @@ class UnknownType(Type[bytes]):
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
-        super().__init__(value or None)
+        super().__init__(value or UNINITIALISED)
         self.tag = tag
 
     def __repr__(self) -> str:
@@ -514,7 +529,9 @@ class OctetString(Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
-    def __init__(self, value: Union[str, bytes] = b"") -> None:
+    def __init__(
+        self, value: Union[str, bytes, _SENTINEL_UNINITIALISED] = b""
+    ) -> None:
         if isinstance(value, str):
             value = value.encode("ascii")
 
@@ -522,7 +539,7 @@ class OctetString(Type[bytes]):
         # bytes. We still need to pass down "None" if need to detect
         # "not-yet-decoded" values
         if not value:
-            value = None
+            value = UNINITIALISED
 
         super().__init__(value)
 
@@ -578,7 +595,7 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
@@ -644,7 +661,7 @@ class Integer(Type[int]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         octets = [self.pyvalue & 0b11111111]
 
@@ -687,8 +704,14 @@ class ObjectIdentifier(Type[str]):
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
 
-    def __init__(self, value: Optional[str] = None) -> None:
-        if value and value.startswith("."):
+    def __init__(
+        self, value: Union[str, _SENTINEL_UNINITIALISED] = UNINITIALISED
+    ) -> None:
+        if (
+            not isinstance(value, _SENTINEL_UNINITIALISED)
+            and value
+            and value.startswith(".")
+        ):
             value = value[1:]
         super().__init__(value)
 
@@ -830,7 +853,7 @@ class ObjectIdentifier(Type[str]):
         """
         Overrides :py:meth:`.Type.encode_raw`
         """
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         collapsed_identifiers = self.collapse_identifiers()
         if collapsed_identifiers == ():
@@ -987,7 +1010,7 @@ class T61String(Type[str]):
 
     def __init__(self, value: Union[str, bytes] = "") -> None:
         if isinstance(value, str):
-            super().__init__(value or None)
+            super().__init__(value or UNINITIALISED)
         else:
             super().__init__(T61String.decode_raw(value))
 
@@ -1015,7 +1038,7 @@ class T61String(Type[str]):
         if not T61String.__INITIALISED:  # pragma: no cover
             t61codec.register()
             T61String.__INITIALISED = True
-        if self.pyvalue is None:
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return self.pyvalue.encode("t61")
 

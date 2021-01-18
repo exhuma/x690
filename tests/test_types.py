@@ -789,4 +789,4 @@ def test_helpful_noarg_error():
 
     with pytest.raises(X690Error) as exc:
         Foo.from_bytes(b"hello")
-    exc.match("no-arg.*None")
+    exc.match("no-arg.*x690.types.UNINITIALISED")
