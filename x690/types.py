@@ -105,7 +105,7 @@ TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 
 
-class _SENTINEL_UNINITIALISED:
+class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
     """
     Helper for specific sentinel values
     """
@@ -928,8 +928,7 @@ class ObjectIdentifier(Type[str]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        a, b = self.nodes, other.nodes
-        return a < b
+        return self.nodes < other.nodes
 
     def __hash__(self) -> int:
         return hash(self.value)
