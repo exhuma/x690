@@ -120,7 +120,7 @@ def decode(
     start_index: int = 0,
     enforce_type: Optional[TypeType[TPopType]] = None,
     strict: bool = False,
-) -> Tuple[Union["TPopType", "Null"], int]:
+) -> Tuple[Union[TPopType, "Null"], int]:
     """
     Convert a X.690 bytes object into a Python instance, and the location of
     the next object.
@@ -267,7 +267,7 @@ class Type(Generic[TWrappedPyType]):
             )
 
     @classmethod
-    def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
+    def decode(cls, data: bytes) -> TWrappedPyType:  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information
