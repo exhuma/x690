@@ -103,6 +103,7 @@ from .util import (
 
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
+TConcreteType = TypeVar("TConcreteType", bound="Type[Any]")
 
 
 class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
@@ -267,7 +268,9 @@ class Type(Generic[TWrappedPyType]):
             )
 
     @classmethod
-    def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
+    def decode(
+        cls: TypeType[TConcreteType], data: bytes
+    ) -> TConcreteType:  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information
@@ -281,8 +284,8 @@ class Type(Generic[TWrappedPyType]):
 
     @classmethod
     def from_bytes(
-        cls, data: bytes, slc: slice = slice(None)
-    ) -> "Type[TWrappedPyType]":
+        cls: TypeType[TConcreteType], data: bytes, slc: slice = slice(None)
+    ) -> TConcreteType:
         """
         Creates a new :py:class:`x690.types.Type` instance from raw-bytes
         (without type nor length bytes)
