@@ -303,6 +303,12 @@ class TestObjectIdentifier(TestCase):
         result = a[1]
         self.assertEqual(result, expected)
 
+    def test_slicing(self):
+        a = ObjectIdentifier("1.2.3.4.5")
+        expected = ObjectIdentifier("1.2.3.4")
+        result = a[:-1]
+        self.assertEqual(result, expected)
+
 
 class TestInteger(TestCase):
     def test_encode_empty(self):

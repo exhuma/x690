@@ -944,7 +944,10 @@ class ObjectIdentifier(Type[str]):
         return ObjectIdentifier(nodes)
 
     def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier(str(self.nodes[index]))
+        output = self.nodes[index]
+        if isinstance(output, int):
+            return ObjectIdentifier(str(output))
+        return ObjectIdentifier(".".join([str(n) for n in output]))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
