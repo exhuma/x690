@@ -648,11 +648,6 @@ class TestNull(TestCase):
 
 
 class TestUnknownType(TestCase):
-    def test_null_from_bytes(self):
-        result, _ = decode(b"")
-        expected = Null()
-        self.assertEqual(result, expected)
-
     def test_decoding(self):
         result, _ = decode(b"\x99\x01\x0a")
         expected = UnknownType(b"\x0a", 0x99)
@@ -685,10 +680,9 @@ class TestAllTypes(TestCase):
     Tests which are valid for all types
     """
 
-    def test_tlv_null(self):
-        result = decode(b"")
-        expected = (Null(), 0)
-        self.assertEqual(result, expected)
+    def test_tlv_empty(self):
+        with pytest.raises(IndexError):
+            decode(b"")
 
     def test_tlv_simple(self):
         result = decode(bytes([2, 1, 0]))
@@ -707,11 +701,6 @@ class TestAllTypes(TestCase):
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
             Integer.validate(bytes([0b00111110]))
-
-    def test_null_from_bytes(self):
-        result, _ = decode(b"")
-        expected = Null()
-        self.assertEqual(result, expected)
 
     def test_childof(self):
         a = ObjectIdentifier("1.2.3")

@@ -121,7 +121,7 @@ def decode(
     start_index: int = 0,
     enforce_type: Optional[TypeType[TPopType]] = None,
     strict: bool = False,
-) -> Tuple[Union[TPopType, "Null"], int]:
+) -> Tuple[TPopType, int]:
     """
     Convert a X.690 bytes object into a Python instance, and the location of
     the next object.
@@ -145,7 +145,10 @@ def decode(
         (Integer(5), 23)
     """
     if start_index >= len(data):
-        return Null(), 0
+        raise IndexError(
+            f"Attempting to read from position {start_index} "
+            f"on data with length {len(data)}"
+        )
 
     start_index = start_index or 0
     type_ = TypeInfo.from_bytes(data[start_index])
