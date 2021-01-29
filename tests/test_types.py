@@ -299,7 +299,7 @@ class TestObjectIdentifier(TestCase):
 
     def test_item_access(self):
         a = ObjectIdentifier("1.2.3")
-        expected = ObjectIdentifier("2")
+        expected = 2
         result = a[1]
         self.assertEqual(result, expected)
 
