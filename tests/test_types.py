@@ -78,7 +78,8 @@ class TestObjectIdentifier(TestCase):
         first two positions to be "small-enough"
         """
         with pytest.raises(ValueError) as exc:
-            ObjectIdentifier("200.200")
+            instance = ObjectIdentifier("200.200")
+            bytes(instance)
         exc.match("Unable to collapse.*too large")
 
     def test_to_int(self):
@@ -308,6 +309,15 @@ class TestObjectIdentifier(TestCase):
         expected = ObjectIdentifier("1.2.3.4")
         result = a[:-1]
         self.assertEqual(result, expected)
+
+    def test_large_first_values(self):
+        """
+        When working with sub-trees the first two values can be larger than is
+        accepted for *absolute* OIDs
+        """
+        str_value = "56.1342177480.31"
+        oid = ObjectIdentifier(str_value)
+        assert str_value == str(oid)
 
 
 class TestInteger(TestCase):

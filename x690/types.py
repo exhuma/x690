@@ -184,7 +184,7 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue", "raw_bytes"]
+    __slots__ = ["pyvalue", "_raw_bytes"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -200,7 +200,7 @@ class Type(Generic[TWrappedPyType]):
     pyvalue: Union[TWrappedPyType, _SENTINEL_UNINITIALISED]
 
     #: The byte representation of "pyvalue" without metadata-header
-    raw_bytes: bytes
+    _raw_bytes: bytes
 
     #: The location of the value within "raw_bytes"
     bounds: slice = slice(None)
@@ -317,10 +317,20 @@ class Type(Generic[TWrappedPyType]):
         value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
     ) -> None:
         self.pyvalue = value
-        if value is UNINITIALISED:
-            self.raw_bytes = b""
-        else:
-            self.raw_bytes = self.encode_raw()
+        self._raw_bytes = b""
+
+    @property
+    def raw_bytes(self) -> bytes:
+        if self._raw_bytes != b"":
+            return self._raw_bytes
+        if self.pyvalue is UNINITIALISED:
+            return b""
+        self._raw_bytes = self.encode_raw()
+        return self._raw_bytes
+
+    @raw_bytes.setter
+    def raw_bytes(self, value: bytes) -> None:
+        self._raw_bytes = value
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
