@@ -83,9 +83,9 @@ type):
 from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, overload
+from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
 from typing import Type as TypeType
-from typing import TypeVar, Union
+from typing import TypeVar, Union, overload
 
 import t61codec  # type: ignore
 
