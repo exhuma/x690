@@ -1,6 +1,48 @@
 Changelog
 =========
 
+0.5.0-alpha.5
+-------------
+
+* Allow ObjectIdentifier instances to be created for "relative" sub-trees by
+  delaying the byte-conversion.
+
+  When converting ObjectIdentifiers to bytes, the first two objects are
+  "folded" together. This is not possible for some values. Delaying this
+  folding until the "is-needed" moment allows the use for such OIDs to be used
+  for subtree modifications/concatenation.  They will still raise errors if
+  they are converted to bytes unmodified.
+
+* Internal typing improvment
+
+
+0.5.0-alpha.4
+-------------
+
+* Raise an exception when trying to decode data that is out-of-bounds of the
+  processed blob.
+* Accessing a scalar index (not a slice) from an OID returns the integer value.
+
+0.5.0-alpha.3
+-------------
+
+* Housekeeping & typing improvments
+
+0.5.0-alpha.2
+-------------
+
+* Don't conider "None/NULL" values as "uninitialised". This prevents
+  unnecessary/repetitive byte-conversions.
+
+0.5.0-alpha.1
+-------------
+
+* ObjectIdentifiers now "feel" more like strings. The constructor changed to
+  reflect this: ``ObjectIdentifier("1.2.3")``
+* Improve error message when creating custom typess without no-arg constructor
+* Fix "unsigned int" values
+* Fix handling of empty ``Sequence`` instances
+
 0.5.0-alpha.0
 -------------
 
