@@ -53,6 +53,7 @@ isort = "*"
 vulture = "*"
 Pygments = "*"
 pylint = "^2.6.0"
+types-dataclasses = "^0.1.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

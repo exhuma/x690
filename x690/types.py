@@ -83,7 +83,7 @@ type):
 from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, overload
 from typing import Type as TypeType
 from typing import TypeVar, Union
 
@@ -571,7 +571,7 @@ class OctetString(Type[bytes]):
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = decode(self.value)[0]
+            embedded: Type[Any] = decode(self.value)[0]
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
@@ -597,6 +597,7 @@ class Sequence(Type[List[Type[Any]]]):
         start_index = slc.start or 0
         if not data[slc] or start_index > len(data):
             return []
+        item: Type[Any]
         item, next_pos = decode(data, start_index)
         items: List[Type[Any]] = [item]
         end = slc.stop or len(data)
@@ -953,10 +954,20 @@ class ObjectIdentifier(Type[str]):
         nodes = ".".join([self.value, other.value])
         return ObjectIdentifier(nodes)
 
-    def __getitem__(self, index: int) -> "ObjectIdentifier":
+    @overload
+    def __getitem__(self, index: int) -> int:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> "ObjectIdentifier":
+        ...
+
+    def __getitem__(
+        self, index: Union[int, slice]
+    ) -> Union["ObjectIdentifier", int]:
+        if isinstance(index, int):
+            return self.nodes[index]
         output = self.nodes[index]
-        if isinstance(output, int):
-            return output
         return ObjectIdentifier(".".join([str(n) for n in output]))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
