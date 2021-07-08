@@ -85,7 +85,7 @@ from itertools import zip_longest
 from textwrap import indent
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
 from typing import Type as TypeType
-from typing import TypeVar, Union
+from typing import TypeVar, Union, overload
 
 import t61codec  # type: ignore
 
@@ -103,9 +103,10 @@ from .util import (
 
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
+TConcreteType = TypeVar("TConcreteType", bound="Type[Any]")
 
 
-class _SENTINEL_UNINITIALISED:
+class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
     """
     Helper for specific sentinel values
     """
@@ -120,7 +121,7 @@ def decode(
     start_index: int = 0,
     enforce_type: Optional[TypeType[TPopType]] = None,
     strict: bool = False,
-) -> Tuple[Union["TPopType", "Null"], int]:
+) -> Tuple[TPopType, int]:
     """
     Convert a X.690 bytes object into a Python instance, and the location of
     the next object.
@@ -144,7 +145,10 @@ def decode(
         (Integer(5), 23)
     """
     if start_index >= len(data):
-        return Null(), 0
+        raise IndexError(
+            f"Attempting to read from position {start_index} "
+            f"on data with length {len(data)}"
+        )
 
     start_index = start_index or 0
     type_ = TypeInfo.from_bytes(data[start_index])
@@ -180,7 +184,7 @@ class Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue", "raw_bytes"]
+    __slots__ = ["pyvalue", "_raw_bytes"]
     __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -196,7 +200,7 @@ class Type(Generic[TWrappedPyType]):
     pyvalue: Union[TWrappedPyType, _SENTINEL_UNINITIALISED]
 
     #: The byte representation of "pyvalue" without metadata-header
-    raw_bytes: bytes
+    _raw_bytes: bytes
 
     #: The location of the value within "raw_bytes"
     bounds: slice = slice(None)
@@ -267,7 +271,9 @@ class Type(Generic[TWrappedPyType]):
             )
 
     @classmethod
-    def decode(cls, data: bytes) -> "Type[TWrappedPyType]":  # pragma: no cover
+    def decode(
+        cls: TypeType[TConcreteType], data: bytes
+    ) -> TConcreteType:  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information
@@ -281,8 +287,8 @@ class Type(Generic[TWrappedPyType]):
 
     @classmethod
     def from_bytes(
-        cls, data: bytes, slc: slice = slice(None)
-    ) -> "Type[TWrappedPyType]":
+        cls: TypeType[TConcreteType], data: bytes, slc: slice = slice(None)
+    ) -> TConcreteType:
         """
         Creates a new :py:class:`x690.types.Type` instance from raw-bytes
         (without type nor length bytes)
@@ -311,10 +317,20 @@ class Type(Generic[TWrappedPyType]):
         value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
     ) -> None:
         self.pyvalue = value
-        if value is UNINITIALISED:
-            self.raw_bytes = b""
-        else:
-            self.raw_bytes = self.encode_raw()
+        self._raw_bytes = b""
+
+    @property
+    def raw_bytes(self) -> bytes:
+        if self._raw_bytes != b"":
+            return self._raw_bytes
+        if self.pyvalue is UNINITIALISED:
+            return b""
+        self._raw_bytes = self.encode_raw()
+        return self._raw_bytes
+
+    @raw_bytes.setter
+    def raw_bytes(self, value: bytes) -> None:
+        self._raw_bytes = value
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
@@ -555,7 +571,7 @@ class OctetString(Type[bytes]):
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded = decode(self.value)[0]
+            embedded: Type[Any] = decode(self.value)[0]
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
@@ -581,6 +597,7 @@ class Sequence(Type[List[Type[Any]]]):
         start_index = slc.start or 0
         if not data[slc] or start_index > len(data):
             return []
+        item: Type[Any]
         item, next_pos = decode(data, start_index)
         items: List[Type[Any]] = [item]
         end = slc.stop or len(data)
@@ -928,8 +945,7 @@ class ObjectIdentifier(Type[str]):
         return False
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
-        a, b = self.nodes, other.nodes
-        return a < b
+        return self.nodes < other.nodes
 
     def __hash__(self) -> int:
         return hash(self.value)
@@ -938,8 +954,21 @@ class ObjectIdentifier(Type[str]):
         nodes = ".".join([self.value, other.value])
         return ObjectIdentifier(nodes)
 
-    def __getitem__(self, index: int) -> "ObjectIdentifier":
-        return ObjectIdentifier(str(self.nodes[index]))
+    @overload
+    def __getitem__(self, index: int) -> int:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> "ObjectIdentifier":
+        ...
+
+    def __getitem__(
+        self, index: Union[int, slice]
+    ) -> Union["ObjectIdentifier", int]:
+        if isinstance(index, int):
+            return self.nodes[index]
+        output = self.nodes[index]
+        return ObjectIdentifier(".".join([str(n) for n in output]))
 
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """

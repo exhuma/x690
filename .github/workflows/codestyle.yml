@@ -21,23 +21,24 @@ jobs:
           python-version: 3.8
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip poetry
-          poetry install
+          python3 -m venv env
+          ./env/bin/pip install -U pip
+          ./env/bin/pip install -e .[dev,test]
       - name: Lint with black
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          poetry run black --check x690
+          ./env/bin/black --check x690
       - name: Check import ordering
         run: |
           set -o pipefail
-          poetry run isort --check-only --diff --recursive x690 | pygmentize
+          ./env/bin/isort --check-only --diff --recursive x690 | pygmentize
       - name: Check Types
         run: |
-          poetry run mypy --strict -p x690
+          ./env/bin/mypy --strict -p x690
       - name: Check for unused code
         run: |
           set -o pipefail
-          poetry run vulture vulture-whitelist.py x690 | pygmentize
+          ./env/bin/vulture vulture-whitelist.py x690 | pygmentize
       - name: Check for obsolete vulture-whitelist items
         run: |
-          poetry run python vulture-whitelist.py
+          ./env/bin/python vulture-whitelist.py

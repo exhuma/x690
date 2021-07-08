@@ -1,0 +1,13 @@
+{
+    "python.formatting.provider": "black",
+    "python.pythonPath": ".venv/bin/python",
+    "files.exclude": {
+        "**/.venv": true,
+        "**/env": true
+    },
+    "files.watcherExclude": {
+        "**/.venv/**": true,
+        "**/env/**": true
+    },
+    "python.analysis.typeCheckingMode": "strict"
+}

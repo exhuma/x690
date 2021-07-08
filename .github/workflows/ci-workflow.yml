@@ -5,6 +5,7 @@
 
 name: Testing
 
+# yamllint disable-line rule:truthy
 on:
   push:
     branches: ["main", "develop"]
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [2.7, 3.6, 3.7, 3.8, "3.x"]
+        python-version: [3.6, 3.7, 3.8, "3.x"]
 
     steps:
       - uses: actions/checkout@v2
@@ -28,11 +29,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip poetry
-          poetry install --no-ansi
+          python3 -m venv env
+          ./env/bin/pip install -U pip
+          ./env/bin/pip install -e .[test]
       - name: Test with pytest
         run: |
-          poetry run pytest
+          ./env/bin/pytest
 
   publish:
     needs: test
@@ -40,14 +42,17 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Build distribution
-        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+        if: github.event_name == 'push' &&
+            startsWith(github.event.ref, 'refs/tags')
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install --upgrade poetry
-          /home/runner/.local/bin/poetry build
+          python -m pip install --upgrade pip
+          python -m pip install build
+          /home/runner/.local/bin/pyproject-build
       - name: Publish package
-        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@e777b333
+        if: github.event_name == 'push' &&
+            startsWith(github.event.ref, 'refs/tags')
+        uses: "pypa/gh-action-pypi-publish@\
+               e777b33388fefa46ce597d8afa9c15a5357af36f"
         with:
           user: __token__
           password: ${{ secrets.pypi_token }}

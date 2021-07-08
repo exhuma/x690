@@ -78,7 +78,8 @@ class TestObjectIdentifier(TestCase):
         first two positions to be "small-enough"
         """
         with pytest.raises(ValueError) as exc:
-            ObjectIdentifier("200.200")
+            instance = ObjectIdentifier("200.200")
+            bytes(instance)
         exc.match("Unable to collapse.*too large")
 
     def test_to_int(self):
@@ -299,9 +300,24 @@ class TestObjectIdentifier(TestCase):
 
     def test_item_access(self):
         a = ObjectIdentifier("1.2.3")
-        expected = ObjectIdentifier("2")
+        expected = 2
         result = a[1]
         self.assertEqual(result, expected)
+
+    def test_slicing(self):
+        a = ObjectIdentifier("1.2.3.4.5")
+        expected = ObjectIdentifier("1.2.3.4")
+        result = a[:-1]
+        self.assertEqual(result, expected)
+
+    def test_large_first_values(self):
+        """
+        When working with sub-trees the first two values can be larger than is
+        accepted for *absolute* OIDs
+        """
+        str_value = "56.1342177480.31"
+        oid = ObjectIdentifier(str_value)
+        assert str_value == str(oid)
 
 
 class TestInteger(TestCase):
@@ -648,11 +664,6 @@ class TestNull(TestCase):
 
 
 class TestUnknownType(TestCase):
-    def test_null_from_bytes(self):
-        result, _ = decode(b"")
-        expected = Null()
-        self.assertEqual(result, expected)
-
     def test_decoding(self):
         result, _ = decode(b"\x99\x01\x0a")
         expected = UnknownType(b"\x0a", 0x99)
@@ -685,10 +696,9 @@ class TestAllTypes(TestCase):
     Tests which are valid for all types
     """
 
-    def test_tlv_null(self):
-        result = decode(b"")
-        expected = (Null(), 0)
-        self.assertEqual(result, expected)
+    def test_tlv_empty(self):
+        with pytest.raises(IndexError):
+            decode(b"")
 
     def test_tlv_simple(self):
         result = decode(bytes([2, 1, 0]))
@@ -707,11 +717,6 @@ class TestAllTypes(TestCase):
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
             Integer.validate(bytes([0b00111110]))
-
-    def test_null_from_bytes(self):
-        result, _ = decode(b"")
-        expected = Null()
-        self.assertEqual(result, expected)
 
     def test_childof(self):
         a = ObjectIdentifier("1.2.3")
