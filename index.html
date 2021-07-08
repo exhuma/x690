@@ -3,7 +3,8 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Welcome to x690’s documentation! &#8212; x690 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -31,26 +32,26 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-x690-s-documentation">
+  <section id="welcome-to-x690-s-documentation">
 <h1>Welcome to x690’s documentation!<a class="headerlink" href="#welcome-to-x690-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Repository: <a class="reference external" href="https://github.com/exhuma/x690">https://github.com/exhuma/x690</a></p>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="pure-python-x-690-implementation">
+</section>
+<section id="pure-python-x-690-implementation">
 <h1>Pure Python <a class="reference external" href="https://www.itu.int/rec/recommendation.asp?lang=en&amp;parent=T-REC-X.690-201508-I">X.690</a> implementation<a class="headerlink" href="#pure-python-x-690-implementation" title="Permalink to this headline">¶</a></h1>
 <img alt="Code Style" src="https://github.com/exhuma/x690/workflows/Testing/badge.svg?branch=main" />
 <img alt="Build &amp; Publish Docs" src="https://github.com/exhuma/x690/workflows/Build%20&amp;%20Publish%20Docs/badge.svg?branch=main" />
 <p>This module contains a pure Python implementation of the “x690” standard for
 BER encoding/decoding. Other encodings are currently unsupported but
 pull-requests are welcome.</p>
-<div class="section" id="supporting-new-types">
+<section id="supporting-new-types">
 <h2>Supporting New Types<a class="headerlink" href="#supporting-new-types" title="Permalink to this headline">¶</a></h2>
 <p>Some applications may need to support types which are not defined in the X.690
 standard. This is supported by this library but the types must be defined and
@@ -75,8 +76,8 @@ existing type.</p>
 <p>To convert raw-bytes into a Python object, override <code class="docutils literal notranslate"><span class="pre">x690.Type.decode_raw</span></code>
 and conversely also <code class="docutils literal notranslate"><span class="pre">x690.Type.encode_raw</span></code>. Refer to the docstrings for more
 details.</p>
-</div>
-<div class="section" id="reverse-engineering-bytes">
+</section>
+<section id="reverse-engineering-bytes">
 <h2>Reverse Engineering Bytes<a class="headerlink" href="#reverse-engineering-bytes" title="Permalink to this headline">¶</a></h2>
 <p>All types defined in the <code class="docutils literal notranslate"><span class="pre">x690</span></code> library provide a <code class="docutils literal notranslate"><span class="pre">.pretty()</span></code> method which
 returns a prettyfied string.</p>
@@ -100,15 +101,15 @@ and will print out the type-class, nature and tag in the pretty-printed block.</
 <p>This will allow you to define your own subclass of <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code> using
 those values. Override <code class="docutils literal notranslate"><span class="pre">decode(...)</span></code> in that class to handle the unknown
 type.</p>
-</div>
-</div>
-<div class="section" id="examples">
+</section>
+</section>
+<section id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="encoding-to-bytes">
+<section id="encoding-to-bytes">
 <h2>Encoding to bytes<a class="headerlink" href="#encoding-to-bytes" title="Permalink to this headline">¶</a></h2>
 <p>Encoding to bytes can be done by simply calling the Python builting <code class="docutils literal notranslate"><span class="pre">bytes()</span></code>
 on instances from <code class="docutils literal notranslate"><span class="pre">x690.types</span></code>:</p>
-<div class="section" id="encoding-of-a-single-value">
+<section id="encoding-of-a-single-value">
 <h3>Encoding of a single value<a class="headerlink" href="#encoding-of-a-single-value" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
@@ -117,8 +118,8 @@ on instances from <code class="docutils literal notranslate"><span class="pre">x
 <span class="go">b&#39;\x02\x01\x0c&#39;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="encoding-of-a-composite-value-using-sequence">
+</section>
+<section id="encoding-of-a-composite-value-using-sequence">
 <h3>Encoding of a composite value using Sequence<a class="headerlink" href="#encoding-of-a-composite-value-using-sequence" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">x690.types</span> <span class="k">as</span> <span class="nn">t</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myvalue</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
@@ -131,8 +132,8 @@ on instances from <code class="docutils literal notranslate"><span class="pre">x
 <span class="go">b&#39;0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c&#39;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="decoding-from-bytes">
+</section>
+<section id="decoding-from-bytes">
 <h3>Decoding from bytes<a class="headerlink" href="#decoding-from-bytes" title="Permalink to this headline">¶</a></h3>
 <p>Decode bytes by calling <code class="docutils literal notranslate"><span class="pre">x690.types.decode</span></code> on your byte data. This will
 return a tuple where the first value contains the decoded object, and the
@@ -146,8 +147,8 @@ second one will contain any remaining bytes which were not decoded.</p>
 <span class="go">11</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="type-hinting-enforcing">
+</section>
+<section id="type-hinting-enforcing">
 <h3>Type-Hinting &amp; Enforcing<a class="headerlink" href="#type-hinting-enforcing" title="Permalink to this headline">¶</a></h3>
 <p><strong>New in 0.3.0</strong></p>
 <p>When decoding bytes, it is possible to specify an expcted type which does two
@@ -165,8 +166,8 @@ value is of the expected type. <code class="docutils literal notranslate"><span 
 <span class="go">11</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="strict-decoding">
+</section>
+<section id="strict-decoding">
 <h3>Strict Decoding<a class="headerlink" href="#strict-decoding" title="Permalink to this headline">¶</a></h3>
 <p><strong>New in 0.3.0</strong></p>
 <p>When decoding using <code class="docutils literal notranslate"><span class="pre">decode</span></code> and you don’t expect any remaining bytes, use
@@ -180,17 +181,17 @@ remaining data.</p>
 <span class="gr">x690.exc.IncompleteDecoding</span>: <span class="n">Strict decoding still had 10 remaining bytes!</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
+</section>
+</section>
+</section>
+<section id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
+</section>
 
 
           </div>
@@ -209,7 +210,7 @@ remaining data.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>

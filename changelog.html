@@ -3,7 +3,8 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Changelog &#8212; x690 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -32,9 +33,67 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="changelog">
+  <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="alpha-0">
+<section id="id1">
+<h2>0.5.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Flagged as “production” release</p></li>
+<li><p>All changes from 0.5.0-alpha.0 - 0.5.0-alpha.6</p></li>
+</ul>
+</section>
+<section id="alpha-6">
+<h2>0.5.0-alpha.6<a class="headerlink" href="#alpha-6" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Relaxed dev-dependencies a bit which caused issues in some installations</p></li>
+</ul>
+</section>
+<section id="alpha-5">
+<h2>0.5.0-alpha.5<a class="headerlink" href="#alpha-5" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Allow ObjectIdentifier instances to be created for “relative” sub-trees by
+delaying the byte-conversion.</p>
+<p>When converting ObjectIdentifiers to bytes, the first two objects are
+“folded” together. This is not possible for some values. Delaying this
+folding until the “is-needed” moment allows the use for such OIDs to be used
+for subtree modifications/concatenation.  They will still raise errors if
+they are converted to bytes unmodified.</p>
+</li>
+<li><p>Internal typing improvment</p></li>
+</ul>
+</section>
+<section id="alpha-4">
+<h2>0.5.0-alpha.4<a class="headerlink" href="#alpha-4" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Raise an exception when trying to decode data that is out-of-bounds of the
+processed blob.</p></li>
+<li><p>Accessing a scalar index (not a slice) from an OID returns the integer value.</p></li>
+</ul>
+</section>
+<section id="alpha-3">
+<h2>0.5.0-alpha.3<a class="headerlink" href="#alpha-3" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Housekeeping &amp; typing improvments</p></li>
+</ul>
+</section>
+<section id="alpha-2">
+<h2>0.5.0-alpha.2<a class="headerlink" href="#alpha-2" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Don’t conider “None/NULL” values as “uninitialised”. This prevents
+unnecessary/repetitive byte-conversions.</p></li>
+</ul>
+</section>
+<section id="alpha-1">
+<h2>0.5.0-alpha.1<a class="headerlink" href="#alpha-1" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>ObjectIdentifiers now “feel” more like strings. The constructor changed to
+reflect this: <code class="docutils literal notranslate"><span class="pre">ObjectIdentifier(&quot;1.2.3&quot;)</span></code></p></li>
+<li><p>Improve error message when creating custom typess without no-arg constructor</p></li>
+<li><p>Fix “unsigned int” values</p></li>
+<li><p>Fix handling of empty <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> instances</p></li>
+</ul>
+</section>
+<section id="alpha-0">
 <h2>0.5.0-alpha.0<a class="headerlink" href="#alpha-0" title="Permalink to this headline">¶</a></h2>
 <p>This release focussed on performance (both memory and CPU) in order to decode
 large x690 documents.</p>
@@ -73,9 +132,9 @@ be the <em>start</em> of an x690 “TLV” block. This will return the slice of 
 value location (The “V” part excluding the “TL” part) and the location of the
 next value-block.</p></li>
 </ul>
-</div>
-<div class="section" id="id1">
-<h2>0.4.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id2">
+<h2>0.4.0<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Removed</strong> Decoding no longer raises a “ValueError” if a value contains
 junk-bytes after decoding. Use either “strict” mode or inspect the
@@ -91,9 +150,9 @@ function.</p></li>
 <li><p>Implement decoding of the GraphicString type</p></li>
 <li><p>Removed duplication of length-decoding</p></li>
 </ul>
-</div>
-<div class="section" id="id2">
-<h2>0.3.0<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id3">
+<h2>0.3.0<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
 <p>The most visible changes in this release are the additional arguments on
 <code class="docutils literal notranslate"><span class="pre">pop_tlv</span></code>. Using <code class="docutils literal notranslate"><span class="pre">enforce_type</span></code> adds valuable typing information for IDEs.
 As long as they are known in advance of course. By default, the type will be
@@ -116,8 +175,8 @@ instead). For example: <code class="docutils literal notranslate"><span class="p
 <li><p>Stricter CI pipeline (including mypy and vulture)</p></li>
 <li><p>Switch to <code class="docutils literal notranslate"><span class="pre">poetry</span></code> for packaging</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -136,7 +195,7 @@ instead). For example: <code class="docutils literal notranslate"><span class="p
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Docs</a></li>
