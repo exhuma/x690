@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.5.0
+-------------
+
+* Flagged as "production" release
+* All changes from 0.5.0-alpha.0 - 0.5.0-alpha.6
+
+
+0.5.0-alpha.6
+-------------
+
+* Relaxed dev-dependencies a bit which caused issues in some installations
+
 0.5.0-alpha.5
 -------------
 
