@@ -216,8 +216,6 @@ class X690Type(Generic[TWrappedPyType]):
     bounds: slice = slice(None)
 
     def __init_subclass__(cls: Type["X690Type[Any]"]) -> None:
-        if cls.__name__ == "X690Type" and cls.TAG == -1:
-            return
         for nature in cls.NATURE:
             X690Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
