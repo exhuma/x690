@@ -967,11 +967,11 @@ class ObjectIdentifier(X690Type[str]):
         return ObjectIdentifier(nodes)
 
     @overload
-    def __getitem__(self, index: int) -> int:
+    def __getitem__(self, index: int) -> int:  # pragma: no cover
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> "ObjectIdentifier":
+    def __getitem__(self, index: slice) -> "ObjectIdentifier":  # pragma: no cover
         ...
 
     def __getitem__(
