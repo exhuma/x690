@@ -36,7 +36,14 @@
   <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
 <section id="id1">
-<h2>0.5.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<h2>1.0.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Renamed <code class="docutils literal notranslate"><span class="pre">x690.types.Type</span></code> to <code class="docutils literal notranslate"><span class="pre">x690.types.X690Type</span></code></p></li>
+<li><p>Flagged as “stable”</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>0.5.0<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>Flagged as “production” release</p></li>
 <li><p>All changes from 0.5.0-alpha.0 - 0.5.0-alpha.6</p></li>
@@ -133,8 +140,8 @@ value location (The “V” part excluding the “TL” part) and the location o
 next value-block.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h2>0.4.0<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<section id="id3">
+<h2>0.4.0<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Removed</strong> Decoding no longer raises a “ValueError” if a value contains
 junk-bytes after decoding. Use either “strict” mode or inspect the
@@ -151,8 +158,8 @@ function.</p></li>
 <li><p>Removed duplication of length-decoding</p></li>
 </ul>
 </section>
-<section id="id3">
-<h2>0.3.0<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<section id="id4">
+<h2>0.3.0<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
 <p>The most visible changes in this release are the additional arguments on
 <code class="docutils literal notranslate"><span class="pre">pop_tlv</span></code>. Using <code class="docutils literal notranslate"><span class="pre">enforce_type</span></code> adds valuable typing information for IDEs.
 As long as they are known in advance of course. By default, the type will be
