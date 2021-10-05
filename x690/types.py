@@ -6,8 +6,8 @@ Overview
 This module contains the encoding/decoding logic for data types as defined in
 :term:`X.690`.
 
-Each type is made available via a registry dictionary on :py:class:`~.Type` and
-can be retrieved via :py:meth:`~.Type.get`.
+Each type is made available via a registry dictionary on :py:class:`~.X690Type` and
+can be retrieved via :py:meth:`~.X690Type.get`.
 
 Additionally, given a :py:class:`bytes` object, the :py:func:`~.decode`
 function can be used to parse the bytes object and return a typed instance
@@ -15,21 +15,21 @@ from it. See :py:func:`~.decode` for details about it's behaviour!
 
 .. note::
     The individual type classes in this module do not contain any additional
-    documentation. The bulk of this module is documented in :py:class:`~.Type`.
+    documentation. The bulk of this module is documented in :py:class:`~.X690Type`.
 
     For the rest, the type classes simply define the type identifier tag.
 
 Supporting Additional Classes
 =============================
 
-Just by subclassing :py:class:`~.Type` and setting correct ``TAG`` and
+Just by subclassing :py:class:`~.X690Type` and setting correct ``TAG`` and
 ``TYPECLASS`` values, most of the basic functionality will be covered by the
-superclass. Type detection, and addition to the registry is automatic.
+superclass. X690Type detection, and addition to the registry is automatic.
 Subclassing is enough.
 
 By default, a new type which does not override any methods will have it's value
 reported as bytes objects. You may want to override at least
-:py:meth:`~.Type.decode_raw` to convert the raw-bytes into your own data-type.
+:py:meth:`~.X690Type.decode_raw` to convert the raw-bytes into your own data-type.
 
 Example
 -------
@@ -52,7 +52,7 @@ type):
 .. code-block:: python
 
     from typing import NamedTuple
-    from x690.types import Type
+    from x690.types import X690Type
     from json import loads, dumps
 
     class Person(NamedTuple):
@@ -60,7 +60,7 @@ type):
         last_name: str
         age: int
 
-    class PersonType(Type[Person]):
+    class PersonType(X690Type[Person]):
         TYPECLASS = TypeClass.APPLICATION
         NATURE = [TypeNature.CONSTRUCTED]
         TAG = 1
@@ -83,9 +83,19 @@ type):
 from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
-from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
-from typing import Type as TypeType
-from typing import TypeVar, Union, overload
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import t61codec  # type: ignore
 
@@ -103,7 +113,7 @@ from .util import (
 
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
-TConcreteType = TypeVar("TConcreteType", bound="Type[Any]")
+TConcreteType = TypeVar("TConcreteType", bound="X690Type[Any]")
 
 
 class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
@@ -119,7 +129,7 @@ UNINITIALISED = _SENTINEL_UNINITIALISED()
 def decode(
     data: bytes,
     start_index: int = 0,
-    enforce_type: Optional[TypeType[TPopType]] = None,
+    enforce_type: Optional[Type[TPopType]] = None,
     strict: bool = False,
 ) -> Tuple[TPopType, int]:
     """
@@ -154,7 +164,7 @@ def decode(
     type_ = TypeInfo.from_bytes(data[start_index])
 
     try:
-        cls = Type.get(type_.cls, type_.tag, type_.nature)
+        cls = X690Type.get(type_.cls, type_.tag, type_.nature)
     except KeyError:
         cls = UnknownType
 
@@ -179,13 +189,13 @@ def decode(
     return output, next_tlv  # type: ignore
 
 
-class Type(Generic[TWrappedPyType]):
+class X690Type(Generic[TWrappedPyType]):
     """
     The superclass for all supported types.
     """
 
     __slots__ = ["pyvalue", "_raw_bytes"]
-    __registry: Dict[Tuple[str, int, TypeNature], TypeType["Type[Any]"]] = {}
+    __registry: Dict[Tuple[str, int, TypeNature], Type["X690Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
@@ -205,11 +215,9 @@ class Type(Generic[TWrappedPyType]):
     #: The location of the value within "raw_bytes"
     bounds: slice = slice(None)
 
-    def __init_subclass__(cls: TypeType["Type[Any]"]) -> None:
-        if cls.__name__ == "Type" and cls.TAG == -1:
-            return
+    def __init_subclass__(cls: Type["X690Type[Any]"]) -> None:
         for nature in cls.NATURE:
-            Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
+            X690Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
     @property
     def value(self) -> TWrappedPyType:
@@ -239,21 +247,21 @@ class Type(Generic[TWrappedPyType]):
     @staticmethod
     def get(
         typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
-    ) -> TypeType["Type[Any]"]:
+    ) -> Type["X690Type[Any]"]:
         """
         Retrieve a Python class by x690 type information
 
-        Classes can be registered by subclassing :py:class:`x690.types.Type`
+        Classes can be registered by subclassing :py:class:`x690.types.X690Type`
         """
-        cls = Type.__registry[(typeclass, typeid, nature)]
+        cls = X690Type.__registry[(typeclass, typeid, nature)]
         return cls
 
     @staticmethod
-    def all() -> List[TypeType["Type[Any]"]]:
+    def all() -> List[Type["X690Type[Any]"]]:
         """
         Returns all registered classes
         """
-        return list(Type.__registry.values())
+        return list(X690Type.__registry.values())
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -272,7 +280,7 @@ class Type(Generic[TWrappedPyType]):
 
     @classmethod
     def decode(
-        cls: TypeType[TConcreteType], data: bytes
+        cls: Type[TConcreteType], data: bytes
     ) -> TConcreteType:  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
@@ -287,10 +295,10 @@ class Type(Generic[TWrappedPyType]):
 
     @classmethod
     def from_bytes(
-        cls: TypeType[TConcreteType], data: bytes, slc: slice = slice(None)
+        cls: Type[TConcreteType], data: bytes, slc: slice = slice(None)
     ) -> TConcreteType:
         """
-        Creates a new :py:class:`x690.types.Type` instance from raw-bytes
+        Creates a new :py:class:`x690.types.X690Type` instance from raw-bytes
         (without type nor length bytes)
 
         >>> Integer.from_bytes(b"\\x01")
@@ -362,7 +370,7 @@ class Type(Generic[TWrappedPyType]):
         b'\\x05'
         >>> Boolean(True).encode_raw()
         b'\\x01'
-        >>> Type(t.UNINITIALISED).encode_raw()
+        >>> X690Type(t.UNINITIALISED).encode_raw()
         b''
         """
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
@@ -387,7 +395,7 @@ class Type(Generic[TWrappedPyType]):
         return indent(str(self), INDENT_STRING * depth)
 
 
-class UnknownType(Type[bytes]):
+class UnknownType(X690Type[bytes]):
     """
     A fallback type for anything not in X.690.
 
@@ -424,7 +432,7 @@ class UnknownType(Type[bytes]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.Type.pretty`
+        See :py:meth:`~.X690Type.pretty`
         """
         wrapped = wrap(
             visible_octets(self.value), str(type(self)), depth
@@ -437,9 +445,9 @@ class UnknownType(Type[bytes]):
             wrapped = wrapped[:10] + ["┊%s┊" % sniptext] + wrapped[-5:]
         typeinfo = TypeInfo.from_bytes(self.tag)
         lines = [
-            "Unknown Type",
+            "Unknown X690Type",
             f"  │ Tag:       {self.tag}",
-            "  │ Type Info:",
+            "  │ X690Type Info:",
             f"  │  │ Class: {typeinfo.cls}",
             f"  │  │ Nature: {typeinfo.nature}",
             f"  │  │ Tag: {typeinfo.tag}",
@@ -450,7 +458,7 @@ class UnknownType(Type[bytes]):
         )
 
 
-class Boolean(Type[bool]):
+class Boolean(X690Type[bool]):
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -460,14 +468,14 @@ class Boolean(Type[bool]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         return data[slc] != b"\x00"
 
     @classmethod
     def validate(cls, data: bytes) -> None:
         """
-        Overrides :py:meth:`.Type.validate`
+        Overrides :py:meth:`.X690Type.validate`
         """
         super().validate(data)
         if data[1] != 1:
@@ -478,7 +486,7 @@ class Boolean(Type[bool]):
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
         """
         return b"\x01" if self.pyvalue else b"\x00"
 
@@ -486,14 +494,14 @@ class Boolean(Type[bool]):
         return isinstance(other, Boolean) and self.value == other.value
 
 
-class Null(Type[None]):
+class Null(X690Type[None]):
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
 
     @classmethod
     def validate(cls, data: bytes) -> None:
         """
-        Overrides :py:meth:`.Type.validate`
+        Overrides :py:meth:`.X690Type.validate`
         """
         super().validate(data)
         if data[1] != 0:
@@ -508,14 +516,14 @@ class Null(Type[None]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         # pylint: disable=unused-argument
         return None
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
 
         >>> Null().encode_raw()
         b'\\x00'
@@ -539,7 +547,7 @@ class Null(Type[None]):
         return False
 
 
-class OctetString(Type[bytes]):
+class OctetString(X690Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -564,21 +572,21 @@ class OctetString(Type[bytes]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.Type.pretty`
+        See :py:meth:`~.X690Type.pretty`
         """
         if self.value == b"":
             return repr(self)
         try:
             # We try to decode embedded X.690 items. If we can't, we display
             # the value raw
-            embedded: Type[Any] = decode(self.value)[0]
+            embedded: X690Type[Any] = decode(self.value)[0]
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
         except:  # pylint: disable=bare-except
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
             return wrapped
 
 
-class Sequence(Type[List[Type[Any]]]):
+class Sequence(X690Type[List[X690Type[Any]]]):
     """
     Represents an X.690 sequence type. Instances of this class are iterable and
     indexable.
@@ -587,19 +595,21 @@ class Sequence(Type[List[Type[Any]]]):
     TAG = 0x10
 
     @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> List[Type[Any]]:
+    def decode_raw(
+        data: bytes, slc: slice = slice(None)
+    ) -> List[X690Type[Any]]:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         start_index = slc.start or 0
         if not data[slc] or start_index > len(data):
             return []
-        item: Type[Any]
+        item: X690Type[Any]
         item, next_pos = decode(data, start_index)
-        items: List[Type[Any]] = [item]
+        items: List[X690Type[Any]] = [item]
         end = slc.stop or len(data)
         while next_pos < end:
             item, next_pos = decode(data, next_pos)
@@ -608,7 +618,7 @@ class Sequence(Type[List[Type[Any]]]):
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
         """
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
@@ -628,15 +638,15 @@ class Sequence(Type[List[Type[Any]]]):
     def __len__(self) -> int:
         return len(self.value)
 
-    def __iter__(self) -> Iterator[Type[Any]]:
+    def __iter__(self) -> Iterator[X690Type[Any]]:
         yield from self.value
 
-    def __getitem__(self, idx: int) -> Type[Any]:
+    def __getitem__(self, idx: int) -> X690Type[Any]:
         return self.value[idx]
 
-    def pythonize(self) -> List[Type[Any]]:
+    def pythonize(self) -> List[X690Type[Any]]:
         """
-        Overrides :py:meth:`~.Type.pythonize`
+        Overrides :py:meth:`~.X690Type.pythonize`
         """
         return [obj.pythonize() for obj in self]
 
@@ -644,7 +654,7 @@ class Sequence(Type[List[Type[Any]]]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.Type.pretty`
+        See :py:meth:`~.X690Type.pretty`
         """
         lines = [f"{self.__class__.__name__} with {len(self.value)} items:"]
         for item in self.value:
@@ -656,7 +666,7 @@ class Sequence(Type[List[Type[Any]]]):
         return "\n".join(lines)
 
 
-class Integer(Type[int]):
+class Integer(X690Type[int]):
     SIGNED = True
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
@@ -667,14 +677,14 @@ class Integer(Type[int]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         data = data[slc]
         return int.from_bytes(data, "big", signed=cls.SIGNED)
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
         """
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
@@ -702,7 +712,7 @@ class Integer(Type[int]):
         return isinstance(other, Integer) and self.value == other.value
 
 
-class ObjectIdentifier(Type[str]):
+class ObjectIdentifier(X690Type[str]):
     """
     Represents an OID.
 
@@ -783,7 +793,7 @@ class ObjectIdentifier(Type[str]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         # Special case for "empty" object identifiers which should be returned
         # as "0"
@@ -866,7 +876,7 @@ class ObjectIdentifier(Type[str]):
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
         """
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
@@ -955,11 +965,11 @@ class ObjectIdentifier(Type[str]):
         return ObjectIdentifier(nodes)
 
     @overload
-    def __getitem__(self, index: int) -> int:
+    def __getitem__(self, index: int) -> int:  # pragma: no cover
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> "ObjectIdentifier":
+    def __getitem__(self, index: slice) -> "ObjectIdentifier":  # pragma: no cover
         ...
 
     def __getitem__(
@@ -983,54 +993,54 @@ class ObjectIdentifier(Type[str]):
         return self in other
 
 
-class ObjectDescriptor(Type[str]):
+class ObjectDescriptor(X690Type[str]):
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class External(Type[bytes]):
+class External(X690Type[bytes]):
     TAG = 0x08
 
 
-class Real(Type[float]):
+class Real(X690Type[float]):
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class Enumerated(Type[List[Any]]):
+class Enumerated(X690Type[List[Any]]):
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class EmbeddedPdv(Type[bytes]):
+class EmbeddedPdv(X690Type[bytes]):
     TAG = 0x0B
 
 
-class Utf8String(Type[str]):
+class Utf8String(X690Type[str]):
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class RelativeOid(Type[str]):
+class RelativeOid(X690Type[str]):
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class Set(Type[bytes]):
+class Set(X690Type[bytes]):
     TAG = 0x11
 
 
-class NumericString(Type[str]):
+class NumericString(X690Type[str]):
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class PrintableString(Type[str]):
+class PrintableString(X690Type[str]):
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class T61String(Type[str]):
+class T61String(X690Type[str]):
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     __INITIALISED = False
@@ -1050,7 +1060,7 @@ class T61String(Type[str]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         data = data[slc]
         if not T61String.__INITIALISED:
@@ -1060,7 +1070,7 @@ class T61String(Type[str]):
 
     def encode_raw(self) -> bytes:
         """
-        Overrides :py:meth:`.Type.encode_raw`
+        Overrides :py:meth:`.X690Type.encode_raw`
         """
         if not T61String.__INITIALISED:  # pragma: no cover
             t61codec.register()
@@ -1070,27 +1080,27 @@ class T61String(Type[str]):
         return self.pyvalue.encode("t61")
 
 
-class VideotexString(Type[str]):
+class VideotexString(X690Type[str]):
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class IA5String(Type[str]):
+class IA5String(X690Type[str]):
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class UtcTime(Type[datetime]):
+class UtcTime(X690Type[datetime]):
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class GeneralizedTime(Type[datetime]):
+class GeneralizedTime(X690Type[datetime]):
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class GraphicString(Type[str]):
+class GraphicString(X690Type[str]):
     # NOTE: As per x.690, this should inherit from OctetString. However, this
     #       library serves as an abstraction layer between X.690 and Python.
     #       For this reason, it defines this as a "str" type. To keep the
@@ -1105,41 +1115,41 @@ class GraphicString(Type[str]):
         Converts the raw byte-value (without type & length header) into a
         pure Python type
 
-        Overrides :py:meth:`~.Type.decode_raw`
+        Overrides :py:meth:`~.X690Type.decode_raw`
         """
         data = data[slc]
         return data.decode("ascii")
 
 
-class VisibleString(Type[str]):
+class VisibleString(X690Type[str]):
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class GeneralString(Type[str]):
+class GeneralString(X690Type[str]):
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class UniversalString(Type[str]):
+class UniversalString(X690Type[str]):
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class CharacterString(Type[str]):
+class CharacterString(X690Type[str]):
     TAG = 0x1D
 
 
-class BmpString(Type[str]):
+class BmpString(X690Type[str]):
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class EOC(Type[bytes]):
+class EOC(X690Type[bytes]):
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class BitString(Type[str]):
+class BitString(X690Type[str]):
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]

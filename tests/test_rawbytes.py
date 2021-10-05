@@ -6,7 +6,7 @@ import pytest
 import x690.types as t
 
 
-@pytest.mark.parametrize("cls", t.Type.all())
+@pytest.mark.parametrize("cls", t.X690Type.all())
 def test_raw_bytes(cls):
     try:
         instance = cls.decode(b"")
@@ -15,7 +15,7 @@ def test_raw_bytes(cls):
     assert instance.raw_bytes == b""
 
 
-@pytest.mark.parametrize("cls", t.Type.all())
+@pytest.mark.parametrize("cls", t.X690Type.all())
 def test_raw_bytes(cls):
     instance = cls()
     assert isinstance(instance.raw_bytes, bytes)

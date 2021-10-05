@@ -13,8 +13,6 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Dict, List, Tuple, Union
 
-    from .types import Type
-
 #: String to be used for indenting nested items during "pretty()" calls
 INDENT_STRING = "  "
 
