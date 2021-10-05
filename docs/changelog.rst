@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.0.0
+-------------
+
+* Renamed ``x690.types.Type`` to ``x690.types.X690Type``
+* Flagged as "stable"
+
+
 0.5.0
 -------------
 
