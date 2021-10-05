@@ -1,5 +1,7 @@
-*.pyc
 *.egg-info
+*.pyc
+.coverage
+dist
 docs/_build
 docs/api
-dist
+env
