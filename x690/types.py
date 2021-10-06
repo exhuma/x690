@@ -969,7 +969,9 @@ class ObjectIdentifier(X690Type[str]):
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> "ObjectIdentifier":  # pragma: no cover
+    def __getitem__(
+        self, index: slice
+    ) -> "ObjectIdentifier":  # pragma: no cover
         ...
 
     def __getitem__(
