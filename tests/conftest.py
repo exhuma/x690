@@ -70,7 +70,7 @@ def assert_bytes_equal(a, b):
             )
         raise AssertionError(
             "Bytes differ!\n"
-            + "type(a)=%s, type(b)=%s\n" % (type_a, type_b)
+            + f"type(a)={type_a}, type(b)={type_b}\n"
             + "\nIndividual bytes:\n"
             + "\n".join(comparisons)
         )

@@ -351,7 +351,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     def __repr__(self) -> str:
         repr_value = repr(self.value)
-        return "%s(%s)" % (self.__class__.__name__, repr_value)
+        return f"{self.__class__.__name__}({repr_value})"
 
     @property
     def length(self) -> int:
@@ -906,7 +906,7 @@ class ObjectIdentifier(X690Type[str]):
         return self.value
 
     def __repr__(self) -> str:
-        return "ObjectIdentifier(%r)" % (self.value,)
+        return f"ObjectIdentifier({self.value!r})"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, ObjectIdentifier) and self.value == other.value
@@ -969,7 +969,9 @@ class ObjectIdentifier(X690Type[str]):
         ...
 
     @overload
-    def __getitem__(self, index: slice) -> "ObjectIdentifier":  # pragma: no cover
+    def __getitem__(
+        self, index: slice
+    ) -> "ObjectIdentifier":  # pragma: no cover
         ...
 
     def __getitem__(

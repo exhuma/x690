@@ -203,7 +203,9 @@ def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
     value_slice = slice(start, end)
     if end > len(data):
         raise X690Error(
-            "Invalid Slice %r (data length=%r)" % (value_slice, len(data))
+            "Invalid Slice {!r} (data length={!r})".format(
+                value_slice, len(data)
+            )
         )
     return ValueMetaData(value_slice, nex_index)
 

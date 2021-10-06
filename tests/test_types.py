@@ -262,8 +262,8 @@ class TestObjectIdentifier(TestCase):
         """
         a = ObjectIdentifier("1.3.6.1.2.1.2.2.1.22")
         b = ObjectIdentifier("1.3.6.1.2.1.2.2.1.10.38")
-        self.assertNotIn(a, b, "%s should not be in %s" % (a, b))
-        self.assertNotIn(b, a, "%s should not be in %s" % (b, a))
+        self.assertNotIn(a, b, f"{a} should not be in {b}")
+        self.assertNotIn(b, a, f"{b} should not be in {a}")
 
     def test_length_1(self):
         """
