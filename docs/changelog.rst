@@ -6,6 +6,7 @@ Changelog
 
 * Renamed ``x690.types.Type`` to ``x690.types.X690Type``
 * Flagged as "stable"
+* Dropped support for Python 3.6
 
 
 0.5.0
