@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.0.0post1 - Maintenance release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* This fixes the incorrectly provided extra ``rest`` in the dependency
+  metadata. This extra has become obsolete and removing it fixed
+  versioning errors when installing ``x690``.
+
 1.0.0
 -------------
 
