@@ -79,19 +79,13 @@ type):
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
-
+from collections.abc import Iterator
 from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
 from typing import (
     Any,
-    Dict,
     Generic,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     overload,
@@ -129,9 +123,9 @@ UNINITIALISED = _SENTINEL_UNINITIALISED()
 def decode(
     data: bytes,
     start_index: int = 0,
-    enforce_type: Optional[Type[TPopType]] = None,
+    enforce_type: type[TPopType] | None = None,
     strict: bool = False,
-) -> Tuple[TPopType, int]:
+) -> tuple[TPopType, int]:
     """
     Convert a X.690 bytes object into a Python instance, and the location of
     the next object.
@@ -195,7 +189,7 @@ class X690Type(Generic[TWrappedPyType]):
     """
 
     __slots__ = ["pyvalue", "_raw_bytes"]
-    __registry: Dict[Tuple[str, int, TypeNature], Type["X690Type[Any]"]] = {}
+    __registry: dict[tuple[str, int, TypeNature], type["X690Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
@@ -207,7 +201,7 @@ class X690Type(Generic[TWrappedPyType]):
     TAG: int = -1
 
     #: The decoded (or to-be encoded) Python value
-    pyvalue: Union[TWrappedPyType, _SENTINEL_UNINITIALISED]
+    pyvalue: TWrappedPyType | _SENTINEL_UNINITIALISED
 
     #: The byte representation of "pyvalue" without metadata-header
     _raw_bytes: bytes
@@ -215,7 +209,7 @@ class X690Type(Generic[TWrappedPyType]):
     #: The location of the value within "raw_bytes"
     bounds: slice = slice(None)
 
-    def __init_subclass__(cls: Type["X690Type[Any]"]) -> None:
+    def __init_subclass__(cls: type["X690Type[Any]"]) -> None:
         for nature in cls.NATURE:
             X690Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
@@ -247,7 +241,7 @@ class X690Type(Generic[TWrappedPyType]):
     @staticmethod
     def get(
         typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
-    ) -> Type["X690Type[Any]"]:
+    ) -> type["X690Type[Any]"]:
         """
         Retrieve a Python class by x690 type information
 
@@ -257,7 +251,7 @@ class X690Type(Generic[TWrappedPyType]):
         return cls
 
     @staticmethod
-    def all() -> List[Type["X690Type[Any]"]]:
+    def all() -> list[type["X690Type[Any]"]]:
         """
         Returns all registered classes
         """
@@ -280,7 +274,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     @classmethod
     def decode(
-        cls: Type[TConcreteType], data: bytes
+        cls: type[TConcreteType], data: bytes
     ) -> TConcreteType:  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
@@ -295,7 +289,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     @classmethod
     def from_bytes(
-        cls: Type[TConcreteType], data: bytes, slc: slice = slice(None)
+        cls: type[TConcreteType], data: bytes, slc: slice = slice(None)
     ) -> TConcreteType:
         """
         Creates a new :py:class:`x690.types.X690Type` instance from raw-bytes
@@ -322,7 +316,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     def __init__(
         self,
-        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+        value: TWrappedPyType | _SENTINEL_UNINITIALISED = UNINITIALISED,
     ) -> None:
         self.pyvalue = value
         self._raw_bytes = b""
@@ -418,7 +412,7 @@ class UnknownType(X690Type[bytes]):
 
     def __repr__(self) -> str:
         typeinfo = TypeInfo.from_bytes(self.tag)
-        tinfo = f"{typeinfo.cls}/{typeinfo.nature}/{typeinfo.tag}"
+        tinfo = f"{typeinfo.cls.value}/{typeinfo.nature.value}/{typeinfo.tag}"
         return f"<{self.__class__.__name__} {self.tag} {self.value!r} {tinfo}>"
 
     def __eq__(self, other: object) -> bool:
@@ -506,8 +500,7 @@ class Null(X690Type[None]):
         super().validate(data)
         if data[1] != 0:
             raise ValueError(
-                "Unexpected NULL value. Length should be 0, it "
-                "was %d" % data[1]
+                "Unexpected NULL value. Length should be 0, it was %d" % data[1]
             )
 
     @staticmethod
@@ -552,7 +545,7 @@ class OctetString(X690Type[bytes]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
     def __init__(
-        self, value: Union[str, bytes, _SENTINEL_UNINITIALISED] = b""
+        self, value: str | bytes | _SENTINEL_UNINITIALISED = b""
     ) -> None:
         if isinstance(value, str):
             value = value.encode("ascii")
@@ -581,12 +574,12 @@ class OctetString(X690Type[bytes]):
             # the value raw
             embedded: X690Type[Any] = decode(self.value)[0]
             return wrap(embedded.pretty(0), f"Embedded in {type(self)}", depth)
-        except:  # pylint: disable=bare-except
+        except Exception:
             wrapped = wrap(visible_octets(self.value), str(type(self)), depth)
             return wrapped
 
 
-class Sequence(X690Type[List[X690Type[Any]]]):
+class Sequence(X690Type[list[X690Type[Any]]]):
     """
     Represents an X.690 sequence type. Instances of this class are iterable and
     indexable.
@@ -597,7 +590,7 @@ class Sequence(X690Type[List[X690Type[Any]]]):
     @staticmethod
     def decode_raw(
         data: bytes, slc: slice = slice(None)
-    ) -> List[X690Type[Any]]:
+    ) -> list[X690Type[Any]]:
         """
         Converts the raw byte-value (without type & length header) into a
         pure Python type
@@ -609,7 +602,7 @@ class Sequence(X690Type[List[X690Type[Any]]]):
             return []
         item: X690Type[Any]
         item, next_pos = decode(data, start_index)
-        items: List[X690Type[Any]] = [item]
+        items: list[X690Type[Any]] = [item]
         end = slc.stop or len(data)
         while next_pos < end:
             item, next_pos = decode(data, next_pos)
@@ -644,7 +637,7 @@ class Sequence(X690Type[List[X690Type[Any]]]):
     def __getitem__(self, idx: int) -> X690Type[Any]:
         return self.value[idx]
 
-    def pythonize(self) -> List[X690Type[Any]]:
+    def pythonize(self) -> list[X690Type[Any]]:
         """
         Overrides :py:meth:`~.X690Type.pythonize`
         """
@@ -730,7 +723,7 @@ class ObjectIdentifier(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE]
 
     def __init__(
-        self, value: Union[str, _SENTINEL_UNINITIALISED] = UNINITIALISED
+        self, value: str | _SENTINEL_UNINITIALISED = UNINITIALISED
     ) -> None:
         if (
             not isinstance(value, _SENTINEL_UNINITIALISED)
@@ -741,7 +734,7 @@ class ObjectIdentifier(X690Type[str]):
         super().__init__(value)
 
     @property
-    def nodes(self) -> Tuple[int, ...]:
+    def nodes(self) -> tuple[int, ...]:
         """
         Returns the numerical nodes for this instance as tuple
 
@@ -756,7 +749,6 @@ class ObjectIdentifier(X690Type[str]):
 
     @staticmethod
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
-
         """
         If we encounter a value larger than 127, we have to consume from the
         stram until we encounter a value below 127 and recombine them.
@@ -773,7 +765,7 @@ class ObjectIdentifier(X690Type[str]):
         return total
 
     @staticmethod
-    def encode_large_value(value: int) -> List[int]:
+    def encode_large_value(value: int) -> list[int]:
         """
         Inverse function of :py:meth:`~.ObjectIdentifier.decode_large_value`
         """
@@ -822,7 +814,7 @@ class ObjectIdentifier(X690Type[str]):
         instance = ".".join([str(n) for n in output])
         return instance
 
-    def collapse_identifiers(self) -> Tuple[int, ...]:
+    def collapse_identifiers(self) -> tuple[int, ...]:
         """
         Meld the first two octets into one octet as defined by x.690
 
@@ -937,7 +929,7 @@ class ObjectIdentifier(X690Type[str]):
         #   2. drop identical items from the front (leaving us with "tail")
         #   3. compare both tails
         zipped = zip_longest(a, b, fillvalue=None)
-        tail: List[Tuple[int, int]] = []
+        tail: list[tuple[int | None, int | None]] = []
         for tmp_a, tmp_b in zipped:
             if tmp_a == tmp_b and not tail:
                 continue
@@ -947,12 +939,9 @@ class ObjectIdentifier(X690Type[str]):
         # is a direct subtree of "b" (no diverging nodes). Otherwise we would
         # have te divergence in "b", and we can say that "b is contained in a"
         _, unzipped_b = zip(*tail)
-        if all([x is None for x in unzipped_b]):
-            return True
-
         # In all other cases we end up with an unmatching tail and know that "b
         # is not contained in a".
-        return False
+        return all(x is None for x in unzipped_b)
 
     def __lt__(self, other: "ObjectIdentifier") -> bool:
         return self.nodes < other.nodes
@@ -974,9 +963,7 @@ class ObjectIdentifier(X690Type[str]):
     ) -> "ObjectIdentifier":  # pragma: no cover
         ...
 
-    def __getitem__(
-        self, index: Union[int, slice]
-    ) -> Union["ObjectIdentifier", int]:
+    def __getitem__(self, index: int | slice) -> Union["ObjectIdentifier", int]:
         if isinstance(index, int):
             return self.nodes[index]
         output = self.nodes[index]
@@ -1009,7 +996,7 @@ class Real(X690Type[float]):
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class Enumerated(X690Type[List[Any]]):
+class Enumerated(X690Type[list[Any]]):
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -1047,7 +1034,7 @@ class T61String(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
     __INITIALISED = False
 
-    def __init__(self, value: Union[str, bytes] = "") -> None:
+    def __init__(self, value: str | bytes = "") -> None:
         if isinstance(value, str):
             super().__init__(value or UNINITIALISED)
         else:

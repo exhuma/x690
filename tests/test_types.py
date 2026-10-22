@@ -1,6 +1,5 @@
 # pylint: skip-file
 
-import sys
 from unittest import TestCase
 
 import pytest
@@ -18,7 +17,6 @@ from x690.types import (
     X690Type,
     decode,
 )
-from x690.util import TypeInfo
 
 from .conftest import assert_bytes_equal
 
@@ -675,7 +673,6 @@ class TestUnknownType(TestCase):
 
     def test_repr(self):
         result = repr(UnknownType(b"abc", 99))
-        typeinfo = TypeInfo("application", "constructed", 3)
         expected = "<UnknownType 99 b'abc' application/constructed/3>"
         self.assertEqual(result, expected)
 

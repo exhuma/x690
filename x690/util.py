@@ -5,13 +5,9 @@ Utility functions for working with the X.690 and related standards.
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 from .exc import X690Error
-
-if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import, cyclic-import
-    from typing import Dict, List, Tuple, Union
 
 #: String to be used for indenting nested items during "pretty()" calls
 INDENT_STRING = "  "
@@ -77,8 +73,7 @@ class TypeInfo:
     _raw_value = None
 
     @staticmethod
-    def from_bytes(data):
-        # type: ( Union[int, bytes] ) -> TypeInfo
+    def from_bytes(data: int | bytes) -> "TypeInfo":
         """
         Given one octet, extract the separate fields and return a TypeInfo
         instance::
@@ -93,7 +88,7 @@ class TypeInfo:
             data = int.from_bytes(data, "big")
         if data == 0b11111111:
             raise NotImplementedError(
-                "Long identifier types are not yet " "implemented"
+                "Long identifier types are not yet implemented"
             )
         cls_hint = (data & 0b11000000) >> 6
         pc_hint = (data & 0b00100000) >> 5
@@ -113,11 +108,10 @@ class TypeInfo:
         nature = TypeNature.CONSTRUCTED if pc_hint else TypeNature.PRIMITIVE
 
         instance = TypeInfo(cls, nature, value)
-        instance._raw_value = data
+        instance._raw_value = data  # type: ignore[assignment]
         return instance
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         # pylint: disable=invalid-name
         if self.cls == TypeClass.UNIVERSAL:
             cls = 0b00
@@ -141,8 +135,7 @@ class TypeInfo:
         return bytes([output])
 
 
-def encode_length(value):
-    # type: (int) -> bytes
+def encode_length(value: int) -> bytes:
     """
     This function encodes the length of a variable into bytes conforming to the
     rules defined in :term:`X.690`: The "length" field must be specially
@@ -173,7 +166,7 @@ def encode_length(value):
     if value < 127:
         return bytes([value])
 
-    output = []  # type: List[int]
+    output: list[int] = []
     while value > 0:
         value, remainder = value // 256, value % 256
         output.insert(0, remainder)
@@ -208,8 +201,7 @@ def get_value_slice(data: bytes, index: int = 0) -> ValueMetaData:
     return ValueMetaData(value_slice, nex_index)
 
 
-def decode_length(data, index=0):
-    # type: ( bytes, int ) -> LengthInfo
+def decode_length(data: bytes, index: int = 0) -> LengthInfo:
     """
     Given a bytes object, which starts with the length information of a TLV
     value, returns a namedtuple with the length and the number of bytes which
@@ -262,8 +254,7 @@ def decode_length(data, index=0):
     return LengthInfo(output, offset)
 
 
-def visible_octets(data):
-    # type: ( bytes ) -> str
+def visible_octets(data: bytes) -> str:
     """
     Returns a geek-friendly (hexdump)  output of a bytes object.
 
