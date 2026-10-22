@@ -1,6 +1,46 @@
 Changelog
 =========
 
+Release 1.1.0 - T61String conformance and maintenance mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**T61String**
+
+* ``T61String`` now uses ``t61codec`` 3, which follows ITU-T T.61 (1988) to
+  the letter.
+* Accented letters decode to precomposed characters (``b"Caf\xc2e"`` gives
+  ``"Café"``).
+* ``0xE0`` decodes to Ω U+03A9 (it was U+2126).
+* Data which is not valid T.61 now falls back to Latin-1 instead of raising.
+  This matches the behaviour of OpenSSL.
+* Latin-1 data which is *also* valid T.61 is decoded as T.61 (for example
+  ``0xE9`` decodes to Ø). This ambiguity is inherent: the two encodings can
+  not be told apart from the bytes alone.
+* Encoding is strict: characters which T.61 cannot represent raise an error.
+* x690 no longer registers the ``t61`` codec in Python's global codec
+  registry.
+* Fixes `#3 <https://github.com/exhuma/x690/issues/3>`_.
+
+**Fixes**
+
+* ``repr()`` of ``UnknownType`` is now stable on Python 3.12 and later.
+
+**Packaging**
+
+* Requires Python 3.11 or newer.
+* Depends on ``t61codec>=3.0,<4``.
+* Built with hatchling from a PEP 621 ``pyproject.toml``, with PEP 639
+  license metadata.
+* ``Development Status :: 6 - Mature``: the project is in maintenance mode.
+
+**Project**
+
+* CI tests all supported CPython versions automatically, plus a monthly
+  scheduled run.
+* Releases are published through PyPI Trusted Publishing.
+* The documentation is deployed to GitHub Pages via GitHub Actions:
+  https://exhuma.github.io/x690/
+
 Release 1.0.0post1 - Maintenance release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

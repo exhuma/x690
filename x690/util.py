@@ -57,7 +57,7 @@ class TypeInfo:
         The typeclass (a value taken from :py:class:`~.TypeClass`)
 
     nature
-        A value taken from :py:`~.TypeNature`
+        A value taken from :py:class:`~.TypeNature`
 
     tag
         The actual type identifier.
