@@ -1158,11 +1158,11 @@ wheels = [
 
 [[package]]
 name = "t61codec"
-version = "1.0.1"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4d/3d/58386307e57294005c8fe2e7b29d97f9094efcb122ab1ff4a368816b45fa/t61codec-1.0.1.tar.gz", hash = "sha256:4d854f40017ef39e699291a57a9891c74630facb370b94238284eb9a475ae23f", size = 5713, upload-time = "2019-12-08T17:04:12.906Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/f4/7613a6e929bfe72acef4c9919d82712ca85f12112738c5826432eb731e82/t61codec-3.0.0.tar.gz", hash = "sha256:bc5e60536812b84e41221c9f4f79d1a64121f4183492b0da3883f205163c0270", size = 100720, upload-time = "2026-10-22T20:08:48.902Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/de/47bfc18604861278a97a8381262da4b6a9b98b9f645695ebaf3f22de2558/t61codec-1.0.1-py2.py3-none-any.whl", hash = "sha256:4dae780d65086a10ff822b14ecebb762defe478645a248b74980ced87c85f723", size = 6006, upload-time = "2019-12-08T17:04:07.574Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/a1/94a43735f5e37e2269e86ca3952123b87e028a34c540c14e38013058c344/t61codec-3.0.0-py3-none-any.whl", hash = "sha256:b28e1507f6031515ad9f9c6adb160bc56bf8ed0362d0ef5b58dcfad94b853bc6", size = 12220, upload-time = "2026-10-22T20:08:47.574Z" },
 ]
 
 [[package]]
@@ -1221,7 +1221,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "t61codec", specifier = ">=1.0.1,<2.0" }]
+requires-dist = [{ name = "t61codec", specifier = ">=3.0,<4" }]
 
 [package.metadata.requires-dev]
 dev = [

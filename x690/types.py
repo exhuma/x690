@@ -91,7 +91,7 @@ from typing import (
     overload,
 )
 
-import t61codec  # type: ignore
+import t61codec
 
 from .exc import IncompleteDecoding, UnexpectedType, X690Error
 from .util import (
@@ -118,6 +118,8 @@ class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
 
 #: sentinel value for uninitialised objects (used for lazy decoding)
 UNINITIALISED = _SENTINEL_UNINITIALISED()
+
+_T61_CODEC = t61codec.Codec()
 
 
 def decode(
@@ -1029,10 +1031,47 @@ class PrintableString(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
+def _decode_t61(data: bytes) -> str:
+    """
+    Decode *data* as T.61, falling back to Latin-1.
+
+    Strict T.61 (via :py:mod:`t61codec`) is tried first. Real-world
+    ``T61String`` values (for example in X.509 certificates) are
+    frequently not valid T.61 at all: OpenSSL treats them as one byte per
+    character in ISO 8859-1. If the strict decoding raises a
+    :py:exc:`UnicodeDecodeError`, the data is therefore decoded as
+    Latin-1, which cannot fail.
+
+    The codec is used directly. It is deliberately *not* registered in
+    the process-wide codec registry.
+    """
+    try:
+        return _T61_CODEC.decode(data)[0]
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
 class T61String(X690Type[str]):
+    """
+    The ``T61String`` (``TeletexString``) type, tag ``0x14``.
+
+    **Decoding** is strict T.61 (ITU-T T.61, as implemented by
+    ``t61codec`` 3) first: accent + letter pairs yield precomposed
+    characters (``b"Caf\\xc2e"`` becomes ``"Café"``) and ``0xE0`` is
+    ``Ω`` (U+03A9, GREEK CAPITAL LETTER OMEGA). If the data is not valid
+    T.61 it is decoded as Latin-1 instead, matching OpenSSL. Note that
+    data which happens to be valid T.61 is never reinterpreted as
+    Latin-1, even if it was probably meant as such.
+
+    **Encoding** is strict T.61 with no fallback, so the output is always
+    valid T.61. A string containing a character which has no T.61
+    representation raises :py:exc:`UnicodeEncodeError`.
+
+    The T.61 codec is never registered globally.
+    """
+
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-    __INITIALISED = False
 
     def __init__(self, value: str | bytes = "") -> None:
         if isinstance(value, str):
@@ -1051,22 +1090,18 @@ class T61String(X690Type[str]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
         """
-        data = data[slc]
-        if not T61String.__INITIALISED:
-            t61codec.register()
-            T61String.__INITIALISED = True
-        return data.decode("t61")
+        return _decode_t61(data[slc])
 
     def encode_raw(self) -> bytes:
         """
         Overrides :py:meth:`.X690Type.encode_raw`
+
+        :raises UnicodeEncodeError: if the value cannot be represented
+            in T.61.
         """
-        if not T61String.__INITIALISED:  # pragma: no cover
-            t61codec.register()
-            T61String.__INITIALISED = True
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
-        return self.pyvalue.encode("t61")
+        return _T61_CODEC.encode(self.pyvalue)[0]
 
 
 class VideotexString(X690Type[str]):

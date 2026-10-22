@@ -25,7 +25,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "t61codec >=1.0.1, <2.0",
+    "t61codec>=3.0,<4",
 ]
 
 [project.urls]
