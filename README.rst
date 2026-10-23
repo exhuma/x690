@@ -48,11 +48,10 @@ Python 3.11 or newer is required::
 T61String decoding
 ------------------
 
-``T61String`` decodes according to ITU-T T.61 (1988) first. Data which is not
-valid T.61 falls back to Latin-1, which is what OpenSSL does. Latin-1 data
-which also happens to be valid T.61 is decoded as T.61 (for example ``0xE9``
-becomes ``Ø``). Encoding is strict. See the `changelog
-<https://exhuma.github.io/x690/changelog.html>`_ for details.
+``T61String`` decodes and encodes strictly according to ITU-T T.61 (1988).
+Invalid T.61 raises ``UnicodeDecodeError``. Data written by OpenSSL is often
+Latin-1 rather than T.61; decode such raw values with ``latin-1`` yourself. See
+the `changelog <https://exhuma.github.io/x690/changelog.html>`_ for details.
 
 
 Supporting New Types

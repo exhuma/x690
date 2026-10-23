@@ -520,22 +520,20 @@ class TestT61String(TestCase):
     def test_encode_accented_letters(self):
         assert_bytes_equal(bytes(T61String("Caf\u00e9")), b"\x14\x05Caf\xc2e")
 
-    def test_latin1_fallback_invalid_t61(self):
-        # 0xDF is undefined in T.61 but is the sharp s in Latin-1
-        result, _ = decode(b"\x14\x06Stra\xdfe")
-        assert result.value == "Stra\u00dfe"
-
-    def test_latin1_fallback_lone_trailing_diacritic(self):
-        result, _ = decode(b"\x14\x04abc\xc2")
-        assert result.value == "abc\u00c2"
-
-    def test_latin1_fallback_undefined_control_byte(self):
-        result, _ = decode(b"\x14\x03a\x80b")
-        assert result.value == "a\x80b"
-
-    def test_valid_t61_is_not_reinterpreted_as_latin1(self):
-        # 0xFC is valid T.61 (thorn), so no fallback happens
+    def test_valid_t61_decodes_strictly(self):
+        # 0xFC is valid T.61 (thorn)
         assert T61String(b"M\xfcller").value == "M\u00feller"
+
+    def test_invalid_t61_raises(self):
+        for raw in (b"Stra\xdfe", b"abc\xc2", b"\x80"):
+            with self.subTest(raw=raw):
+                with pytest.raises(UnicodeDecodeError):
+                    T61String(raw)
+                with pytest.raises(UnicodeDecodeError):
+                    T61String.decode_raw(raw)
+                with pytest.raises(UnicodeDecodeError):
+                    result, _ = decode(b"\x14" + bytes([len(raw)]) + raw)
+                    result.pythonize()
 
     def test_encode_unrepresentable_raises(self):
         with pytest.raises(UnicodeEncodeError):
@@ -544,7 +542,6 @@ class TestT61String(TestCase):
     def test_no_global_codec_registration(self):
         decode(b"\x14\x07hello \xe0")
         bytes(T61String("Caf\u00e9"))
-        T61String(b"Stra\xdfe")
         with pytest.raises(LookupError):
             codecs.lookup("t61")
 

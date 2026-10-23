@@ -11,11 +11,9 @@ Release 1.1.0 - T61String conformance and maintenance mode
 * Accented letters decode to precomposed characters (``b"Caf\xc2e"`` gives
   ``"Café"``).
 * ``0xE0`` decodes to Ω U+03A9 (it was U+2126).
-* Data which is not valid T.61 now falls back to Latin-1 instead of raising.
-  This matches the behaviour of OpenSSL.
-* Latin-1 data which is *also* valid T.61 is decoded as T.61 (for example
-  ``0xE9`` decodes to Ø). This ambiguity is inherent: the two encodings can
-  not be told apart from the bytes alone.
+* Invalid T.61 now raises ``UnicodeDecodeError``. Data written by OpenSSL is
+  often Latin-1 rather than T.61; decode such raw values with ``latin-1``
+  yourself.
 * Encoding is strict: characters which T.61 cannot represent raise an error.
 * x690 no longer registers the ``t61`` codec in Python's global codec
   registry.

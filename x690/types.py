@@ -1031,41 +1031,19 @@ class PrintableString(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-def _decode_t61(data: bytes) -> str:
-    """
-    Decode *data* as T.61, falling back to Latin-1.
-
-    Strict T.61 (via :py:mod:`t61codec`) is tried first. Real-world
-    ``T61String`` values (for example in X.509 certificates) are
-    frequently not valid T.61 at all: OpenSSL treats them as one byte per
-    character in ISO 8859-1. If the strict decoding raises a
-    :py:exc:`UnicodeDecodeError`, the data is therefore decoded as
-    Latin-1, which cannot fail.
-
-    The codec is used directly. It is deliberately *not* registered in
-    the process-wide codec registry.
-    """
-    try:
-        return _T61_CODEC.decode(data)[0]
-    except UnicodeDecodeError:
-        return data.decode("latin-1")
-
-
 class T61String(X690Type[str]):
     """
     The ``T61String`` (``TeletexString``) type, tag ``0x14``.
 
-    **Decoding** is strict T.61 (ITU-T T.61, as implemented by
-    ``t61codec`` 3) first: accent + letter pairs yield precomposed
-    characters (``b"Caf\\xc2e"`` becomes ``"Café"``) and ``0xE0`` is
-    ``Ω`` (U+03A9, GREEK CAPITAL LETTER OMEGA). If the data is not valid
-    T.61 it is decoded as Latin-1 instead, matching OpenSSL. Note that
-    data which happens to be valid T.61 is never reinterpreted as
-    Latin-1, even if it was probably meant as such.
+    Decoding and encoding are strict ITU-T T.61 (1988), via ``t61codec``
+    3. Accented letters decode to precomposed characters
+    (``b"Caf\\xc2e"`` becomes ``"Café"``) and ``0xE0`` is ``Ω`` (U+03A9,
+    GREEK CAPITAL LETTER OMEGA). Invalid T.61 raises
+    :py:exc:`UnicodeDecodeError`, and characters without a T.61
+    representation raise :py:exc:`UnicodeEncodeError`.
 
-    **Encoding** is strict T.61 with no fallback, so the output is always
-    valid T.61. A string containing a character which has no T.61
-    representation raises :py:exc:`UnicodeEncodeError`.
+    Data written by OpenSSL is often Latin-1 rather than T.61. For such
+    values, decode the raw bytes with ``bytes.decode("latin-1")``.
 
     The T.61 codec is never registered globally.
     """
@@ -1089,8 +1067,10 @@ class T61String(X690Type[str]):
         pure Python type
 
         Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises UnicodeDecodeError: if the data is not valid T.61.
         """
-        return _decode_t61(data[slc])
+        return _T61_CODEC.decode(data[slc])[0]
 
     def encode_raw(self) -> bytes:
         """
