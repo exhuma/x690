@@ -51,22 +51,10 @@ def assert_bytes_equal(a, b):
                 char_bh = f"0x{char_b:02x}"
                 char_br = char_repr(char_b)
             comparisons.append(
-                "{8:<3} Offset {0:4d}: "
-                "{1:^10} {4} {5:^10} | "
-                "{2:>3} {4} {6:>3} | "
-                "{3:^4} {4} {7:^4} | {9:>3} {4} {10:>3}".format(
-                    offset,
-                    char_ab,
-                    char_ad,
-                    char_ah,
-                    comp,
-                    char_bb,
-                    char_bd,
-                    char_bh,
-                    marker,
-                    char_ar,
-                    char_br,
-                )
+                f"{marker:<3} Offset {offset:4d}: "
+                f"{char_ab:^10} {comp} {char_bb:^10} | "
+                f"{char_ad:>3} {comp} {char_bd:>3} | "
+                f"{char_ah:^4} {comp} {char_bh:^4} | {char_ar:>3} {comp} {char_br:>3}"
             )
         raise AssertionError(
             "Bytes differ!\n"

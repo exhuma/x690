@@ -15,6 +15,8 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+from importlib.metadata import version as _version
+
 # -- Project information -----------------------------------------------------
 
 project = "x690"
@@ -22,7 +24,7 @@ copyright = "2020, Michel Albert"
 author = "Michel Albert"
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.0"
+release = _version("x690")
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,8 +49,3 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "alabaster"
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]

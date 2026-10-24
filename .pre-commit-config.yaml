@@ -1,27 +1,32 @@
----
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.8.0
-    hooks:
-      - id: isort
-        args: ["--profile", "black"]
-  - repo: https://github.com/psf/black
-    rev: 20.8b1
-    hooks:
-      - id: black
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
   - repo: https://github.com/exhuma/pre-commit-hooks
-    rev: b31e7670811fd7ac12ef10bea59c5ac0e3b1a212
+    rev: 1ed006084019efb779563b6b0957a3723f5bbcd1
     hooks:
       - id: prevent-debug-markers
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.17.0
+
+  - repo: local
     hooks:
-      - id: yamllint
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false

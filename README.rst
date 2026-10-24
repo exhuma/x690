@@ -1,11 +1,21 @@
 Pure Python `X.690`_ implementation
 ===================================
 
-.. image:: https://github.com/exhuma/x690/workflows/Testing/badge.svg?branch=main
-    :alt: Code Style
+.. image:: https://img.shields.io/pypi/v/x690.svg
+   :target: https://pypi.org/project/x690/
+   :alt: PyPI version
 
-.. image:: https://github.com/exhuma/x690/workflows/Build%20&%20Publish%20Docs/badge.svg?branch=main
-    :alt: Build & Publish Docs
+.. image:: https://img.shields.io/pypi/pyversions/x690.svg
+   :target: https://pypi.org/project/x690/
+   :alt: Supported Python versions
+
+.. image:: https://github.com/exhuma/x690/actions/workflows/pythonpackage.yml/badge.svg
+   :target: https://github.com/exhuma/x690/actions/workflows/pythonpackage.yml
+   :alt: CI status
+
+.. image:: https://github.com/exhuma/x690/actions/workflows/docs.yml/badge.svg
+   :target: https://exhuma.github.io/x690/
+   :alt: Documentation
 
 .. _X.690: https://www.itu.int/rec/recommendation.asp?lang=en&parent=T-REC-X.690-201508-I
 
@@ -13,6 +23,35 @@ Pure Python `X.690`_ implementation
 This module contains a pure Python implementation of the "x690" standard for
 BER encoding/decoding. Other encodings are currently unsupported but
 pull-requests are welcome.
+
+Documentation: https://exhuma.github.io/x690/
+
+
+Project status
+--------------
+
+X.690 is a fixed standard (ITU-T X.690) and x690 implements the BER-based
+types it needs. The library is feature-complete. The project is in
+maintenance mode: only bug fixes, support for new Python versions and
+security fixes are accepted. Feature requests will be declined unless a
+change in Python itself requires one. Semantic Versioning applies.
+
+
+Installation
+------------
+
+Python 3.11 or newer is required::
+
+    pip install x690
+
+
+T61String decoding
+------------------
+
+``T61String`` decodes and encodes strictly according to ITU-T T.61 (1988).
+Invalid T.61 raises ``UnicodeDecodeError``. Data written by OpenSSL is often
+Latin-1 rather than T.61; decode such raw values with ``latin-1`` yourself. See
+the `changelog <https://exhuma.github.io/x690/changelog.html>`_ for details.
 
 
 Supporting New Types

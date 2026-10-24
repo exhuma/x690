@@ -1,4 +1,0 @@
-exclude tests/*
-exclude tests/**/*
-prune tests
-

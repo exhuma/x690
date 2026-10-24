@@ -275,7 +275,7 @@ class TestHelpers(TestCase):
             )
         )
         expected = (
-            "00 55 00 55 00 55 00 55  55                        " ".U.U.U.UU"
+            "00 55 00 55 00 55 00 55  55                        .U.U.U.UU"
         )
         self.assertEqual(result, expected)
 
