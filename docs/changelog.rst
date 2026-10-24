@@ -30,6 +30,9 @@ Release 1.1.0 - T61String conformance and maintenance mode
 * Built with hatchling from a PEP 621 ``pyproject.toml``, with PEP 639
   license metadata.
 * ``Development Status :: 6 - Mature``: the project is in maintenance mode.
+* The wheel contains only the ``x690`` package; the test suite is no longer
+  installed as a top-level ``tests`` package (see
+  `#2 <https://github.com/exhuma/x690/pull/2>`_).
 
 **Project**
 
