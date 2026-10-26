@@ -11,10 +11,12 @@ Context-specific types are declared on their enclosing type with
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
+import math
 import re
 import string
 from array import array
 from collections.abc import Collection, Iterable, Iterator
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
 from fractions import Fraction
 from itertools import zip_longest
@@ -692,16 +694,20 @@ class OctetString(X690Type[bytes]):
             return wrapped
 
 
-class Sequence(X690Type[list[X690Type[Any]]]):
+class _Structure(X690Type[list[X690Type[Any]]]):
     """
-    Represents an X.690 sequence type. Instances of this class are iterable and
-    indexable.
+    Base for the constructed types that hold a list of x690 values:
+    :class:`Sequence` and :class:`Set`.
+
+    It is not registered as a type (it has no tag). A decoded value reads
+    its items lazily: only the item headers are read to find their
+    offsets, and an item is decoded when it is accessed. Items keep their
+    order; a :class:`Set` is not sorted.
     """
 
     __slots__ = ("_item_offsets",)
-    TAG = 0x10
 
-    #: Start index of each item, once a decoded sequence has been read.
+    #: Start index of each item, once a decoded value has been read.
     _item_offsets: "array[int] | None"
 
     def __init__(
@@ -714,7 +720,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
     @property
     def value(self) -> list[X690Type[Any]]:
         """
-        The items of this sequence.
+        The items of this value.
 
         Overrides :py:attr:`~.X690Type.value`
         """
@@ -750,15 +756,15 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         lookup = cls.child_lookup()
         return [
             _decode_value(data, offset, lookup)[0]
-            for offset in Sequence.item_offsets(data, slc)
+            for offset in cls.item_offsets(data, slc)
         ]
 
     def _offsets(self) -> "array[int]":
         """
-        Return the item offsets of a decoded sequence, computed once.
+        Return the item offsets of a decoded value, computed once.
         """
         if self._item_offsets is None:
-            self._item_offsets = Sequence.item_offsets(*self._source())
+            self._item_offsets = self.item_offsets(*self._source())
         return self._item_offsets
 
     def detach(self) -> Self:
@@ -783,11 +789,6 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
         return output
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Sequence):
-            return False
-        return self.raw_bytes == other.raw_bytes
 
     def __repr__(self) -> str:
         item_repr = list(self)
@@ -839,6 +840,45 @@ class Sequence(X690Type[list[X690Type[Any]]]):
                 lines.append(bullet + line)
                 bullet = "  "
         return "\n".join(lines)
+
+
+class Sequence(_Structure):
+    """
+    Represents an X.690 sequence type. Instances of this class are iterable and
+    indexable.
+    """
+
+    __slots__ = ()
+    TAG = 0x10
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Sequence):
+            return False
+        return self.raw_bytes == other.raw_bytes
+
+
+class Set(_Structure):
+    """
+    The ``SET`` type, tag ``0x11``, holding a :class:`list` of x690 values.
+
+    It behaves like :class:`Sequence`: it is iterable and indexable, and a
+    decoded value reads its items lazily. The items keep the order in which
+    they were given or decoded; they are not sorted as DER requires.
+
+    >>> value = Set([Integer(1), Boolean(True)])
+    >>> bytes(value)
+    b'1\\x06\\x02\\x01\\x01\\x01\\x01\\x01'
+    >>> decode(bytes(value))[0]
+    Set([Integer(1), Boolean(True)])
+    """
+
+    __slots__ = ()
+    TAG = 0x11
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Set):
+            return False
+        return self.raw_bytes == other.raw_bytes
 
 
 class Explicit(X690Type[TInnerType]):
@@ -1321,10 +1361,201 @@ class External(X690Type[bytes]):
     TAG = 0x08
 
 
+#: The special values of REAL (X.690, 8.5.9), by their contents octet
+_REAL_SPECIAL = {
+    0x40: math.inf,
+    0x41: -math.inf,
+    0x42: math.nan,
+    0x43: -0.0,
+}
+
+#: Bits per digit of the bases of a binary REAL (X.690, 8.5.7.2)
+_REAL_BASE_BITS = {0b00: 1, 0b01: 3, 0b10: 4}
+
+#: The decimal REAL forms of ISO 6093 (X.690, 8.5.8), by number
+_REAL_DECIMAL_FORMS = {
+    1: re.compile(r" *[+-]?[0-9]+"),
+    2: re.compile(r" *[+-]?(?:[0-9]+[.,][0-9]*|[.,][0-9]+)"),
+    3: re.compile(
+        r" *[+-]?(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)[eE][+-]?[0-9]+"
+    ),
+}
+
+
+def _scale_to_float(mantissa: int, exponent: int) -> float:
+    """
+    Return ``mantissa * 2 ** exponent`` as the nearest float.
+
+    Values too large for a float become infinite, and values too small
+    become zero.
+    """
+    if mantissa == 0:
+        return 0.0
+    magnitude = mantissa.bit_length() + exponent
+    if magnitude > 1025:
+        return math.inf
+    if magnitude < -1076:
+        return 0.0
+    if exponent >= 0:
+        try:
+            return float(mantissa << exponent)
+        except OverflowError:
+            return math.inf
+    # int / int is correctly rounded, also for subnormal results
+    return mantissa / (1 << -exponent)
+
+
+def _decode_binary_real(content: bytes) -> float:
+    """
+    Decode the contents of a binary REAL (X.690, 8.5.7).
+
+    :raises ValueError: if the contents are malformed.
+    """
+    first = content[0]
+    base_bits = _REAL_BASE_BITS.get((first >> 4) & 0b11)
+    if base_bits is None:
+        raise ValueError("Invalid Real: the base bits 0b11 are reserved")
+    scale = (first >> 2) & 0b11
+    position = 1
+    exponent_length = (first & 0b11) + 1
+    if exponent_length == 4:
+        if len(content) < 2 or content[1] == 0:
+            raise ValueError("Invalid Real: missing exponent length")
+        exponent_length = content[1]
+        position = 2
+    exponent_end = position + exponent_length
+    if len(content) <= exponent_end:
+        raise ValueError(
+            "Invalid Real: %d octets are too short for the exponent and "
+            "the mantissa" % len(content)
+        )
+    exponent = int.from_bytes(
+        content[position:exponent_end], "big", signed=True
+    )
+    mantissa = int.from_bytes(content[exponent_end:], "big")
+    value = _scale_to_float(mantissa, scale + exponent * base_bits)
+    return -value if first & 0x40 else value
+
+
+def _decode_decimal_real(content: bytes) -> float:
+    """
+    Decode the contents of a decimal REAL in ISO 6093 form (X.690, 8.5.8).
+
+    :raises ValueError: if the contents are malformed.
+    """
+    form = content[0] & 0b111111
+    pattern = _REAL_DECIMAL_FORMS.get(form)
+    if pattern is None:
+        raise ValueError("Invalid Real: unknown decimal form %d" % form)
+    text = content[1:].decode("ascii", errors="replace")
+    if not pattern.fullmatch(text):
+        raise ValueError(
+            "Invalid Real: %r is not in the NR%d form" % (text, form)
+        )
+    return float(text.replace(",", ".").lstrip(" "))
+
+
+def _encode_real(value: float) -> bytes:
+    """
+    Encode *value* as the contents of a REAL in base 2, as DER requires.
+
+    The mantissa is odd, the scaling factor 0 and the exponent as short as
+    possible. Zero has no contents.
+    """
+    if math.isnan(value):
+        return b"\x42"
+    if math.isinf(value):
+        return b"\x40" if value > 0 else b"\x41"
+    if value == 0:
+        return b"" if math.copysign(1.0, value) > 0 else b"\x43"
+    mantissa, denominator = abs(value).as_integer_ratio()
+    exponent = 1 - denominator.bit_length()
+    trailing_zeros = (mantissa & -mantissa).bit_length() - 1
+    mantissa >>= trailing_zeros
+    exponent += trailing_zeros
+    exponent_octets = _encode_twos_complement(exponent)
+    first = 0x80 | (0x40 if value < 0 else 0) | (len(exponent_octets) - 1)
+    mantissa_octets = mantissa.to_bytes((mantissa.bit_length() + 7) // 8, "big")
+    return bytes([first]) + exponent_octets + mantissa_octets
+
+
 class Real(X690Type[float]):
+    """
+    The ``REAL`` type, tag ``0x09``, holding a :class:`float`.
+
+    Decoding reads every form of X.690 section 8.5: zero, the special
+    values (infinities, NaN and minus zero), binary in base 2, 8 or 16 with
+    a scaling factor, and decimal in the ISO 6093 forms NR1, NR2 and NR3.
+    Malformed contents raise :py:exc:`ValueError`. A binary value outside
+    the range of a float decodes to an infinity or to zero.
+
+    Encoding writes base 2 with an odd mantissa, as DER requires. Every
+    finite float survives a round trip unchanged. An :class:`int` is
+    converted to a float.
+
+    >>> bytes(Real(0.5))
+    b'\\t\\x03\\x80\\xff\\x01'
+    >>> decode(b"\\t\\x04\\x01-25")[0]
+    Real(-25.0)
+    """
+
     __slots__ = ()
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
+
+    def __init__(
+        self, value: float | _SENTINEL_UNINITIALISED = UNINITIALISED
+    ) -> None:
+        if not isinstance(value, _SENTINEL_UNINITIALISED):
+            value = float(value)
+        super().__init__(value)
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> float:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises ValueError: if the contents are not a valid REAL.
+        """
+        content = data[slc]
+        if not content:
+            return 0.0
+        first = content[0]
+        if first & 0x80:
+            return _decode_binary_real(content)
+        if first & 0x40:
+            special = _REAL_SPECIAL.get(first)
+            if special is None or len(content) != 1:
+                raise ValueError(
+                    "Invalid Real: unknown special value %r" % content
+                )
+            return special
+        return _decode_decimal_real(content)
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        return _encode_real(self.pyvalue)
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Compare the values, where NaN equals NaN and ``-0.0`` differs from
+        ``0.0``, as their encodings do.
+        """
+        if not isinstance(other, Real):
+            return False
+        mine, theirs = self.value, other.value
+        if math.isnan(mine) or math.isnan(theirs):
+            return math.isnan(mine) and math.isnan(theirs)
+        return mine == theirs and math.copysign(1.0, mine) == math.copysign(
+            1.0, theirs
+        )
 
 
 class Enumerated(X690Type[int]):
@@ -1435,11 +1666,6 @@ class RelativeOid(X690Type[str]):
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, RelativeOid) and self.value == other.value
-
-
-class Set(X690Type[bytes]):
-    __slots__ = ()
-    TAG = 0x11
 
 
 class NumericString(_TextString):
@@ -1843,7 +2069,185 @@ class EOC(X690Type[bytes]):
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class BitString(X690Type[str]):
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Bits:
+    """
+    The value of a :class:`BitString`: a string of bits.
+
+    It holds the octets and the number of unused bits at the end of the
+    last octet, so a decoded value encodes back without loss. Bit 0 is the
+    most significant bit of the first octet, as in ASN.1 named bit lists
+    such as the X.509 ``KeyUsage``.
+
+    >>> flags = Bits.from_bin("101")
+    >>> flags
+    Bits(b'\\xa0', unused=5)
+    >>> len(flags), flags[0], flags[1]
+    (3, True, False)
+    >>> str(flags)
+    '101'
+
+    Equality and hashing look at the bits only: the unused bits of the last
+    octet are ignored, as they are on indexing and iteration.
+
+    :param data: The octets.
+    :param unused: The number of unused bits at the end of the last octet,
+        from 0 to 7. It must be 0 if *data* is empty.
+    :raises ValueError: if *unused* is out of range.
+    """
+
+    data: bytes = b""
+    unused: int = 0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "data", bytes(self.data))
+        if not 0 <= self.unused <= 7:
+            raise ValueError(
+                "The number of unused bits must be 0 to 7, not %d" % self.unused
+            )
+        if self.unused and not self.data:
+            raise ValueError(
+                "An empty bit string cannot have %d unused bits" % self.unused
+            )
+
+    @classmethod
+    def from_bin(cls, text: str) -> "Bits":
+        """
+        Create a value from a string of ``"0"`` and ``"1"``.
+
+        >>> Bits.from_bin("10000001")
+        Bits(b'\\x81')
+
+        :param text: The bits, bit 0 first.
+        :return: A new value, with the last octet padded with zeros.
+        :raises ValueError: if *text* holds other characters.
+        """
+        if not set(text) <= {"0", "1"}:
+            raise ValueError("Bits must be '0' or '1', not %r" % text)
+        unused = -len(text) % 8
+        padded = text + "0" * unused
+        data = int(padded, 2).to_bytes(len(padded) // 8, "big") if text else b""
+        return cls(data, unused)
+
+    def is_set(self, index: int) -> bool:
+        """
+        Return whether bit *index* is 1, where bits past the end are 0.
+
+        Use it for named bit lists: DER drops their trailing zero bits, so
+        a set of flags is often shorter than the list of names.
+
+        >>> Bits.from_bin("1").is_set(5)
+        False
+
+        :raises ValueError: if *index* is negative.
+        """
+        if index < 0:
+            raise ValueError("Bit positions are not negative: %d" % index)
+        return index < len(self) and self[index]
+
+    def _bits_only(self) -> bytes:
+        """
+        Return the octets with the unused bits set to 0.
+        """
+        if not self.unused:
+            return self.data
+        last = self.data[-1] & (0xFF << self.unused) & 0xFF
+        return self.data[:-1] + bytes([last])
+
+    def __len__(self) -> int:
+        return len(self.data) * 8 - self.unused
+
+    def __getitem__(self, index: int) -> bool:
+        size = len(self)
+        position = index + size if index < 0 else index
+        if not 0 <= position < size:
+            raise IndexError("Bit index %d out of range" % index)
+        return bool(self.data[position >> 3] >> (7 - (position & 7)) & 1)
+
+    def __iter__(self) -> Iterator[bool]:
+        for position in range(len(self)):
+            yield self[position]
+
+    def __bytes__(self) -> bytes:
+        return self.data
+
+    def __str__(self) -> str:
+        if not self.data:
+            return ""
+        number = int.from_bytes(self.data, "big")
+        return format(number, "0%db" % (len(self.data) * 8))[: len(self)]
+
+    def __repr__(self) -> str:
+        if self.unused:
+            return "Bits(%r, unused=%d)" % (self.data, self.unused)
+        return "Bits(%r)" % (self.data,)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Bits):
+            return NotImplemented
+        return len(self) == len(other) and self._bits_only() == (
+            other._bits_only()
+        )
+
+    def __hash__(self) -> int:
+        return hash((len(self), self._bits_only()))
+
+
+class BitString(X690Type[Bits]):
+    """
+    The ``BIT STRING`` type, tag ``0x03``, holding a :class:`Bits`.
+
+    Construct it from a :class:`Bits` value, or from :class:`bytes` for a
+    string of whole octets such as a key or a signature. The contents start
+    with the number of unused bits. Decoding raises :py:exc:`ValueError` if
+    that number is above 7, or not 0 for an empty string. Unused bits that
+    are not zero are kept, but ignored.
+
+    Only the primitive encoding is supported.
+
+    >>> bytes(BitString(b"\\x01\\x02"))
+    b'\\x03\\x03\\x00\\x01\\x02'
+    >>> decode(b"\\x03\\x02\\x05\\xa0")[0].value
+    Bits(b'\\xa0', unused=5)
+    """
+
     __slots__ = ()
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+
+    def __init__(
+        self, value: Bits | bytes | _SENTINEL_UNINITIALISED = UNINITIALISED
+    ) -> None:
+        if isinstance(value, bytes):
+            value = Bits(value)
+        super().__init__(value)
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> Bits:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        Empty contents decode to an empty value.
+
+        :raises ValueError: if the number of unused bits is invalid.
+        """
+        content = data[slc]
+        if not content:
+            return Bits()
+        try:
+            return Bits(content[1:], content[0])
+        except ValueError as exc:
+            raise ValueError("Invalid BitString: %s" % exc) from exc
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+        """
+        bits = self.value
+        return bytes([bits.unused]) + bits.data
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, BitString) and self.value == other.value

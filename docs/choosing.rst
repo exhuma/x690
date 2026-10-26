@@ -440,9 +440,8 @@ Current limitations
 - Types are declared by tag, not by position. Two items of one structure
   with the same tag, such as the two sequences that open an X.509
   certificate, decode to the same class.
-- Several universal types hold raw bytes instead of a Python value; see
-  :doc:`types` (`#7
-  <https://github.com/exhuma/x690/issues/7>`_).
+- Six rarely used universal types hold raw bytes instead of a Python value;
+  see :doc:`types`.
 - Sequences are accessed by position, not by name (`#9
   <https://github.com/exhuma/x690/issues/9>`_).
 - There is no validating decode that rejects unknown types (`#8

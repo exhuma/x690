@@ -23,6 +23,9 @@ except where noted:
    * - :class:`~x690.types.Integer`
      - ``0x02``
      - :class:`int`
+   * - :class:`~x690.types.BitString`
+     - ``0x03``
+     - :class:`~x690.types.Bits`
    * - :class:`~x690.types.OctetString`
      - ``0x04``
      - :class:`bytes`
@@ -35,6 +38,9 @@ except where noted:
    * - :class:`~x690.types.ObjectDescriptor`
      - ``0x07``
      - :class:`str` (ASCII)
+   * - :class:`~x690.types.Real`
+     - ``0x09``
+     - :class:`float`
    * - :class:`~x690.types.Enumerated`
      - ``0x0A``
      - :class:`int`
@@ -47,6 +53,9 @@ except where noted:
    * - :class:`~x690.types.Sequence`
      - ``0x10``
      - :class:`list` of x690 values
+   * - :class:`~x690.types.Set`
+     - ``0x11``
+     - :class:`list` of x690 values, in their encoded order
    * - :class:`~x690.types.NumericString`
      - ``0x12``
      - :class:`str` (ASCII)
@@ -93,6 +102,36 @@ represents.
 True
 >>> oid[:6] + ObjectIdentifier("2")
 ObjectIdentifier('1.3.6.1.2.1.2')
+
+Bit strings
+-----------
+
+:class:`~x690.types.BitString` holds a :class:`~x690.types.Bits` value.
+It keeps the octets and the number of unused bits, so a decoded value
+encodes back unchanged. Bit 0 is the most significant bit of the first
+octet, as in ASN.1 named bit lists.
+
+Read flags such as the X.509 ``KeyUsage`` by position. DER drops trailing
+zero bits, so use :meth:`~x690.types.Bits.is_set`, which reads bits past
+the end as 0:
+
+>>> from x690 import decode
+>>> usage = decode(b"\x03\x02\x05\xa0")[0].value
+>>> str(usage)
+'101'
+>>> usage.is_set(0), usage.is_set(1)
+(True, False)
+>>> usage.is_set(8)
+False
+
+Pass bytes for keys and signatures, and write flags with
+:meth:`~x690.types.Bits.from_bin`:
+
+>>> from x690.types import BitString, Bits
+>>> bytes(BitString(b"\x01\x02"))
+b'\x03\x03\x00\x01\x02'
+>>> bytes(Bits.from_bin("1011"))
+b'\xb0'
 
 T61String
 ---------
@@ -145,7 +184,7 @@ b'\x18\x0e20251026120000'
 Types with raw bytes
 --------------------
 
-All other universal types hold the bytes of their value, without the type and
+Six universal types hold the bytes of their value, without the type and
 length header. They decode and encode without loss, and the bytes are left
 for the application to interpret:
 
@@ -155,8 +194,15 @@ VideotexString(b'abc')
 >>> text.value.decode("ascii")
 'abc'
 
-This applies to ``EOC``, ``BitString``, ``External``, ``Real``,
-``EmbeddedPdv``, ``Set``, ``VideotexString``, ``GeneralString`` and
-``CharacterString``. To give one of them a Python value, subclass it, set
-its ``TAG`` again, and override :meth:`~x690.types.X690Type.decode_raw` and
+These types are:
+
+- ``EOC``, the end-of-contents marker. It is part of the structure of an
+  encoding, not a value.
+- ``External``, ``EmbeddedPdv`` and ``CharacterString``, constructed types
+  that are rarely used.
+- ``VideotexString`` and ``GeneralString``, which switch character sets
+  inside the value, as T.100 and ISO 2022 define.
+
+To give one of them a Python value, subclass it, set its ``TAG`` again, and
+override :meth:`~x690.types.X690Type.decode_raw` and
 :meth:`~x690.types.X690Type.encode_raw` as shown in :doc:`custom-types`.
