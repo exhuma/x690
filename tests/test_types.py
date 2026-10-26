@@ -8,6 +8,7 @@ import pytest
 from x690.exc import IncompleteDecoding, UnexpectedType, X690Error
 from x690.types import (
     Boolean,
+    GraphicString,
     Integer,
     Null,
     ObjectIdentifier,
@@ -845,3 +846,29 @@ def test_helpful_noarg_error():
     with pytest.raises(X690Error) as exc:
         Foo.from_bytes(b"hello")
     exc.match("no-arg.*x690.types.UNINITIALISED")
+
+
+def test_graphic_string_encoding():
+    """
+    Ensure a GraphicString can be encoded from a str value.
+    """
+    assert bytes(GraphicString("abc")) == b"\x19\x03abc"
+
+
+def test_graphic_string_round_trip():
+    """
+    Ensure decoding GraphicString bytes and encoding them again yields the
+    original bytes.
+    """
+    data = b"\x19\x03abc"
+    value, _ = decode(data)
+    assert value.value == "abc"
+    assert bytes(GraphicString(value.value)) == data
+
+
+def test_graphic_string_non_ascii():
+    """
+    Ensure encoding a non-ASCII GraphicString raises UnicodeEncodeError.
+    """
+    with pytest.raises(UnicodeEncodeError):
+        bytes(GraphicString("abcé"))

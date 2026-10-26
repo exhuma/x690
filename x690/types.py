@@ -1136,6 +1136,17 @@ class GraphicString(X690Type[str]):
         data = data[slc]
         return data.decode("ascii")
 
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+
+        :raises UnicodeEncodeError: if the value contains non-ASCII
+            characters.
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        return self.pyvalue.encode("ascii")
+
 
 class VisibleString(X690Type[str]):
     __slots__ = ()

@@ -40,7 +40,7 @@ except where noted:
      - :class:`str`
    * - :class:`~x690.types.GraphicString`
      - ``0x19``
-     - :class:`str` (decoding only)
+     - :class:`str`
 
 Object identifiers
 ------------------
