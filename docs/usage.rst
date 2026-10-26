@@ -78,6 +78,15 @@ bytes when first read.
 >>> decode(b"header\x02\x01\x05trailer", 6)
 (Integer(5), 9)
 
+A value kept from a large buffer keeps the whole buffer alive. Call
+``detach()`` to copy only the value's own bytes and release the buffer. It
+returns the value, so it can be chained.
+
+>>> data = b"\x02\x01\x05" + bytes(1000)
+>>> kept = decode(data)[0].detach()
+>>> kept.raw_bytes
+b'\x05'
+
 Check the type
 --------------
 

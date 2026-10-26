@@ -17,6 +17,7 @@ from textwrap import indent
 from typing import (
     Any,
     Generic,
+    Self,
     TypeVar,
     Union,
     overload,
@@ -121,7 +122,7 @@ class X690Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue", "_raw_bytes", "bounds"]
+    __slots__ = ["pyvalue", "_raw_bytes", "_buffer", "_bounds"]
     __registry: dict[tuple[str, int, TypeNature], type["X690Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -136,11 +137,16 @@ class X690Type(Generic[TWrappedPyType]):
     #: The decoded (or to-be encoded) Python value
     pyvalue: TWrappedPyType | _SENTINEL_UNINITIALISED
 
-    #: The byte representation of "pyvalue" without metadata-header
+    #: Cache for the byte representation of "pyvalue" without
+    #: metadata-header (only used for values built from Python objects)
     _raw_bytes: bytes
 
-    #: The location of the value within "raw_bytes"
-    bounds: slice
+    #: The shared input buffer of a decoded value (``None`` if the value was
+    #: not created from a buffer). Never copied during decoding.
+    _buffer: bytes | None
+
+    #: The location of the value's own content bytes within "_buffer"
+    _bounds: slice
 
     def __init_subclass__(cls: type["X690Type[Any]"]) -> None:
         for nature in cls.NATURE:
@@ -153,7 +159,40 @@ class X690Type(Generic[TWrappedPyType]):
         """
         if not isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return self.pyvalue
-        return self.decode_raw(self.raw_bytes, self.bounds)
+        buffer, bounds = self._source()
+        return self.decode_raw(buffer, bounds)
+
+    def _source(self) -> tuple[bytes, slice]:
+        """
+        Return the buffer and bounds holding this value's content bytes
+        without copying them.
+        """
+        if self._buffer is None:
+            return self.raw_bytes, slice(None)
+        return self._buffer, self._bounds
+
+    def detach(self) -> Self:
+        """
+        Copy the value's own content bytes and drop the reference to the
+        buffer it was decoded from.
+
+        Use this to keep a few values from a large document without keeping
+        the whole document alive. Values that were not created from a buffer
+        are left unchanged.
+
+        >>> data = b"\\x02\\x01\\x05" + bytes(1000)
+        >>> value, _ = decode(data)
+        >>> value.detach() is value
+        True
+        >>> value.raw_bytes
+        b'\\x05'
+
+        :return: This instance.
+        """
+        if self._buffer is not None:
+            self._buffer = bytes(self._buffer[self._bounds])
+            self._bounds = slice(None)
+        return self
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> TWrappedPyType:
@@ -243,8 +282,8 @@ class X690Type(Generic[TWrappedPyType]):
                 "x690.types.UNINITIALISED as value. Custom type %r does not "
                 "support this!" % cls
             ) from exc
-        instance.raw_bytes = data
-        instance.bounds = slc
+        instance._buffer = data
+        instance._bounds = slc
         return instance
 
     def __init__(
@@ -253,10 +292,19 @@ class X690Type(Generic[TWrappedPyType]):
     ) -> None:
         self.pyvalue = value
         self._raw_bytes = b""
-        self.bounds = slice(None)
+        self._buffer = None
+        self._bounds = slice(None)
 
     @property
     def raw_bytes(self) -> bytes:
+        """
+        The value's own content bytes, without the type and length header.
+
+        For decoded values this is a copy of the bytes at the value's
+        location in the input buffer.
+        """
+        if self._buffer is not None:
+            return self._buffer[self._bounds]
         if self._raw_bytes != b"":
             return self._raw_bytes
         if self.pyvalue is UNINITIALISED:
@@ -266,14 +314,15 @@ class X690Type(Generic[TWrappedPyType]):
 
     @raw_bytes.setter
     def raw_bytes(self, value: bytes) -> None:
-        self._raw_bytes = value
+        self._buffer = value
+        self._bounds = slice(None)
 
     def __bytes__(self) -> bytes:  # pragma: no cover
         """
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
         """
-        value = self.raw_bytes[self.bounds] or self.encode_raw()
+        value = self.raw_bytes or self.encode_raw()
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
@@ -286,7 +335,9 @@ class X690Type(Generic[TWrappedPyType]):
         """
         Return the x690 byte-length of this instance
         """
-        return len(self.raw_bytes[self.bounds])
+        buffer, bounds = self._source()
+        start, stop, _ = bounds.indices(len(buffer))
+        return max(stop - start, 0)
 
     def encode_raw(self) -> bytes:
         """
@@ -582,10 +633,18 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         Return the item offsets of a decoded sequence, computed once.
         """
         if self._item_offsets is None:
-            self._item_offsets = Sequence.item_offsets(
-                self.raw_bytes, self.bounds
-            )
+            self._item_offsets = Sequence.item_offsets(*self._source())
         return self._item_offsets
+
+    def detach(self) -> Self:
+        """
+        Overrides :py:meth:`.X690Type.detach`
+
+        Also resets the cached item offsets, which refer to the old buffer.
+        """
+        super().detach()
+        self._item_offsets = None
+        return self
 
     def _is_decoded(self) -> bool:
         return isinstance(self.pyvalue, _SENTINEL_UNINITIALISED)
@@ -603,7 +662,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Sequence):
             return False
-        return self.raw_bytes[self.bounds] == other.raw_bytes[other.bounds]
+        return self.raw_bytes == other.raw_bytes
 
     def __repr__(self) -> str:
         item_repr = list(self)
@@ -618,7 +677,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         if not self._is_decoded():
             yield from self.value
             return
-        data = self.raw_bytes
+        data = self._source()[0]
         for offset in self._offsets():
             yield decode(data, offset)[0]
 
@@ -627,10 +686,10 @@ class Sequence(X690Type[list[X690Type[Any]]]):
             return self.value[idx]
         if isinstance(idx, slice):
             return [
-                decode(self.raw_bytes, offset)[0]
+                decode(self._source()[0], offset)[0]
                 for offset in self._offsets()[idx]
             ]
-        item: X690Type[Any] = decode(self.raw_bytes, self._offsets()[idx])[0]
+        item: X690Type[Any] = decode(self._source()[0], self._offsets()[idx])[0]
         return item
 
     def pythonize(self) -> list[X690Type[Any]]:
