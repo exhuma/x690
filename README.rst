@@ -18,9 +18,10 @@ x690
    :alt: Documentation
 
 Encode and decode ASN.1 data in BER (ITU-T X.690) with pure Python. x690
-turns every encoded value into a typed Python object, decodes large buffers
-without copying them, and takes new types with a few lines of code. It is the
-encoding layer of `puresnmp <https://github.com/exhuma/puresnmp>`_.
+turns every encoded value into a typed Python object, decodes documents of a
+million values in a few megabytes of memory, and takes new types with a few
+lines of code. It is the encoding layer of `puresnmp
+<https://github.com/exhuma/puresnmp>`_.
 
 Documentation: https://exhuma.github.io/x690/
 

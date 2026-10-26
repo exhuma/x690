@@ -286,6 +286,8 @@ Summary
      - x690 objects
      - first level
 
+.. _performance:
+
 Performance
 -----------
 
@@ -404,8 +406,9 @@ No copies, parse on read
    Before version 0.5, every nested value copied its part of the data. On
    large documents this cost memory and time. x690 now keeps one reference to
    the input and parses a value only when it is read. A sequence records
-   where its items start and creates each item when it is accessed. Memory
-   use stays predictable for deeply nested data, and applications that need
+   where its items start and creates each item when it is accessed. Beyond
+   the input itself, memory grows by about 8 bytes per item of the sequence
+   being read, plus the values the application keeps. Applications that need
    a few values from a large document do no work for the rest. Errors in a
    value surface when that value is read.
 
@@ -418,7 +421,9 @@ Decode anything
 Pure Python
    x690 has no compiled parts and one small dependency. There are no wheels
    to build, it runs wherever Python runs, and the code is short enough to
-   audit. Speed is not its selling point.
+   audit. Raw throughput is not its goal: on a stream of small records,
+   asn1crypto decodes faster. For whole documents, x690 is the fastest of the
+   libraries compared, because it does less work.
 
 BER
    x690 implements the Basic Encoding Rules, which SNMP uses. Its output has
@@ -452,8 +457,8 @@ When to choose x690
 
 x690 fits when the data is BER, the protocol uses universal types and
 protocol types with unique tags (SNMP is the reference case), and the
-application wants typed Python objects, reads parts of large documents, or
-inspects data without a specification. For X.509 and other cryptographic
-structures, asn1crypto ships the definitions ready to use. For complete ASN.1
-modules or encodings other than BER, asn1tools and pycrate compile the
-specification directly.
+application decodes large documents with limited memory, reads only parts of
+them, wants typed Python objects, or inspects data without a specification.
+For X.509 and other cryptographic structures, asn1crypto ships the
+definitions ready to use. For complete ASN.1 modules or encodings other than
+BER, asn1tools and pycrate compile the specification directly.

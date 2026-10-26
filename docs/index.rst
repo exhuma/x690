@@ -2,9 +2,10 @@ x690
 ====
 
 Encode and decode ASN.1 data in BER (ITU-T X.690) with pure Python. x690
-turns every encoded value into a typed Python object, decodes large buffers
-without copying them, and takes new types with a few lines of code. It is the
-encoding layer of `puresnmp <https://github.com/exhuma/puresnmp>`_.
+turns every encoded value into a typed Python object, decodes documents of a
+million values in a few megabytes of memory, and takes new types with a few
+lines of code. It is the encoding layer of `puresnmp
+<https://github.com/exhuma/puresnmp>`_.
 
 Install
 -------
@@ -44,10 +45,13 @@ Typed decoding
    type checkers know what comes back. The package ships type hints and is
    checked with ``mypy --strict``.
 
-No copies
-   :func:`~x690.decode` reads from any offset of a buffer and returns the
-   offset of the next value. Values keep a reference to the buffer and are
-   converted when first read. Definite and indefinite lengths are supported.
+Large documents
+   A document of 1,000,000 records decodes with 8 MB of memory on top of its
+   input, where the other Python libraries in the :ref:`benchmark
+   <performance>` need 0.35 to 9.6 GB. :func:`~x690.decode` reads from any
+   offset of a buffer without copying it, a sequence records where its items
+   start, and values are converted when first read. Definite and indefinite
+   lengths are supported.
 
 Custom types
    Subclass :class:`~x690.types.X690Type` to add application, context or
