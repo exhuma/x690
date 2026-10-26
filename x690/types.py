@@ -452,6 +452,19 @@ class X690Type(Generic[TWrappedPyType]):
         tinfo = TypeInfo(self.TYPECLASS, self.NATURE[0], self.TAG)
         return bytes(tinfo) + encode_length(len(value)) + value
 
+    def __eq__(self, other: object) -> bool:
+        """
+        Two values are equal if they are of exactly the same class and hold
+        the same value.
+
+        Subclasses compare equal to nothing but their own class, so a
+        context-specific subclass of :class:`Sequence` does not equal a
+        plain one. Values are not hashable.
+        """
+        if not isinstance(other, X690Type) or type(other) is not type(self):
+            return False
+        return bool(self.value == other.value)
+
     def __repr__(self) -> str:
         repr_value = repr(self.value)
         return "%s(%s)" % (self.__class__.__name__, repr_value)
@@ -530,6 +543,7 @@ class UnknownType(X690Type[bytes]):
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, UnknownType)
+            and type(other) is type(self)
             and self.value == other.value
             and self.tag == other.tag
         )
@@ -597,9 +611,6 @@ class Boolean(X690Type[bool]):
         """
         return b"\x01" if self.pyvalue else b"\x00"
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Boolean) and self.value == other.value
-
 
 class Null(X690Type[None]):
     __slots__ = ()
@@ -641,9 +652,6 @@ class Null(X690Type[None]):
     def __bytes__(self) -> bytes:
         return b"\x05\x00"
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Null) and self.value == other.value
-
     def __repr__(self) -> str:
         return "Null()"
 
@@ -672,9 +680,6 @@ class OctetString(X690Type[bytes]):
             value = UNINITIALISED
 
         super().__init__(value)
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, OctetString) and self.value == other.value
 
     def pretty(self, depth: int = 0) -> str:
         """
@@ -790,6 +795,15 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         output = b"".join(items)
         return output
 
+    def __eq__(self, other: object) -> bool:
+        """
+        Two structures are equal if they are of exactly the same class and
+        their content bytes are equal.
+        """
+        if not isinstance(other, X690Type) or type(other) is not type(self):
+            return False
+        return self.raw_bytes == other.raw_bytes
+
     def __repr__(self) -> str:
         item_repr = list(self)
         return "%s(%r)" % (self.__class__.__name__, item_repr)
@@ -851,11 +865,6 @@ class Sequence(_Structure):
     __slots__ = ()
     TAG = 0x10
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Sequence):
-            return False
-        return self.raw_bytes == other.raw_bytes
-
 
 class Set(_Structure):
     """
@@ -874,11 +883,6 @@ class Set(_Structure):
 
     __slots__ = ()
     TAG = 0x11
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Set):
-            return False
-        return self.raw_bytes == other.raw_bytes
 
 
 class Explicit(X690Type[TInnerType]):
@@ -929,7 +933,13 @@ class Explicit(X690Type[TInnerType]):
         return bytes(self.pyvalue)
 
     def __eq__(self, other: object) -> bool:
-        return type(other) is type(self) and self.value == other.value
+        """
+        Two explicit values are equal if they are of exactly the same class
+        and their content bytes are equal.
+        """
+        if not isinstance(other, X690Type) or type(other) is not type(self):
+            return False
+        return self.raw_bytes == other.raw_bytes
 
     # Any: the Python value of the inner type is not known statically
     def pythonize(self) -> Any:
@@ -1003,9 +1013,6 @@ class Integer(X690Type[int]):
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return _encode_twos_complement(self.pyvalue)
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Integer) and self.value == other.value
 
 
 class ObjectIdentifier(X690Type[str]):
@@ -1204,9 +1211,6 @@ class ObjectIdentifier(X690Type[str]):
     def __repr__(self) -> str:
         return "ObjectIdentifier(%r)" % (self.value,)
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, ObjectIdentifier) and self.value == other.value
-
     def __len__(self) -> int:
         return len(self.nodes)
 
@@ -1338,11 +1342,6 @@ class _TextString(X690Type[str]):
                         % (self.__class__.__name__, char)
                     )
         return self.pyvalue.encode(self._ENCODING)
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _TextString) or type(other) is not type(self):
-            return False
-        return self.value == other.value
 
 
 class ObjectDescriptor(_TextString):
@@ -1548,7 +1547,7 @@ class Real(X690Type[float]):
         Compare the values, where NaN equals NaN and ``-0.0`` differs from
         ``0.0``, as their encodings do.
         """
-        if not isinstance(other, Real):
+        if not isinstance(other, Real) or type(other) is not type(self):
             return False
         mine, theirs = self.value, other.value
         if math.isnan(mine) or math.isnan(theirs):
@@ -1587,9 +1586,6 @@ class Enumerated(X690Type[int]):
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return _encode_twos_complement(self.pyvalue)
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Enumerated) and self.value == other.value
 
 
 class EmbeddedPdv(X690Type[bytes]):
@@ -1664,9 +1660,6 @@ class RelativeOid(X690Type[str]):
             octets.extend(ObjectIdentifier.encode_large_value(arc))
         return bytes(octets)
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, RelativeOid) and self.value == other.value
-
 
 class NumericString(_TextString):
     """
@@ -1723,9 +1716,6 @@ class T61String(X690Type[str]):
             super().__init__(value or UNINITIALISED)
         else:
             super().__init__(T61String.decode_raw(value))
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, T61String) and self.value == other.value
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None, None)) -> str:
@@ -1837,11 +1827,6 @@ class _TimeType(X690Type[datetime]):
             except ValueError:
                 return "%s(raw=%r)" % (name, self.raw_bytes)
         return "%s(%r)" % (name, self.pyvalue)
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _TimeType) or type(other) is not type(self):
-            return False
-        return self.value == other.value
 
 
 class UtcTime(_TimeType):
@@ -2226,6 +2211,3 @@ class BitString(X690Type[Bits]):
         """
         bits = self.value
         return bytes([bits.unused]) + bits.data
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, BitString) and self.value == other.value

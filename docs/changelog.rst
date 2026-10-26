@@ -44,6 +44,11 @@ apply.
   (`#3 <https://github.com/exhuma/x690/issues/3>`_).
 * x690 no longer registers the ``t61`` codec in Python's global codec
   registry.
+* Values compare equal only when they are of the same class and hold the
+  same value. A subclass differs from its base class, and a context-class
+  ``Sequence`` subclass from a plain ``Sequence`` with the same items.
+  The types converted to Python values now compare by value and, like
+  ``Integer`` and ``OctetString``, cannot be hashed.
 * Requires Python 3.11 or newer.
 
 **Performance**
