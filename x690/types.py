@@ -9,6 +9,7 @@ describe the classes and how to add new ones.
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
+from array import array
 from collections.abc import Iterator
 from datetime import datetime
 from itertools import zip_longest
@@ -120,7 +121,7 @@ class X690Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue", "_raw_bytes"]
+    __slots__ = ["pyvalue", "_raw_bytes", "bounds"]
     __registry: dict[tuple[str, int, TypeNature], type["X690Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -139,7 +140,7 @@ class X690Type(Generic[TWrappedPyType]):
     _raw_bytes: bytes
 
     #: The location of the value within "raw_bytes"
-    bounds: slice = slice(None)
+    bounds: slice
 
     def __init_subclass__(cls: type["X690Type[Any]"]) -> None:
         for nature in cls.NATURE:
@@ -252,6 +253,7 @@ class X690Type(Generic[TWrappedPyType]):
     ) -> None:
         self.pyvalue = value
         self._raw_bytes = b""
+        self.bounds = slice(None)
 
     @property
     def raw_bytes(self) -> bytes:
@@ -336,6 +338,7 @@ class UnknownType(X690Type[bytes]):
       with ``__repr__`` of this class).
     """
 
+    __slots__ = ("tag",)
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
@@ -385,6 +388,7 @@ class UnknownType(X690Type[bytes]):
 
 
 class Boolean(X690Type[bool]):
+    __slots__ = ()
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -421,6 +425,7 @@ class Boolean(X690Type[bool]):
 
 
 class Null(X690Type[None]):
+    __slots__ = ()
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -473,6 +478,7 @@ class Null(X690Type[None]):
 
 
 class OctetString(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -517,7 +523,44 @@ class Sequence(X690Type[list[X690Type[Any]]]):
     indexable.
     """
 
+    __slots__ = ("_item_offsets",)
     TAG = 0x10
+
+    #: Start index of each item, once a decoded sequence has been read.
+    _item_offsets: "array[int] | None"
+
+    def __init__(
+        self,
+        value: list[X690Type[Any]] | _SENTINEL_UNINITIALISED = UNINITIALISED,
+    ) -> None:
+        super().__init__(value)
+        self._item_offsets = None
+
+    @property
+    def value(self) -> list[X690Type[Any]]:
+        """
+        The items of this sequence.
+
+        Overrides :py:attr:`~.X690Type.value`
+        """
+        if self._is_decoded():
+            return list(self)
+        return self.pyvalue  # type: ignore
+
+    @staticmethod
+    def item_offsets(data: bytes, slc: slice = slice(None)) -> "array[int]":
+        """
+        Return the start index of every item in the value at *slc*.
+
+        Only the type and length headers are read; no item is decoded.
+        """
+        start, end, _ = slc.indices(len(data))
+        offsets = array("Q")
+        position = start
+        while position < end:
+            offsets.append(position)
+            position = get_value_slice(data, position).next_value_index
+        return offsets
 
     @staticmethod
     def decode_raw(
@@ -529,17 +572,23 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
         """
-        start_index = slc.start or 0
-        if not data[slc] or start_index > len(data):
-            return []
-        item: X690Type[Any]
-        item, next_pos = decode(data, start_index)
-        items: list[X690Type[Any]] = [item]
-        end = slc.stop or len(data)
-        while next_pos < end:
-            item, next_pos = decode(data, next_pos)
-            items.append(item)
-        return items
+        return [
+            decode(data, offset)[0]
+            for offset in Sequence.item_offsets(data, slc)
+        ]
+
+    def _offsets(self) -> "array[int]":
+        """
+        Return the item offsets of a decoded sequence, computed once.
+        """
+        if self._item_offsets is None:
+            self._item_offsets = Sequence.item_offsets(
+                self.raw_bytes, self.bounds
+            )
+        return self._item_offsets
+
+    def _is_decoded(self) -> bool:
+        return isinstance(self.pyvalue, _SENTINEL_UNINITIALISED)
 
     def encode_raw(self) -> bytes:
         """
@@ -561,13 +610,28 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
+        if self._is_decoded():
+            return len(self._offsets())
         return len(self.value)
 
     def __iter__(self) -> Iterator[X690Type[Any]]:
-        yield from self.value
+        if not self._is_decoded():
+            yield from self.value
+            return
+        data = self.raw_bytes
+        for offset in self._offsets():
+            yield decode(data, offset)[0]
 
     def __getitem__(self, idx: int) -> X690Type[Any]:
-        return self.value[idx]
+        if not self._is_decoded():
+            return self.value[idx]
+        if isinstance(idx, slice):
+            return [
+                decode(self.raw_bytes, offset)[0]
+                for offset in self._offsets()[idx]
+            ]
+        item: X690Type[Any] = decode(self.raw_bytes, self._offsets()[idx])[0]
+        return item
 
     def pythonize(self) -> list[X690Type[Any]]:
         """
@@ -593,6 +657,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
 class Integer(X690Type[int]):
     SIGNED = True
+    __slots__ = ()
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -651,6 +716,7 @@ class ObjectIdentifier(X690Type[str]):
         False
     """
 
+    __slots__ = ()
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -915,48 +981,58 @@ class ObjectIdentifier(X690Type[str]):
 
 
 class ObjectDescriptor(X690Type[str]):
+    __slots__ = ()
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class External(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x08
 
 
 class Real(X690Type[float]):
+    __slots__ = ()
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class Enumerated(X690Type[list[Any]]):
+    __slots__ = ()
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class EmbeddedPdv(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x0B
 
 
 class Utf8String(X690Type[str]):
+    __slots__ = ()
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class RelativeOid(X690Type[str]):
+    __slots__ = ()
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class Set(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x11
 
 
 class NumericString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class PrintableString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -978,6 +1054,7 @@ class T61String(X690Type[str]):
     The T.61 codec is never registered globally.
     """
 
+    __slots__ = ()
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1015,21 +1092,25 @@ class T61String(X690Type[str]):
 
 
 class VideotexString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class IA5String(X690Type[str]):
+    __slots__ = ()
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class UtcTime(X690Type[datetime]):
+    __slots__ = ()
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class GeneralizedTime(X690Type[datetime]):
+    __slots__ = ()
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1040,6 +1121,7 @@ class GraphicString(X690Type[str]):
     #       For this reason, it defines this as a "str" type. To keep the
     #       correct behaviours, we can still "borrow" the implementation from
     #       OctetString if needed
+    __slots__ = ()
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1056,34 +1138,41 @@ class GraphicString(X690Type[str]):
 
 
 class VisibleString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class GeneralString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class UniversalString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class CharacterString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1D
 
 
 class BmpString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class EOC(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class BitString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
