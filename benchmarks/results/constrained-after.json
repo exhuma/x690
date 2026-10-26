@@ -1,0 +1,627 @@
+{
+  "schema": 1,
+  "started": "2026-10-26T14:51:46+00:00",
+  "machine": {
+    "label": "constrained",
+    "system": "Linux",
+    "release": "7.0.0-27-generic",
+    "machine": "x86_64",
+    "cpu": "Intel Xeon Processor (Skylake, IBRS, no TSX)",
+    "cpu_count": 2,
+    "memory_bytes": 4000067584,
+    "python": "3.13.14",
+    "implementation": "CPython"
+  },
+  "versions": {
+    "x690": "1.1.0",
+    "asn1crypto": "1.5.1",
+    "asn1tools": "0.169.0",
+    "pycrate": "0.8.1",
+    "pyasn1": "0.6.4"
+  },
+  "x690_commit": {
+    "sha": "62cddca7f63c640747c704fb38faf3e673a6735d",
+    "dirty": false
+  },
+  "settings": {
+    "sizes": [
+      10000,
+      100000,
+      1000000
+    ],
+    "memory_limit_bytes": 2147483648,
+    "timeout_seconds": 600,
+    "slow_seconds": 60
+  },
+  "results": [
+    {
+      "library": "x690",
+      "workload": "stream",
+      "records": 10000,
+      "input_bytes": 768174,
+      "memory_method": "proc",
+      "seconds": 0.19752061739563942,
+      "peak_bytes": 65536,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "stream",
+      "records": 100000,
+      "input_bytes": 7874974,
+      "memory_method": "proc",
+      "seconds": 2.1684346944093704,
+      "peak_bytes": 65536,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "stream",
+      "records": 1000000,
+      "input_bytes": 80007371,
+      "memory_method": "proc",
+      "seconds": 21.102645305916667,
+      "peak_bytes": 65536,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "full",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.1964593455195427,
+      "peak_bytes": 200704,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "full",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.211788522079587,
+      "peak_bytes": 958464,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "full",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 21.516132520511746,
+      "peak_bytes": 8257536,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "partial",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.015382248908281326,
+      "peak_bytes": 139264,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "partial",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 0.1513968724757433,
+      "peak_bytes": 892928,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "partial",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 1.6133716944605112,
+      "peak_bytes": 8065024,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "indexed",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.2266662586480379,
+      "peak_bytes": 139264,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "indexed",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.228065012022853,
+      "peak_bytes": 892928,
+      "correct": true
+    },
+    {
+      "library": "x690",
+      "workload": "indexed",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 22.255065966397524,
+      "peak_bytes": 8138752,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "stream",
+      "records": 10000,
+      "input_bytes": 768174,
+      "memory_method": "proc",
+      "seconds": 0.1437364276498556,
+      "peak_bytes": 4096,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "stream",
+      "records": 100000,
+      "input_bytes": 7874974,
+      "memory_method": "proc",
+      "seconds": 1.4677588231861591,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "stream",
+      "records": 1000000,
+      "input_bytes": 80007371,
+      "memory_method": "proc",
+      "seconds": 13.74034366197884,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "full",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.1890452690422535,
+      "peak_bytes": 19529728,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "full",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.208172772079706,
+      "peak_bytes": 196919296,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "full",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 26.317426584661007,
+      "peak_bytes": 1974157312,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "partial",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.016029255464673042,
+      "peak_bytes": 3432448,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "partial",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 0.180634506046772,
+      "peak_bytes": 34705408,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "partial",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 1.9199932385236025,
+      "peak_bytes": 351223808,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "indexed",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.16757432371377945,
+      "peak_bytes": 19816448,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "indexed",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.188731836155057,
+      "peak_bytes": 197103616,
+      "correct": true
+    },
+    {
+      "library": "asn1crypto",
+      "workload": "indexed",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 28.54875542782247,
+      "peak_bytes": 1974157312,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "stream",
+      "records": 10000,
+      "input_bytes": 768174,
+      "memory_method": "proc",
+      "seconds": 0.2033860068768263,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "stream",
+      "records": 100000,
+      "input_bytes": 7874974,
+      "memory_method": "proc",
+      "seconds": 2.212362864986062,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "stream",
+      "records": 1000000,
+      "input_bytes": 80007371,
+      "memory_method": "proc",
+      "seconds": 21.05261455103755,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "full",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.29487459547817707,
+      "peak_bytes": 12300288,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "full",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.5120777133852243,
+      "peak_bytes": 141668352,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "full",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 28.28479091823101,
+      "peak_bytes": 1436405760,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "partial",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.2342961635440588,
+      "peak_bytes": 12312576,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "partial",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.4587034061551094,
+      "peak_bytes": 141471744,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "partial",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 27.307935981079936,
+      "peak_bytes": 1436549120,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "indexed",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 0.24504411220550537,
+      "peak_bytes": 12308480,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "indexed",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 2.5592389870435,
+      "peak_bytes": 141537280,
+      "correct": true
+    },
+    {
+      "library": "asn1tools",
+      "workload": "indexed",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "seconds": 29.410341994836926,
+      "peak_bytes": 1436647424,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "stream",
+      "records": 10000,
+      "input_bytes": 768174,
+      "memory_method": "proc",
+      "seconds": 0.975464042276144,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "stream",
+      "records": 100000,
+      "input_bytes": 7874974,
+      "memory_method": "proc",
+      "seconds": 9.388257130980492,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "stream",
+      "records": 1000000,
+      "input_bytes": 80007371,
+      "memory_method": "proc",
+      "seconds": 96.60978689603508,
+      "peak_bytes": 0,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "full",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 1.061892794445157,
+      "peak_bytes": 54849536,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "full",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 13.411955228075385,
+      "peak_bytes": 549707776,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "full",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    },
+    {
+      "library": "pycrate",
+      "workload": "partial",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 1.056282639503479,
+      "peak_bytes": 54796288,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "partial",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 13.003784930333495,
+      "peak_bytes": 549707776,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "partial",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    },
+    {
+      "library": "pycrate",
+      "workload": "indexed",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 1.3254346158355474,
+      "peak_bytes": 54595584,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "indexed",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 13.825759192928672,
+      "peak_bytes": 549580800,
+      "correct": true
+    },
+    {
+      "library": "pycrate",
+      "workload": "indexed",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    },
+    {
+      "library": "pyasn1",
+      "workload": "stream",
+      "records": 10000,
+      "input_bytes": 768174,
+      "memory_method": "proc",
+      "seconds": 2.6335359048098326,
+      "peak_bytes": 98304,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "stream",
+      "records": 100000,
+      "input_bytes": 7874974,
+      "memory_method": "proc",
+      "seconds": 25.056053826585412,
+      "peak_bytes": 163840,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "stream",
+      "records": 1000000,
+      "input_bytes": 80007371,
+      "memory_method": "proc",
+      "seconds": 238.49468903057277,
+      "peak_bytes": 163840,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "full",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 2.668981496244669,
+      "peak_bytes": 83922944,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "full",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 29.49448931030929,
+      "peak_bytes": 842121216,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "full",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    },
+    {
+      "library": "pyasn1",
+      "workload": "partial",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 2.5386096034199,
+      "peak_bytes": 83992576,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "partial",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 28.841140309348702,
+      "peak_bytes": 842215424,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "partial",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    },
+    {
+      "library": "pyasn1",
+      "workload": "indexed",
+      "records": 10000,
+      "input_bytes": 768179,
+      "memory_method": "proc",
+      "seconds": 2.43025360442698,
+      "peak_bytes": 83922944,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "indexed",
+      "records": 100000,
+      "input_bytes": 7874979,
+      "memory_method": "proc",
+      "seconds": 30.524390794336796,
+      "peak_bytes": 842203136,
+      "correct": true
+    },
+    {
+      "library": "pyasn1",
+      "workload": "indexed",
+      "records": 1000000,
+      "input_bytes": 80007377,
+      "memory_method": "proc",
+      "error": "out of memory"
+    }
+  ],
+  "finished": "2026-10-26T15:10:23+00:00"
+}
