@@ -729,8 +729,8 @@ wheels = [
 
 [[package]]
 name = "michel-albert-sphinx"
-version = "0.3.1"
-source = { git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.3.1#696d77d542bebec3e1132140867250fefba046d0" }
+version = "0.4.0"
+source = { git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.4.0#b427cf5ab106992c0467d8eb362d6056497aa2f8" }
 dependencies = [
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "sphinx", version = "9.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*'" },
@@ -1416,7 +1416,7 @@ requires-dist = [{ name = "t61codec", specifier = ">=3.0,<4" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "michel-albert-sphinx", git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.3.1" },
+    { name = "michel-albert-sphinx", git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.4.0" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "pre-commit", specifier = ">=3.7" },
     { name = "pygments", specifier = ">=2.17" },
