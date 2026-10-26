@@ -8,8 +8,7 @@ Python value they hold.
 Types with a Python value
 -------------------------
 
-These types convert between bytes and a Python value in both directions,
-except where noted:
+These types convert between bytes and a Python value in both directions:
 
 .. list-table::
    :header-rows: 1

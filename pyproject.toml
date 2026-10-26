@@ -1,6 +1,6 @@
 [project]
 name = "x690"
-version = "1.1.0"
+version = "2.0.0"
 description = "Pure-Python ASN.1 BER encoder and decoder with typed values, light on memory for large documents"
 authors = [{ name = "Michel Albert", email = "michel@albert.lu" }]
 license = "MIT"

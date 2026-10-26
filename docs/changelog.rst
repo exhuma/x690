@@ -1,16 +1,53 @@
 Changelog
 =========
 
-Unreleased
-----------
+Release 2.0.0
+-------------
 
-* The documentation has a new theme and new structure: a start page, a
-  comparison with other ASN.1 libraries, guides for usage and custom types,
-  a list of supported types and an API reference. Every x690 example in it
-  runs as a doctest.
-* The project is under active development again, starting with
-  context-specific tags. The package is classified as
-  ``Development Status :: 5 - Production/Stable``.
+2.0.0 includes the changes prepared as 1.1.0, which was never published.
+Upgrading from 1.0 needs code changes where the breaking changes below
+apply.
+
+**Breaking changes**
+
+* Context-specific types are no longer registered globally. A constructed
+  type lists the types of its children in ``CHILD_TYPES``, and tags are
+  resolved per enclosing type, so the same tag can mean a different type in
+  every structure. ``decode()`` takes the types of the top-level value as
+  ``types=``. ``Explicit`` describes explicitly tagged values. A subclass
+  is registered only if it sets its own ``TYPECLASS``, ``TAG`` or
+  ``NATURE``; ``register=False`` keeps an application or private type out of
+  the global registry
+  (`#6 <https://github.com/exhuma/x690/issues/6>`_).
+* More universal types hold Python values instead of bytes:
+  ``Utf8String``, ``NumericString``, ``PrintableString``, ``IA5String``,
+  ``VisibleString``, ``ObjectDescriptor``, ``BmpString`` and
+  ``UniversalString`` hold a ``str``; ``UtcTime`` and ``GeneralizedTime`` a
+  ``datetime``; ``Enumerated`` an ``int``; ``RelativeOid`` a ``str``;
+  ``Real`` a ``float``; ``BitString`` a ``Bits`` value; ``Set`` a list of
+  values like ``Sequence``
+  (`#7 <https://github.com/exhuma/x690/issues/7>`_).
+* ``raw_bytes`` of a decoded value is its own content bytes instead of the
+  whole input buffer, and the ``bounds`` attribute is gone. The new
+  ``detach()`` copies a value's own bytes and drops the reference to the
+  input, so a value kept from a large document no longer keeps the document
+  alive (`#14 <https://github.com/exhuma/x690/issues/14>`_).
+* ``repr()`` of a ``Sequence`` subclass starts with the subclass name
+  (`#19 <https://github.com/exhuma/x690/issues/19>`_).
+* ``T61String`` uses ``t61codec`` 3, which follows ITU-T T.61 (1988) to
+  the letter. Accented letters decode to precomposed characters
+  (``b"Caf\xc2e"`` gives ``"Café"``), and ``0xE0`` decodes to Ω U+03A9
+  (it was U+2126). Invalid T.61 raises ``UnicodeDecodeError``, and
+  characters which T.61 cannot represent raise an error when encoding.
+  Data written by OpenSSL is often Latin-1 rather than T.61; decode such
+  raw values with ``latin-1`` yourself
+  (`#3 <https://github.com/exhuma/x690/issues/3>`_).
+* x690 no longer registers the ``t61`` codec in Python's global codec
+  registry.
+* Requires Python 3.11 or newer.
+
+**Performance**
+
 * Indexing a decoded ``Sequence`` no longer re-decodes all its items: a
   sequence records where its items start and decodes each item when it is
   accessed. Reading every item by index was quadratic and is now linear
@@ -21,46 +58,29 @@ Unreleased
 * A benchmark in ``benchmarks/`` compares decode time and memory with
   pyasn1, asn1tools, asn1crypto and pycrate.
 
-Release 1.1.0 - T61String conformance and maintenance mode
-----------------------------------------------------------
-
-**T61String**
-
-* ``T61String`` now uses ``t61codec`` 3, which follows ITU-T T.61 (1988) to
-  the letter.
-* Accented letters decode to precomposed characters (``b"Caf\xc2e"`` gives
-  ``"Café"``).
-* ``0xE0`` decodes to Ω U+03A9 (it was U+2126).
-* Invalid T.61 now raises ``UnicodeDecodeError``. Data written by OpenSSL is
-  often Latin-1 rather than T.61; decode such raw values with ``latin-1``
-  yourself.
-* Encoding is strict: characters which T.61 cannot represent raise an error.
-* x690 no longer registers the ``t61`` codec in Python's global codec
-  registry.
-* Fixes `#3 <https://github.com/exhuma/x690/issues/3>`_.
-
 **Fixes**
 
-* ``repr()`` of ``UnknownType`` is now stable on Python 3.12 and later.
+* ``decode(..., strict=True)`` raises on a single trailing byte
+  (`#12 <https://github.com/exhuma/x690/issues/12>`_).
+* ``GraphicString`` encodes values built from a ``str``
+  (`#13 <https://github.com/exhuma/x690/issues/13>`_).
+* ``repr()`` of ``UnknownType`` is stable on Python 3.12 and later.
 
-**Packaging**
+**Packaging and project**
 
-* Requires Python 3.11 or newer.
 * Depends on ``t61codec>=3.0,<4``.
 * Built with hatchling from a PEP 621 ``pyproject.toml``, with PEP 639
-  license metadata.
-* ``Development Status :: 6 - Mature``: the project is in maintenance mode.
+  license metadata, and classified as
+  ``Development Status :: 5 - Production/Stable``.
 * The wheel contains only the ``x690`` package; the test suite is no longer
   installed as a top-level ``tests`` package (see
   `#2 <https://github.com/exhuma/x690/pull/2>`_).
-
-**Project**
-
 * CI tests all supported CPython versions automatically, plus a monthly
-  scheduled run.
-* Releases are published through PyPI Trusted Publishing.
-* The documentation is deployed to GitHub Pages via GitHub Actions:
-  https://exhuma.github.io/x690/
+  scheduled run. Releases are published through PyPI Trusted Publishing.
+* The documentation has a new theme and structure, including a comparison
+  with other ASN.1 libraries, and is deployed to GitHub Pages:
+  https://exhuma.github.io/x690/. Every x690 example in it runs as a
+  doctest.
 
 Release 1.0.0post1 - Maintenance release
 ----------------------------------------

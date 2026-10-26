@@ -2,7 +2,7 @@
 
 ## Scope
 
-The library implements the BER encoding of ITU-T X.690. The 1.x API is
+The library implements the BER encoding of ITU-T X.690. The API is
 stable; the project is under active development. Welcome contributions:
 
 - bug fixes,
