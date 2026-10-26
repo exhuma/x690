@@ -55,6 +55,12 @@ dev = [
     "mypy>=1.10",
     "pre-commit>=3.7",
 ]
+bench = [
+    "asn1crypto>=1.5",
+    "asn1tools>=0.169",
+    "pyasn1>=0.6",
+    "pycrate>=0.8",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "x690", "docs", "README.rst"]
