@@ -106,7 +106,7 @@ def decode(
             f"{enforce_type} but got {type(output)} instead"
         )
 
-    if strict and next_tlv < len(data) - 1:
+    if strict and next_tlv < len(data):
         remainder = data[next_tlv:]
         raise IncompleteDecoding(
             f"Strict decoding still had {len(remainder)} remaining bytes!",

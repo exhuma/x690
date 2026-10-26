@@ -810,6 +810,18 @@ def test_incomplete_decoding():
     assert exc.value.remainder == b"junk-bytes"
 
 
+def test_incomplete_decoding_single_byte():
+    """
+    Ensure strict decoding raises on a single trailing byte, and accepts
+    input with no trailing bytes at all.
+    """
+    data = bytes(Integer(1)) + b"X"
+    with pytest.raises(IncompleteDecoding) as exc:
+        decode(data, strict=True)
+    assert exc.value.remainder == b"X"
+    assert decode(bytes(Integer(1)), strict=True) == (Integer(1), 3)
+
+
 @pytest.mark.parametrize("cls", X690Type.all())
 def test_repr(cls):
     obj = cls()
