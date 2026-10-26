@@ -1,8 +1,15 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* The documentation has a new theme and new structure: a start page, guides
+  for usage and custom types, a list of supported types and an API
+  reference. Every example in it runs as a doctest.
+
 Release 1.1.0 - T61String conformance and maintenance mode
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------------------------
 
 **T61String**
 
@@ -43,14 +50,14 @@ Release 1.1.0 - T61String conformance and maintenance mode
   https://exhuma.github.io/x690/
 
 Release 1.0.0post1 - Maintenance release
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------
 
 * This fixes the incorrectly provided extra ``rest`` in the dependency
   metadata. This extra has become obsolete and removing it fixed
   versioning errors when installing ``x690``.
 
 1.0.0
--------------
+-----
 
 * Renamed ``x690.types.Type`` to ``x690.types.X690Type``
 * Flagged as "stable"
@@ -58,7 +65,7 @@ Release 1.0.0post1 - Maintenance release
 
 
 0.5.0
--------------
+-----
 
 * Flagged as "production" release
 * All changes from 0.5.0-alpha.0 - 0.5.0-alpha.6
