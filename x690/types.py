@@ -914,11 +914,11 @@ class Explicit(X690Type[TInnerType]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
 
-        :raises X690Error: If the wrapper holds no value.
+        :raises ValueError: If the wrapper holds no value.
         """
         start, end, _ = slc.indices(len(data))
         if start >= end:
-            raise X690Error(
+            raise ValueError(
                 f"{cls.__name__} is explicitly tagged but holds no value"
             )
         inner, _ = _decode_value(data, start, cls.child_lookup())

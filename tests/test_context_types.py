@@ -5,7 +5,6 @@ Resolution of context-specific and other tags relative to the enclosing type.
 import pytest
 
 from x690 import decode
-from x690.exc import X690Error
 from x690.types import (
     Explicit,
     Integer,
@@ -350,7 +349,7 @@ def test_explicit_without_value() -> None:
     and encodes to an empty wrapper.
     """
     empty, _ = decode(b"\xa0\x00", types=[Version])
-    with pytest.raises(X690Error, match="holds no value"):
+    with pytest.raises(ValueError, match="holds no value"):
         empty.value  # noqa: B018
     assert Version().encode_raw() == b""
 
