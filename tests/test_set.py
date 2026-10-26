@@ -2,8 +2,13 @@
 Tests for the SET type, which holds a list of x690 values like Sequence.
 """
 
+import gc
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 
+import x690.types
 from x690 import decode
 from x690.exc import UnexpectedType
 from x690.types import (
@@ -49,15 +54,39 @@ def test_empty() -> None:
     assert value.value == []
 
 
-def test_lazy_access() -> None:
+def count_header_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[[], int]:
+    """
+    Count the calls of ``get_value_slice`` made from now on.
+
+    :return: A function returning the number of calls so far.
+    """
+    calls = 0
+    original = x690.types.get_value_slice
+
+    def counting(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(x690.types, "get_value_slice", counting)
+    return lambda: calls
+
+
+def test_lazy_access(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Ensure a decoded Set finds its item offsets only on access, and
     supports len, indexing, slicing and iteration.
     """
+    calls = count_header_reads(monkeypatch)
     value, _ = decode(REFERENCE)
-    assert value._item_offsets is None
+    after_decode = calls()
     assert len(value) == 2
-    assert list(value._item_offsets) == [2, 5]
+    after_len = calls()
+    assert after_len == after_decode + 2
+    assert len(value) == 2
+    assert calls() == after_len
     assert value[0] == Integer(1)
     assert value[-1] == Boolean(True)
     assert value[0:1] == [Integer(1)]
@@ -111,9 +140,10 @@ def test_detach() -> None:
     data = b"junk" + REFERENCE + bytes(100)
     value, _ = decode(data, 4)
     assert len(value) == 2
+    assert any(ref is data for ref in gc.get_referents(value))
     assert value.detach() is value
-    assert value._item_offsets is None
-    assert value._buffer == REFERENCE[2:]
+    assert not any(ref is data for ref in gc.get_referents(value))
+    assert value.raw_bytes == REFERENCE[2:]
     assert list(value) == [Integer(1), Boolean(True)]
 
 

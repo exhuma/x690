@@ -1,5 +1,5 @@
 """
-Fixtures for the doctests in the documentation pages.
+Fixtures for every test, the doctests and the documentation pages.
 """
 
 from collections.abc import Iterator
@@ -12,7 +12,7 @@ from x690 import types
 @pytest.fixture(autouse=True)
 def isolated_type_registry() -> Iterator[None]:
     """
-    Remove the types a page registers once its doctests have run.
+    Remove the types a test or a doctest page registers once it has run.
     """
     registry = types._REGISTRY
     saved = dict(registry)
