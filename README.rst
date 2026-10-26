@@ -1,5 +1,5 @@
-Pure Python `X.690`_ implementation
-===================================
+x690
+====
 
 .. image:: https://img.shields.io/pypi/v/x690.svg
    :target: https://pypi.org/project/x690/
@@ -17,196 +17,43 @@ Pure Python `X.690`_ implementation
    :target: https://exhuma.github.io/x690/
    :alt: Documentation
 
-.. _X.690: https://www.itu.int/rec/recommendation.asp?lang=en&parent=T-REC-X.690-201508-I
-
-
-This module contains a pure Python implementation of the "x690" standard for
-BER encoding/decoding. Other encodings are currently unsupported but
-pull-requests are welcome.
+Encode and decode ASN.1 data in BER (ITU-T X.690) with pure Python. x690
+turns every encoded value into a typed Python object, decodes large buffers
+without copying them, and takes new types with a few lines of code. It is the
+encoding layer of `puresnmp <https://github.com/exhuma/puresnmp>`_.
 
 Documentation: https://exhuma.github.io/x690/
-
-
-Project status
---------------
-
-X.690 is a fixed standard (ITU-T X.690) and x690 implements the BER-based
-types it needs. The library is feature-complete. The project is in
-maintenance mode: only bug fixes, support for new Python versions and
-security fixes are accepted. Feature requests will be declined unless a
-change in Python itself requires one. Semantic Versioning applies.
-
 
 Installation
 ------------
 
-Python 3.11 or newer is required::
+x690 needs Python 3.11 or newer::
 
     pip install x690
 
+Example
+-------
 
-T61String decoding
-------------------
+::
 
-``T61String`` decodes and encodes strictly according to ITU-T T.61 (1988).
-Invalid T.61 raises ``UnicodeDecodeError``. Data written by OpenSSL is often
-Latin-1 rather than T.61; decode such raw values with ``latin-1`` yourself. See
-the `changelog <https://exhuma.github.io/x690/changelog.html>`_ for details.
+    >>> from x690 import decode
+    >>> from x690.types import Integer, OctetString, Sequence
+    >>> data = bytes(Sequence([Integer(42), OctetString(b"hello")]))
+    >>> data
+    b'0\n\x02\x01*\x04\x05hello'
+    >>> decode(data)
+    (Sequence([Integer(42), OctetString(b'hello')]), 12)
 
+The documentation covers `decoding streams and checking types
+<https://exhuma.github.io/x690/usage.html>`_, `adding custom types
+<https://exhuma.github.io/x690/custom-types.html>`_ and `which types convert to
+which Python values <https://exhuma.github.io/x690/types.html>`_.
 
-Supporting New Types
---------------------
+Project status
+--------------
 
-Some applications may need to support types which are not defined in the X.690
-standard. This is supported by this library but the types must be defined and
-registered.
-
-To register a type, simply subclass ``x690.types.Type``. This will take care of
-the registration. Make sure that your new type is imported before using it.
-
-New types should define the following 3 class-variables:
-
-**TYPECLASS**
-    A value from ``x690.util.TypeClass``
-**NATURE**
-    A value from ``x690.util.TypeNature``
-**TAG**
-    A numerical identifier for the type
-
-Refer to the x690 standard for more details on these values. As a general
-rule-of-thumb you can assume that the class is either "context" or
-"application" (it might be good to keep the "universal" class reserved for
-x690). The nature should be "primitive" for simple values and "constructed" for
-composed types. The tag is free to choose as long as you don't overlap with an
-existing type.
-
-To convert raw-bytes into a Python object, override ``x690.Type.decode_raw``
-and conversely also ``x690.Type.encode_raw``. Refer to the docstrings for more
-details.
-
-
-Reverse Engineering Bytes
--------------------------
-
-All types defined in the ``x690`` library provide a ``.pretty()`` method which
-returns a prettyfied string.
-
-If you are confronted with a bytes-object encoded using X.690 but don't have
-any documentation, you can write the following loop::
-
-    from x690 import decode
-
-    data = open("mydatafile.bin", "rb").read()
-
-    value, nxt = decode(data)
-    print(value.pretty())
-
-    while nxt < len(data):
-        value, nxt = decode(data, nxt)
-        print(value.pretty())
-
-This should get you started.
-
-If the data contain non-standard types, they will get detected as "UnknownType"
-and will print out the type-class, nature and tag in the pretty-printed block.
-
-This will allow you to define your own subclass of ``x690.types.Type`` using
-those values. Override ``decode(...)`` in that class to handle the unknown
-type.
-
-
-Examples
-========
-
-Encoding to bytes
------------------
-
-Encoding to bytes can be done by simply calling the Python builting ``bytes()``
-on instances from ``x690.types``:
-
-Encoding of a single value
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: python
-
-    >>> import x690.types as t
-    >>> myvalue = t.Integer(12)
-    >>> asbytes = bytes(myvalue)
-    >>> repr(asbytes)
-    b'\x02\x01\x0c'
-
-Encoding of a composite value using Sequence
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: python
-
-    >>> import x690.types as t
-    >>> myvalue = t.Sequence(
-    ...     t.Integer(12),
-    ...     t.Integer(12),
-    ...     t.Integer(12),
-    ... )
-    >>> asbytes = bytes(myvalue)
-    >>> repr(asbytes)
-    b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-
-
-Decoding from bytes
-~~~~~~~~~~~~~~~~~~~
-
-Decode bytes by calling ``x690.types.decode`` on your byte data. This will
-return a tuple where the first value contains the decoded object, and the
-second one will contain any remaining bytes which were not decoded.
-
-.. code:: python
-
-    >>> import x690
-    >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, nxt = x690.decode(data)
-    >>> decoded
-    Sequence(Integer(12), Integer(12), Integer(12))
-    >>> nxt
-    11
-
-
-Type-Hinting & Enforcing
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-**New in 0.3.0**
-
-When decoding bytes, it is possible to specify an expcted type which does two
-things: Firstly, it tells tools like ``mypy`` what the return type will be and
-secondly, it runs an internal type-check which *ensures* that the returned
-value is of the expected type. ``x690.exc.UnexpectedType`` is raised otherwise.
-
-This does of course only work if you know the type in advance.
-
-.. code:: python
-
-    >>> import x690
-    >>> import x690.types as t
-    >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0c'
-    >>> decoded, nxt = x690.decode(data, enforce_type=t.Sequence)
-    >>> decoded
-    Sequence(Integer(12), Integer(12), Integer(12))
-    >>> nxt
-    11
-
-
-Strict Decoding
-~~~~~~~~~~~~~~~
-
-**New in 0.3.0**
-
-When decoding using ``decode`` and you don't expect any remaining bytes, use
-``strict=True`` which will raise ``x690.exc.IncompleteDecoding`` if there's any
-remaining data.
-
-.. code:: python
-
-    >>> import x690
-    >>> data = b'0\t\x02\x01\x0c\x02\x01\x0c\x02\x01\x0cjunk-bytes'
-    >>> decoded, nxt = x690.decode(data, strict=True)
-    Traceback (most recent call last):
-      ...
-    x690.exc.IncompleteDecoding: Strict decoding still had 10 remaining bytes!
+x690 implements the Basic Encoding Rules of a fixed standard and is
+feature-complete. The project is in maintenance mode: only bug fixes, support
+for new Python versions and security fixes are accepted. Feature requests will
+be declined unless a change in Python itself requires one. Semantic Versioning
+applies.
