@@ -31,6 +31,42 @@ def cell(result: dict[str, object] | None) -> str:
     return f"{seconds:.2f} s / {megabytes:,.0f} MB"
 
 
+def _gigabytes(value: object) -> str:
+    return f"{int(str(value)) / 1024**3:.1f} GB" if value else "none"
+
+
+def describe(report: dict[str, object]) -> str:
+    """
+    Return the machine, versions and settings of *report* as a Markdown list.
+    """
+    machine: dict[str, object] = report["machine"]  # type: ignore[assignment]
+    settings: dict[str, object] = report["settings"]  # type: ignore[assignment]
+    versions: dict[str, object] = report["versions"]  # type: ignore[assignment]
+    commit: dict[str, object] = report["x690_commit"]  # type: ignore[assignment]
+    sha = str(commit["sha"])[:12]
+    dirty = " (with local changes)" if commit["dirty"] else ""
+    libraries = ", ".join(
+        f"{name} {version}" for name, version in versions.items() if version
+    )
+    return "\n".join(
+        [
+            f"### Machine: {machine['label']}",
+            "",
+            f"- System: {machine['system']} {machine['release']} "
+            f"({machine['machine']})",
+            f"- CPU: {machine['cpu']}, {machine['cpu_count']} logical cores",
+            f"- Memory: {_gigabytes(machine['memory_bytes'])}",
+            f"- Python: {machine['implementation']} {machine['python']}",
+            f"- Libraries: {libraries}",
+            f"- x690 commit: {sha}{dirty}",
+            f"- Memory limit per case: "
+            f"{_gigabytes(settings['memory_limit_bytes'])}",
+            f"- Started: {report['started']}",
+            "",
+        ]
+    )
+
+
 def _key(result: dict[str, object]) -> tuple[str, str, int]:
     return (
         str(result["library"]),
@@ -58,7 +94,7 @@ def render(reports: list[dict[str, object]]) -> str:
         str(report["machine"]["label"])  # type: ignore[index]
         for report in reports
     )
-    lines = []
+    lines = [describe(report) for report in reports]
     for workload in workloads:
         lines += [
             f"### {workload}",

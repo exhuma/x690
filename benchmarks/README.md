@@ -38,6 +38,8 @@ $ uv run python benchmarks/report.py before.json after.json
 ```
 
 Every cell then lists the results of the reports in order, separated by `→`.
+The output starts with the machine, library versions, x690 commit and settings
+of each report, so numbers are never read without their hardware.
 
 ## Data
 
