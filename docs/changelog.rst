@@ -47,8 +47,8 @@ apply.
 * Values compare equal only when they are of the same class and hold the
   same value. A subclass differs from its base class, and a context-class
   ``Sequence`` subclass from a plain ``Sequence`` with the same items.
-  The types converted to Python values now compare by value and, like
-  ``Integer`` and ``OctetString``, cannot be hashed.
+  All types except ``ObjectIdentifier`` compare by value and cannot be
+  hashed, so they cannot be used in sets or as dictionary keys.
 * Requires Python 3.11 or newer.
 
 **Performance**
