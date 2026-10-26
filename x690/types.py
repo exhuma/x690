@@ -989,11 +989,19 @@ def _encode_twos_complement(value: int) -> bytes:
     return bytes(octets)
 
 
-class Integer(X690Type[int]):
-    SIGNED = True
+class _IntegerContent(X690Type[int]):
+    """
+    Base for the types whose content is a two's-complement integer:
+    :class:`Integer` and :class:`Enumerated`.
+
+    It is not registered as a type (it has no tag). The subclasses stay
+    distinct types, so they never compare equal to each other.
+    """
+
     __slots__ = ()
-    TAG = 0x02
-    NATURE = [TypeNature.PRIMITIVE]
+
+    #: Whether the content octets are read as signed numbers
+    SIGNED = True
 
     @classmethod
     def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> int:
@@ -1013,6 +1021,12 @@ class Integer(X690Type[int]):
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
         return _encode_twos_complement(self.pyvalue)
+
+
+class Integer(_IntegerContent):
+    __slots__ = ()
+    TAG = 0x02
+    NATURE = [TypeNature.PRIMITIVE]
 
 
 class ObjectIdentifier(X690Type[str]):
@@ -1557,7 +1571,7 @@ class Real(X690Type[float]):
         )
 
 
-class Enumerated(X690Type[int]):
+class Enumerated(_IntegerContent):
     """
     The ``Enumerated`` type, tag ``0x0A``, holding an :class:`int`.
 
@@ -1568,24 +1582,6 @@ class Enumerated(X690Type[int]):
     __slots__ = ()
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
-
-    @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
-        """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
-
-        Overrides :py:meth:`~.X690Type.decode_raw`
-        """
-        return Integer.decode_raw(data, slc)
-
-    def encode_raw(self) -> bytes:
-        """
-        Overrides :py:meth:`.X690Type.encode_raw`
-        """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
-            return b""
-        return _encode_twos_complement(self.pyvalue)
 
 
 class EmbeddedPdv(X690Type[bytes]):

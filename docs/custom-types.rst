@@ -185,8 +185,9 @@ Convert your own values
 For a new encoding, override two methods:
 
 :meth:`~x690.types.X690Type.decode_raw`
-   A static method. It receives the data and the slice that holds the value,
-   without the type and length header, and returns the Python value.
+   A static or class method (use a class method to read class attributes).
+   It receives the data and the slice that holds the value, without the
+   type and length header, and returns the Python value.
 
 :meth:`~x690.types.X690Type.encode_raw`
    Returns the bytes of ``self.pyvalue``, without the header.
