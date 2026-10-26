@@ -57,12 +57,14 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "x690"]
+testpaths = ["tests", "x690", "docs", "README.rst"]
+norecursedirs = ["docs/_build"]
 addopts = [
     "--cov=x690",
     "--cov-report=term-missing",
     "--cov-fail-under=99",
     "--doctest-modules",
+    "--doctest-glob=*.rst",
 ]
 
 [tool.mypy]
