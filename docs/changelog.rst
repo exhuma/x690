@@ -1,8 +1,19 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* The documentation has a new theme and new structure: a start page, a
+  comparison with other ASN.1 libraries, guides for usage and custom types,
+  a list of supported types and an API reference. Every x690 example in it
+  runs as a doctest.
+* The project is under active development again, starting with
+  context-specific tags. The package is classified as
+  ``Development Status :: 5 - Production/Stable``.
+
 Release 1.1.0 - T61String conformance and maintenance mode
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------------------------
 
 **T61String**
 
@@ -43,14 +54,14 @@ Release 1.1.0 - T61String conformance and maintenance mode
   https://exhuma.github.io/x690/
 
 Release 1.0.0post1 - Maintenance release
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------
 
 * This fixes the incorrectly provided extra ``rest`` in the dependency
   metadata. This extra has become obsolete and removing it fixed
   versioning errors when installing ``x690``.
 
 1.0.0
--------------
+-----
 
 * Renamed ``x690.types.Type`` to ``x690.types.X690Type``
 * Flagged as "stable"
@@ -58,7 +69,7 @@ Release 1.0.0post1 - Maintenance release
 
 
 0.5.0
--------------
+-----
 
 * Flagged as "production" release
 * All changes from 0.5.0-alpha.0 - 0.5.0-alpha.6
