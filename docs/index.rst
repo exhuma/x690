@@ -22,8 +22,12 @@ Build a value from the classes in :mod:`x690.types`, turn it into bytes with
 :class:`bytes`, and read it back with :func:`x690.decode`:
 
 >>> from x690 import decode
->>> from x690.types import Integer, OctetString, Sequence
->>> data = bytes(Sequence([Integer(42), OctetString(b"hello")]))
+>>> from x690.types import Integer, OctetString
+>>> from x690.types import Sequence
+>>> data = bytes(Sequence([
+...     Integer(42),
+...     OctetString(b"hello"),
+... ]))
 >>> data
 b'0\n\x02\x01*\x04\x05hello'
 >>> value, next_index = decode(data)

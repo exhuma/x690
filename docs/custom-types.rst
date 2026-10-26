@@ -34,8 +34,9 @@ change only the attributes. The SNMP ``GetRequest`` PDU from
 :doc:`usage` is a sequence in the context class with tag 0:
 
 >>> from x690 import decode
->>> from x690.types import Integer, Null, ObjectIdentifier, OctetString
->>> from x690.types import Sequence
+>>> from x690.types import Integer, Null
+>>> from x690.types import ObjectIdentifier
+>>> from x690.types import OctetString, Sequence
 >>> from x690.util import TypeClass
 >>> class GetRequest(Sequence):
 ...     TYPECLASS = TypeClass.CONTEXT
@@ -44,8 +45,10 @@ change only the attributes. The SNMP ``GetRequest`` PDU from
 Once the class exists, the same bytes decode to a full structure:
 
 >>> data = (
-...     b"0'\x02\x01\x01\x04\x06public\xa0\x1a\x02\x02\x04\xd2\x02\x01\x00"
-...     b"\x02\x01\x000\x0e0\x0c\x06\x08+\x06\x01\x02\x01\x01\x01\x00\x05\x00"
+...     b"0'\x02\x01\x01\x04\x06public"
+...     b"\xa0\x1a\x02\x02\x04\xd2\x02\x01\x00"
+...     b"\x02\x01\x000\x0e0\x0c\x06\x08+\x06"
+...     b"\x01\x02\x01\x01\x01\x00\x05\x00"
 ... )
 >>> message, _ = decode(data)
 >>> print(message[2].pretty())
@@ -60,13 +63,22 @@ GetRequest with 4 items:
 
 The class also encodes. This builds the same message from scratch:
 
+>>> varbind = Sequence([
+...     ObjectIdentifier("1.3.6.1.2.1.1.1.0"),
+...     Null(),
+... ])
 >>> request = GetRequest([
 ...     Integer(1234),
 ...     Integer(0),
 ...     Integer(0),
-...     Sequence([Sequence([ObjectIdentifier("1.3.6.1.2.1.1.1.0"), Null()])]),
+...     Sequence([varbind]),
 ... ])
->>> bytes(Sequence([Integer(1), OctetString(b"public"), request])) == data
+>>> message = Sequence([
+...     Integer(1),
+...     OctetString(b"public"),
+...     request,
+... ])
+>>> bytes(message) == data
 True
 
 Convert your own values
@@ -96,15 +108,19 @@ This type stores a person as UTF-8 encoded JSON in the application class:
 ...     TAG = 1
 ...
 ...     @staticmethod
-...     def decode_raw(data: bytes, slc: slice = slice(None)) -> Person:
+...     def decode_raw(data, slc=slice(None)):
 ...         return Person(**json.loads(data[slc]))
 ...
-...     def encode_raw(self) -> bytes:
-...         return json.dumps(self.pyvalue._asdict()).encode("utf8")
+...     def encode_raw(self):
+...         value = self.pyvalue._asdict()
+...         return json.dumps(value).encode()
 >>> data = bytes(PersonType(Person("Ada", 36)))
 >>> data
 b'A\x1a{"name": "Ada", "age": 36}'
->>> decode(data, enforce_type=PersonType)[0].value
+>>> person, _ = decode(
+...     data, enforce_type=PersonType
+... )
+>>> person.value
 Person(name='Ada', age=36)
 
 Rules for custom types

@@ -79,7 +79,10 @@ length header. They decode and encode without loss, and the bytes are left
 for the application to interpret:
 
 >>> from x690 import decode
->>> decode(b"\x0c\x03h\xc3\xa9")[0].value.decode("utf8")
+>>> text, _ = decode(b"\x0c\x03h\xc3\xa9")
+>>> text
+Utf8String(b'h\xc3\xa9')
+>>> text.value.decode("utf8")
 'hé'
 
 This applies to ``EOC``, ``BitString``, ``ObjectDescriptor``, ``External``,

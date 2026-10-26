@@ -7,7 +7,8 @@ Encode values
 Every type in :mod:`x690.types` wraps a Python value. Call :class:`bytes` on
 an instance to get its encoding, type and length header included:
 
->>> from x690.types import Boolean, Integer, Null, ObjectIdentifier
+>>> from x690.types import Boolean, Integer, Null
+>>> from x690.types import ObjectIdentifier
 >>> bytes(Integer(12))
 b'\x02\x01\x0c'
 >>> bytes(Boolean(True))
@@ -21,7 +22,11 @@ A :class:`~x690.types.Sequence` takes a list of values and encodes them in
 order. Sequences nest:
 
 >>> from x690.types import OctetString, Sequence
->>> bytes(Sequence([Integer(1), Sequence([OctetString(b"a")])]))
+>>> nested = Sequence([
+...     Integer(1),
+...     Sequence([OctetString(b"a")]),
+... ])
+>>> bytes(nested)
 b'0\x08\x02\x01\x010\x03\x04\x01a'
 
 Decode a value
@@ -40,9 +45,15 @@ Integer(12)
 ``value.value`` holds the Python value of a single item.
 :meth:`~x690.types.X690Type.pythonize` converts nested sequences as well:
 
+.. note::
+
+   On a :class:`~x690.types.Sequence`, ``value`` is a list of x690 objects.
+   ``pythonize()`` converts each of them to its Python value.
+
+
 >>> value.value
 12
->>> decode(b"0\x08\x02\x01\x010\x03\x04\x01a")[0].pythonize()
+>>> decode(bytes(nested))[0].pythonize()
 [1, [b'a']]
 
 Decode a stream
@@ -74,9 +85,10 @@ When the type of the value is known in advance, pass it as ``enforce_type``.
 The result is then typed for type checkers, and a mismatch raises
 :exc:`~x690.exc.UnexpectedType`:
 
->>> decode(b"\x02\x01\x0c", enforce_type=Integer)
+>>> data = b"\x02\x01\x0c"
+>>> decode(data, enforce_type=Integer)
 (Integer(12), 3)
->>> decode(b"\x02\x01\x0c", enforce_type=OctetString)
+>>> decode(data, enforce_type=OctetString)
 Traceback (most recent call last):
   ...
 x690.exc.UnexpectedType: Unexpected decode result. Expected instance of type <class 'x690.types.OctetString'> but got <class 'x690.types.Integer'> instead
@@ -103,8 +115,10 @@ Values x690 has no type for decode to :class:`~x690.types.UnknownType`, which
 shows their class, nature and tag. This SNMP request contains such a value:
 
 >>> data = (
-...     b"0'\x02\x01\x01\x04\x06public\xa0\x1a\x02\x02\x04\xd2\x02\x01\x00"
-...     b"\x02\x01\x000\x0e0\x0c\x06\x08+\x06\x01\x02\x01\x01\x01\x00\x05\x00"
+...     b"0'\x02\x01\x01\x04\x06public"
+...     b"\xa0\x1a\x02\x02\x04\xd2\x02\x01\x00"
+...     b"\x02\x01\x000\x0e0\x0c\x06\x08+\x06"
+...     b"\x01\x02\x01\x01\x01\x00\x05\x00"
 ... )
 >>> print(decode(data)[0].pretty())
 Sequence with 3 items:
