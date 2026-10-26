@@ -607,7 +607,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
     def __repr__(self) -> str:
         item_repr = list(self)
-        return "Sequence(%r)" % item_repr
+        return "%s(%r)" % (self.__class__.__name__, item_repr)
 
     def __len__(self) -> int:
         if self._is_decoded():

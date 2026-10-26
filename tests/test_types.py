@@ -19,6 +19,7 @@ from x690.types import (
     X690Type,
     decode,
 )
+from x690.util import TypeClass
 
 from .conftest import assert_bytes_equal
 
@@ -828,6 +829,19 @@ def test_repr(cls):
     obj = cls()
     result = repr(obj)
     assert cls.__name__ in result
+
+
+def test_sequence_subclass_repr():
+    """
+    Ensure repr() of a Sequence subclass starts with the subclass name
+    """
+
+    class Sub(Sequence):
+        TYPECLASS = TypeClass.PRIVATE
+        TAG = 30
+
+    assert repr(Sub([Integer(1)])) == "Sub([Integer(1)])"
+    assert repr(Sequence([Integer(1)])) == "Sequence([Integer(1)])"
 
 
 def test_helpful_noarg_error():
