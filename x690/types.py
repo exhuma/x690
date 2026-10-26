@@ -1984,37 +1984,15 @@ class GeneralizedTime(_TimeType):
         return (text + zone).encode("ascii")
 
 
-class GraphicString(X690Type[str]):
-    # NOTE: As per x.690, this should inherit from OctetString. However, this
-    #       library serves as an abstraction layer between X.690 and Python.
-    #       For this reason, it defines this as a "str" type. To keep the
-    #       correct behaviours, we can still "borrow" the implementation from
-    #       OctetString if needed
+class GraphicString(_TextString):
+    """
+    The ``GraphicString`` type, tag ``0x19``, holding an ASCII
+    :class:`str`.
+    """
+
     __slots__ = ()
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
-
-    @staticmethod
-    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
-        """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
-
-        Overrides :py:meth:`~.X690Type.decode_raw`
-        """
-        data = data[slc]
-        return data.decode("ascii")
-
-    def encode_raw(self) -> bytes:
-        """
-        Overrides :py:meth:`.X690Type.encode_raw`
-
-        :raises UnicodeEncodeError: if the value contains non-ASCII
-            characters.
-        """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
-            return b""
-        return self.pyvalue.encode("ascii")
 
 
 class VisibleString(_TextString):
