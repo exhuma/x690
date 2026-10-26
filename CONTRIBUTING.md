@@ -73,6 +73,11 @@ There are no automated version-update PRs: the monthly scheduled CI run is the
 signal. When it fails because of an outdated tool or action, update it then
 (`uv lock --upgrade`, `uv run pre-commit autoupdate`, or bump the action).
 
+Security fixes are the exception. When an advisory affects a locked
+development tool or a workflow action, Dependabot opens one grouped
+security-update PR (see `.github/dependabot.yml`). Merge it once CI is
+green.
+
 ## Documentation
 
 The Sphinx docs are built with `-W` (warnings are errors) on every push and
