@@ -11,9 +11,12 @@ Context-specific types are declared on their enclosing type with
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
+import re
+import string
 from array import array
 from collections.abc import Collection, Iterable, Iterator
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
+from fractions import Fraction
 from itertools import zip_longest
 from textwrap import indent
 from typing import (
@@ -911,6 +914,31 @@ class Explicit(X690Type[TInnerType]):
         return "\n".join(lines)
 
 
+def _encode_twos_complement(value: int) -> bytes:
+    """
+    Encode *value* as the shortest big-endian two's-complement octets.
+    """
+    octets = [value & 0b11111111]
+
+    # Append remaining octets for long integers.
+    remainder = value
+    while remainder not in (0, -1):
+        remainder = remainder >> 8
+        octets.append(remainder & 0b11111111)
+
+    if remainder == 0 and octets[-1] == 0b10000000:
+        octets.append(0)
+    octets.reverse()
+
+    # remove leading octet if there is a string of 9 zeros or ones
+    while len(octets) > 1 and (
+        (octets[0] == 0 and octets[1] & 0b10000000 == 0)
+        or (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0)
+    ):
+        del octets[0]
+    return bytes(octets)
+
+
 class Integer(X690Type[int]):
     SIGNED = True
     __slots__ = ()
@@ -934,25 +962,7 @@ class Integer(X690Type[int]):
         """
         if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
             return b""
-        octets = [self.pyvalue & 0b11111111]
-
-        # Append remaining octets for long integers.
-        remainder = self.pyvalue
-        while remainder not in (0, -1):
-            remainder = remainder >> 8
-            octets.append(remainder & 0b11111111)
-
-        if remainder == 0 and octets[-1] == 0b10000000:
-            octets.append(0)
-        octets.reverse()
-
-        # remove leading octet if there is a string of 9 zeros or ones
-        while len(octets) > 1 and (
-            (octets[0] == 0 and octets[1] & 0b10000000 == 0)
-            or (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0)
-        ):
-            del octets[0]
-        return bytes(octets)
+        return _encode_twos_complement(self.pyvalue)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Integer) and self.value == other.value
@@ -1236,7 +1246,71 @@ class ObjectIdentifier(X690Type[str]):
         return self in other
 
 
-class ObjectDescriptor(X690Type[str]):
+class _TextString(X690Type[str]):
+    """
+    Base for the character string types that hold a :class:`str`.
+
+    It is not registered as a type (it has no tag). Subclasses set the
+    codec in ``_ENCODING``, and optionally the characters that are allowed
+    on encoding in ``_ALPHABET``. Decoding never checks the alphabet.
+
+    Only the primitive encoding is supported.
+    """
+
+    __slots__ = ()
+
+    #: Name of the codec used for decoding and encoding
+    _ENCODING: ClassVar[str] = "ascii"
+
+    #: The characters allowed on encoding (``None`` allows all)
+    _ALPHABET: ClassVar[frozenset[str] | None] = None
+
+    @classmethod
+    def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> str:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises UnicodeDecodeError: if the data is invalid for the
+            character set of the type.
+        """
+        return data[slc].decode(cls._ENCODING)
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+
+        :raises UnicodeEncodeError: if the value contains characters that
+            the character set of the type cannot represent.
+        :raises ValueError: if the value contains characters outside of the
+            alphabet of the type.
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        alphabet = self._ALPHABET
+        if alphabet is not None:
+            for char in self.pyvalue:
+                if char not in alphabet:
+                    raise ValueError(
+                        "%s cannot contain the character %r"
+                        % (self.__class__.__name__, char)
+                    )
+        return self.pyvalue.encode(self._ENCODING)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _TextString) or type(other) is not type(self):
+            return False
+        return self.value == other.value
+
+
+class ObjectDescriptor(_TextString):
+    """
+    The ``ObjectDescriptor`` type, tag ``0x07``, holding an ASCII
+    :class:`str`.
+    """
+
     __slots__ = ()
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
@@ -1253,10 +1327,38 @@ class Real(X690Type[float]):
     NATURE = [TypeNature.PRIMITIVE]
 
 
-class Enumerated(X690Type[list[Any]]):
+class Enumerated(X690Type[int]):
+    """
+    The ``Enumerated`` type, tag ``0x0A``, holding an :class:`int`.
+
+    The value is encoded like an :class:`Integer`: as two's-complement
+    octets, so negative numbers are valid.
+    """
+
     __slots__ = ()
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> int:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+        """
+        return Integer.decode_raw(data, slc)
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        return _encode_twos_complement(self.pyvalue)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Enumerated) and self.value == other.value
 
 
 class EmbeddedPdv(X690Type[bytes]):
@@ -1264,16 +1366,75 @@ class EmbeddedPdv(X690Type[bytes]):
     TAG = 0x0B
 
 
-class Utf8String(X690Type[str]):
+class Utf8String(_TextString):
+    """
+    The ``UTF8String`` type, tag ``0x0C``, holding a :class:`str`.
+    """
+
     __slots__ = ()
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+    _ENCODING = "utf-8"
 
 
 class RelativeOid(X690Type[str]):
+    """
+    The ``RELATIVE-OID`` type, tag ``0x0D``, holding a dotted
+    :class:`str` such as ``"8571.3.2"``.
+
+    The arcs are encoded like those of an :class:`ObjectIdentifier`, but
+    the first two are not merged into one octet.
+    """
+
     __slots__ = ()
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises ValueError: if the last arc is not complete.
+        """
+        remaining = iter(data[slc])
+        arcs: list[int] = []
+        for octet in remaining:
+            try:
+                arcs.append(
+                    ObjectIdentifier.decode_large_value(octet, remaining)
+                )
+            except StopIteration as exc:
+                raise ValueError(
+                    "Truncated RelativeOid: the last arc is incomplete"
+                ) from exc
+        return ".".join(str(arc) for arc in arcs)
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+
+        :raises ValueError: if an arc is not a non-negative integer.
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        if not self.pyvalue:
+            return b""
+        octets: list[int] = []
+        for text in self.pyvalue.split("."):
+            arc = int(text)
+            if arc < 0:
+                raise ValueError(
+                    "RelativeOid arcs must not be negative: %r" % self.pyvalue
+                )
+            octets.extend(ObjectIdentifier.encode_large_value(arc))
+        return bytes(octets)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, RelativeOid) and self.value == other.value
 
 
 class Set(X690Type[bytes]):
@@ -1281,16 +1442,33 @@ class Set(X690Type[bytes]):
     TAG = 0x11
 
 
-class NumericString(X690Type[str]):
+class NumericString(_TextString):
+    """
+    The ``NumericString`` type, tag ``0x12``, holding a :class:`str`.
+
+    Decoding accepts any ASCII. Encoding accepts only digits and the space
+    and raises :py:exc:`ValueError` for anything else.
+    """
+
     __slots__ = ()
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+    _ALPHABET = frozenset("0123456789 ")
 
 
-class PrintableString(X690Type[str]):
+class PrintableString(_TextString):
+    """
+    The ``PrintableString`` type, tag ``0x13``, holding a :class:`str`.
+
+    Decoding accepts any ASCII, because real data often breaks the
+    alphabet. Encoding accepts only ``A-Z``, ``a-z``, ``0-9``, the space and
+    ``'()+,-./:=?``, and raises :py:exc:`ValueError` for anything else.
+    """
+
     __slots__ = ()
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+    _ALPHABET = frozenset(string.ascii_letters + string.digits + " '()+,-./:=?")
 
 
 class T61String(X690Type[str]):
@@ -1353,22 +1531,231 @@ class VideotexString(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class IA5String(X690Type[str]):
+class IA5String(_TextString):
+    """
+    The ``IA5String`` type, tag ``0x16``, holding an ASCII :class:`str`.
+    """
+
     __slots__ = ()
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class UtcTime(X690Type[datetime]):
+_UTC_TIME_PATTERN = re.compile(
+    r"([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})?"
+    r"(Z|[+-][0-9]{4})"
+)
+
+_GENERALIZED_TIME_PATTERN = re.compile(
+    r"([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})"
+    r"(?:([0-9]{2})(?:([0-9]{2}))?)?"
+    r"(?:[.,]([0-9]+))?"
+    r"(Z|[+-][0-9]{2}(?:[0-9]{2})?)?"
+)
+
+
+def _parse_zone(zone: str) -> timezone:
+    """
+    Convert ``Z``, ``+hh``, ``+hhmm``, ``-hh`` or ``-hhmm`` to a timezone.
+
+    :raises ValueError: if the offset is out of range.
+    """
+    if zone == "Z":
+        return UTC
+    hours, minutes = int(zone[1:3]), int(zone[3:5] or 0)
+    if hours > 23 or minutes > 59:
+        raise ValueError("Invalid time zone offset: %r" % zone)
+    offset = timedelta(hours=hours, minutes=minutes)
+    return timezone(-offset if zone[0] == "-" else offset)
+
+
+def _fraction_suffix(microsecond: int) -> str:
+    """
+    Return ``.ffffff`` without trailing zeros, or ``""`` for zero.
+    """
+    if not microsecond:
+        return ""
+    return ("." + "%06d" % microsecond).rstrip("0")
+
+
+def _timestamp(moment: datetime) -> str:
+    """
+    Format *moment* as ``YYYYMMDDhhmmss`` without any zone.
+    """
+    return "%04d%02d%02d%02d%02d%02d" % (
+        moment.year,
+        moment.month,
+        moment.day,
+        moment.hour,
+        moment.minute,
+        moment.second,
+    )
+
+
+class _TimeType(X690Type[datetime]):
+    """
+    Base for the time types that hold a :class:`~datetime.datetime`.
+
+    It is not registered as a type (it has no tag).
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        name = self.__class__.__name__
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            if not self.raw_bytes:
+                return "%s()" % name
+            try:
+                return "%s(%r)" % (name, self.value)
+            except ValueError:
+                return "%s(raw=%r)" % (name, self.raw_bytes)
+        return "%s(%r)" % (name, self.pyvalue)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _TimeType) or type(other) is not type(self):
+            return False
+        return self.value == other.value
+
+
+class UtcTime(_TimeType):
+    """
+    The ``UTCTime`` type, tag ``0x17``, holding a timezone-aware
+    :class:`~datetime.datetime`.
+
+    Decoding reads ``YYMMDDhhmm[ss]`` followed by ``Z`` or ``+hhmm`` /
+    ``-hhmm``. Years 50 to 99 are 1950 to 1999, years 00 to 49 are 2000
+    to 2049 (the rule of X.509).
+
+    Encoding converts to UTC and writes ``YYMMDDhhmmssZ``. Fractions of a
+    second are dropped. A naive datetime or a year outside 1950 to 2049
+    raises :py:exc:`ValueError`.
+    """
+
     __slots__ = ()
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> datetime:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
 
-class GeneralizedTime(X690Type[datetime]):
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises UnicodeDecodeError: if the data is not ASCII.
+        :raises ValueError: if the text is not a valid UTCTime.
+        """
+        text = data[slc].decode("ascii")
+        match = _UTC_TIME_PATTERN.fullmatch(text)
+        if match is None:
+            raise ValueError("Invalid UtcTime: %r" % text)
+        year, month, day, hour, minute, second, zone = match.groups()
+        full_year = int(year) + (1900 if int(year) >= 50 else 2000)
+        try:
+            return datetime(
+                full_year,
+                int(month),
+                int(day),
+                int(hour),
+                int(minute),
+                int(second or 0),
+                tzinfo=_parse_zone(zone),
+            )
+        except ValueError as exc:
+            raise ValueError("Invalid UtcTime: %r (%s)" % (text, exc)) from exc
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+
+        :raises ValueError: if the value is naive or the year is outside
+            of 1950 to 2049.
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        if self.pyvalue.tzinfo is None or self.pyvalue.utcoffset() is None:
+            raise ValueError("UtcTime requires a timezone-aware datetime")
+        moment = self.pyvalue.astimezone(UTC)
+        if not 1950 <= moment.year <= 2049:
+            raise ValueError(
+                "UtcTime supports the years 1950 to 2049, not %d" % moment.year
+            )
+        return (_timestamp(moment)[2:] + "Z").encode("ascii")
+
+
+class GeneralizedTime(_TimeType):
+    """
+    The ``GeneralizedTime`` type, tag ``0x18``, holding a
+    :class:`~datetime.datetime`.
+
+    Decoding reads ``YYYYMMDDHH[MM[SS[.fff]]]``, optionally followed by
+    ``Z`` or ``+hhmm`` / ``-hhmm`` (also ``+hh``). A comma may replace the
+    decimal point. With a zone the result is timezone-aware, without one
+    it is naive (local time, as X.680 defines it).
+
+    Encoding writes aware datetimes in UTC with a ``Z``, and naive ones
+    without a zone. Microseconds are written only if they are not zero.
+    """
+
     __slots__ = ()
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> datetime:
+        """
+        Converts the raw byte-value (without type & length header) into a
+        pure Python type
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises UnicodeDecodeError: if the data is not ASCII.
+        :raises ValueError: if the text is not a valid GeneralizedTime.
+        """
+        text = data[slc].decode("ascii")
+        match = _GENERALIZED_TIME_PATTERN.fullmatch(text)
+        if match is None:
+            raise ValueError("Invalid GeneralizedTime: %r" % text)
+        year, month, day, hour, minute, second, fraction, zone = match.groups()
+        # a fraction applies to the last component that is present
+        unit = 1 if second else 60 if minute else 3600
+        extra = timedelta()
+        if fraction:
+            digits = Fraction(int(fraction), 10 ** len(fraction))
+            extra = timedelta(microseconds=int(digits * unit * 1_000_000))
+        try:
+            return (
+                datetime(
+                    int(year),
+                    int(month),
+                    int(day),
+                    int(hour),
+                    int(minute or 0),
+                    int(second or 0),
+                    tzinfo=_parse_zone(zone) if zone else None,
+                )
+                + extra
+            )
+        except ValueError as exc:
+            raise ValueError(
+                "Invalid GeneralizedTime: %r (%s)" % (text, exc)
+            ) from exc
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        moment = self.pyvalue
+        zone = ""
+        if moment.tzinfo is not None and moment.utcoffset() is not None:
+            moment = moment.astimezone(UTC)
+            zone = "Z"
+        text = _timestamp(moment) + _fraction_suffix(moment.microsecond)
+        return (text + zone).encode("ascii")
 
 
 class GraphicString(X690Type[str]):
@@ -1404,7 +1791,12 @@ class GraphicString(X690Type[str]):
         return self.pyvalue.encode("ascii")
 
 
-class VisibleString(X690Type[str]):
+class VisibleString(_TextString):
+    """
+    The ``VisibleString`` type, tag ``0x1A``, holding an ASCII
+    :class:`str`.
+    """
+
     __slots__ = ()
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
@@ -1416,10 +1808,16 @@ class GeneralString(X690Type[str]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class UniversalString(X690Type[str]):
+class UniversalString(_TextString):
+    """
+    The ``UniversalString`` type, tag ``0x1C``, holding a :class:`str`
+    encoded as UTF-32-BE.
+    """
+
     __slots__ = ()
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+    _ENCODING = "utf-32-be"
 
 
 class CharacterString(X690Type[str]):
@@ -1427,10 +1825,16 @@ class CharacterString(X690Type[str]):
     TAG = 0x1D
 
 
-class BmpString(X690Type[str]):
+class BmpString(_TextString):
+    """
+    The ``BMPString`` type, tag ``0x1E``, holding a :class:`str` encoded
+    as UTF-16-BE.
+    """
+
     __slots__ = ()
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
+    _ENCODING = "utf-16-be"
 
 
 class EOC(X690Type[bytes]):

@@ -32,14 +32,50 @@ except where noted:
    * - :class:`~x690.types.ObjectIdentifier`
      - ``0x06``
      - :class:`str`, such as ``"1.3.6.1"``
+   * - :class:`~x690.types.ObjectDescriptor`
+     - ``0x07``
+     - :class:`str` (ASCII)
+   * - :class:`~x690.types.Enumerated`
+     - ``0x0A``
+     - :class:`int`
+   * - :class:`~x690.types.Utf8String`
+     - ``0x0C``
+     - :class:`str`
+   * - :class:`~x690.types.RelativeOid`
+     - ``0x0D``
+     - :class:`str`, such as ``"8571.3.2"``
    * - :class:`~x690.types.Sequence`
      - ``0x10``
      - :class:`list` of x690 values
+   * - :class:`~x690.types.NumericString`
+     - ``0x12``
+     - :class:`str` (ASCII)
+   * - :class:`~x690.types.PrintableString`
+     - ``0x13``
+     - :class:`str` (ASCII)
    * - :class:`~x690.types.T61String`
      - ``0x14``
      - :class:`str`
+   * - :class:`~x690.types.IA5String`
+     - ``0x16``
+     - :class:`str` (ASCII)
+   * - :class:`~x690.types.UtcTime`
+     - ``0x17``
+     - timezone-aware :class:`~datetime.datetime`
+   * - :class:`~x690.types.GeneralizedTime`
+     - ``0x18``
+     - :class:`~datetime.datetime`
    * - :class:`~x690.types.GraphicString`
      - ``0x19``
+     - :class:`str`
+   * - :class:`~x690.types.VisibleString`
+     - ``0x1A``
+     - :class:`str` (ASCII)
+   * - :class:`~x690.types.UniversalString`
+     - ``0x1C``
+     - :class:`str`
+   * - :class:`~x690.types.BmpString`
+     - ``0x1E``
      - :class:`str`
 
 Object identifiers
@@ -71,6 +107,41 @@ represent raise :exc:`UnicodeEncodeError`.
    Data written by OpenSSL is often Latin-1 rather than T.61. Decode such
    values from their raw bytes with ``bytes.decode("latin-1")``.
 
+Time values
+-----------
+
+:class:`~x690.types.UtcTime` always holds a timezone-aware
+:class:`~datetime.datetime`. It decodes a ``Z`` or an offset such as
+``+0130``. The two-digit year follows the X.509 rule: 50 to 99 mean 1950 to
+1999, and 00 to 49 mean 2000 to 2049.
+
+>>> from x690 import decode
+>>> value, _ = decode(b"\x17\x0d251026120000Z")
+>>> value.value
+datetime.datetime(2025, 10, 26, 12, 0, tzinfo=datetime.timezone.utc)
+>>> decode(b"\x17\x0b4910261200Z")[0].value.year
+2049
+>>> decode(b"\x17\x0b5010261200Z")[0].value.year
+1950
+
+Encoding converts to UTC and writes ``Z``. A naive datetime, or a year
+outside 1950 to 2049, raises :exc:`ValueError`.
+
+:class:`~x690.types.GeneralizedTime` has a four-digit year and optional
+minutes, seconds and fractions. Without a zone it holds a naive datetime,
+which stands for local time. With ``Z`` or an offset it holds an aware one.
+Encoding keeps that difference. Microseconds are written only when they are
+not zero.
+
+>>> from datetime import datetime
+>>> from x690.types import GeneralizedTime
+>>> moment = datetime(2025, 10, 26, 12)
+>>> bytes(GeneralizedTime(moment))
+b'\x18\x0e20251026120000'
+>>> data = b"\x18\x1120251026120000.5Z"
+>>> decode(data)[0].value.microsecond
+500000
+
 Types with raw bytes
 --------------------
 
@@ -78,18 +149,14 @@ All other universal types hold the bytes of their value, without the type and
 length header. They decode and encode without loss, and the bytes are left
 for the application to interpret:
 
->>> from x690 import decode
->>> text, _ = decode(b"\x0c\x03h\xc3\xa9")
+>>> text, _ = decode(b"\x15\x03abc")
 >>> text
-Utf8String(b'h\xc3\xa9')
->>> text.value.decode("utf8")
-'hé'
+VideotexString(b'abc')
+>>> text.value.decode("ascii")
+'abc'
 
-This applies to ``EOC``, ``BitString``, ``ObjectDescriptor``, ``External``,
-``Real``, ``Enumerated``, ``EmbeddedPdv``, ``Utf8String``, ``RelativeOid``,
-``Set``, ``NumericString``, ``PrintableString``, ``VideotexString``,
-``IA5String``, ``UtcTime``, ``GeneralizedTime``, ``VisibleString``,
-``GeneralString``, ``UniversalString``, ``CharacterString`` and
-``BmpString``. To give one of them a Python value, subclass it, set its
-``TAG`` again, and override :meth:`~x690.types.X690Type.decode_raw` and
+This applies to ``EOC``, ``BitString``, ``External``, ``Real``,
+``EmbeddedPdv``, ``Set``, ``VideotexString``, ``GeneralString`` and
+``CharacterString``. To give one of them a Python value, subclass it, set
+its ``TAG`` again, and override :meth:`~x690.types.X690Type.decode_raw` and
 :meth:`~x690.types.X690Type.encode_raw` as shown in :doc:`custom-types`.
