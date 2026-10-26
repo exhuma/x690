@@ -52,8 +52,8 @@ which Python values <https://exhuma.github.io/x690/types.html>`_.
 Project status
 --------------
 
-x690 implements the Basic Encoding Rules of a fixed standard and is
-feature-complete. The project is in maintenance mode: only bug fixes, support
-for new Python versions and security fixes are accepted. Feature requests will
-be declined unless a change in Python itself requires one. Semantic Versioning
-applies.
+The 1.x API is stable and follows Semantic Versioning. Work continues on
+context-specific tags, which are registered globally for now and keep
+protocols such as X.509 and LDAP out of reach, and on Python values for more
+universal types. `Choosing x690 <https://exhuma.github.io/x690/choosing.html>`_
+compares x690 with other ASN.1 libraries and lists its current limitations.

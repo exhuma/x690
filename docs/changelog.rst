@@ -4,9 +4,13 @@ Changelog
 Unreleased
 ----------
 
-* The documentation has a new theme and new structure: a start page, guides
-  for usage and custom types, a list of supported types and an API
-  reference. Every example in it runs as a doctest.
+* The documentation has a new theme and new structure: a start page, a
+  comparison with other ASN.1 libraries, guides for usage and custom types,
+  a list of supported types and an API reference. Every x690 example in it
+  runs as a doctest.
+* The project is under active development again, starting with
+  context-specific tags. The package is classified as
+  ``Development Status :: 5 - Production/Stable``.
 
 Release 1.1.0 - T61String conformance and maintenance mode
 ----------------------------------------------------------

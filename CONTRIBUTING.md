@@ -2,15 +2,18 @@
 
 ## Scope
 
-The library implements a fixed standard (ITU-T X.690, BER encoding) and is
-feature-complete. The project is in **maintenance mode**. Accepted:
+The library implements the BER encoding of ITU-T X.690. The 1.x API is
+stable; the project is under active development. Welcome contributions:
 
 - bug fixes,
+- work on open issues, such as context-specific tags and Python values for
+  more universal types,
 - support for new Python versions,
 - security fixes,
 - documentation and tooling improvements.
 
-Feature requests are declined unless a change in Python itself requires one.
+For a new feature, open an issue first so the design can be agreed before
+the work starts.
 
 ## Getting started
 
