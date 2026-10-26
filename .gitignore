@@ -3,7 +3,6 @@
 .coverage
 dist
 docs/_build
-docs/api
 env
 .venv
 .ruff_cache

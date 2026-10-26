@@ -1,81 +1,11 @@
 # Type-Hinting is done in a stub file
 """
-Overview
-========
+The type classes of X.690 and the :func:`decode` function.
 
-This module contains the encoding/decoding logic for data types as defined in
-:term:`X.690`.
-
-Each type is made available via a registry dictionary on :py:class:`~.X690Type` and
-can be retrieved via :py:meth:`~.X690Type.get`.
-
-Additionally, given a :py:class:`bytes` object, the :py:func:`~.decode`
-function can be used to parse the bytes object and return a typed instance
-from it. See :py:func:`~.decode` for details about it's behaviour!
-
-.. note::
-    The individual type classes in this module do not contain any additional
-    documentation. The bulk of this module is documented in :py:class:`~.X690Type`.
-
-    For the rest, the type classes simply define the type identifier tag.
-
-Supporting Additional Classes
-=============================
-
-Just by subclassing :py:class:`~.X690Type` and setting correct ``TAG`` and
-``TYPECLASS`` values, most of the basic functionality will be covered by the
-superclass. X690Type detection, and addition to the registry is automatic.
-Subclassing is enough.
-
-By default, a new type which does not override any methods will have it's value
-reported as bytes objects. You may want to override at least
-:py:meth:`~.X690Type.decode_raw` to convert the raw-bytes into your own data-type.
-
-Example
--------
-
-Let's assume you want to decode/encode a "Person" object with a first-name,
-last-name and age. Let's also assume it will be an application-specific type of
-a "constructed" nature with our application-local tag 1. Let's further assume
-that the value will be a UTF-8 encoded JSON string inside the x690 stream.
-
-We specify the metadata as class-level variables ``TYPECLASS``, ``NATURE`` and
-``TAG``. The decoding is handled by implementing a static-method
-``decode_raw`` which gets the data-object containing the value and a slice
-defining at which position the data is located. The encoding is handled by
-implementing the instance-method ``encode_raw``. The instance contains the
-Python value in ``self.pyvalue``.
-
-So we can implement this as follows (including a named-tuple as our local
-type):
-
-.. code-block:: python
-
-    from typing import NamedTuple
-    from x690.types import X690Type
-    from json import loads, dumps
-
-    class Person(NamedTuple):
-        first_name: str
-        last_name: str
-        age: int
-
-    class PersonType(X690Type[Person]):
-        TYPECLASS = TypeClass.APPLICATION
-        NATURE = [TypeNature.CONSTRUCTED]
-        TAG = 1
-
-        @staticmethod
-        def decode_raw(data: bytes, slc: slice = slice(None)) -> Person:
-            values = loads(data[slc].decode("utf8"))
-            return Person(
-                values["first_name"], values["last_name"], values["age"]
-            )
-
-        def encode_raw(self) -> bytes:
-            return dumps(self.pyvalue._asdict()).encode("utf8")
-
-
+Every class wraps a Python value and encodes it with :class:`bytes`.
+:class:`X690Type` is the base class: subclassing it registers a new type with
+:func:`decode`. The documentation pages "Supported types" and "Custom types"
+describe the classes and how to add new ones.
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
@@ -400,7 +330,7 @@ class UnknownType(X690Type[bytes]):
 
     * ``value``: The value without leading metadata (as bytes value)
     * ``tag``: The *unparsed* "tag". This is the type ID as defined in the
-      reference document. See :py:class:`~puresnmp.x690.util.TypeInfo` for
+      reference document. See :py:class:`~x690.util.TypeInfo` for
       details.
     * ``typeinfo``: unused (derived from *tag* and only here for consistency
       with ``__repr__`` of this class).
