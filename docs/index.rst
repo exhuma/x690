@@ -55,7 +55,9 @@ Large documents
 
 Custom types
    Subclass :class:`~x690.types.X690Type` to add application, context or
-   private types. Subclassing registers the type with the decoder.
+   private types. Application and private types are registered with the
+   decoder. Context-specific types are declared on their enclosing type, so
+   the same tag can mean a different type in every structure.
 
 Readable dumps
    :meth:`~x690.types.X690Type.pretty` prints nested values with hex dumps,
@@ -68,10 +70,11 @@ One dependency
 Project status
 --------------
 
-The 1.x API is stable and follows `Semantic Versioning
-<https://semver.org/spec/v2.0.0.html>`_. Work continues: context-specific
-tags are registered globally, which keeps protocols such as X.509 and LDAP
-out of reach for now, and some universal types hold raw bytes only.
+The API is stable and follows `Semantic Versioning
+<https://semver.org/spec/v2.0.0.html>`_. Context-specific tags resolve per
+enclosing type, so structures that reuse a tag such as ``[0]``, as X.509 and
+LDAP do, can be described. Work continues: types are declared by tag, not
+by position, and some universal types hold raw bytes only.
 :doc:`choosing` compares x690 with other ASN.1 libraries and lists its
 current limitations.
 
@@ -87,8 +90,8 @@ Contents
    unknown data.
 
 :doc:`custom-types`
-   Add application or context types, from a tag-only subclass to a type with
-   its own conversion.
+   Add application or context types, declare the types of a structure, and
+   write a type with its own conversion.
 
 :doc:`types`
    The universal types and the Python value each one decodes to.

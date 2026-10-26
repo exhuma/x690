@@ -90,6 +90,6 @@ This applies to ``EOC``, ``BitString``, ``ObjectDescriptor``, ``External``,
 ``Set``, ``NumericString``, ``PrintableString``, ``VideotexString``,
 ``IA5String``, ``UtcTime``, ``GeneralizedTime``, ``VisibleString``,
 ``GeneralString``, ``UniversalString``, ``CharacterString`` and
-``BmpString``. To give one of them a Python value, subclass it and override
-:meth:`~x690.types.X690Type.decode_raw` and
+``BmpString``. To give one of them a Python value, subclass it, set its
+``TAG`` again, and override :meth:`~x690.types.X690Type.decode_raw` and
 :meth:`~x690.types.X690Type.encode_raw` as shown in :doc:`custom-types`.

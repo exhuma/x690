@@ -49,8 +49,7 @@ strings and a nested list of three usage volumes, about 80 bytes per record.
 depend on any library under test. The ASN.1 module is `data.SPEC`.
 
 All fields use universal tags, so every library decodes the same structure.
-Real CDRs tag nearly every field with a context-specific tag, which x690
-cannot resolve per structure yet (#6).
+Real CDRs tag nearly every field with a context-specific tag.
 
 ## Workloads
 

@@ -3,19 +3,22 @@
 The type classes of X.690 and the :func:`decode` function.
 
 Every class wraps a Python value and encodes it with :class:`bytes`.
-:class:`X690Type` is the base class: subclassing it registers a new type with
-:func:`decode`. The documentation pages "Supported types" and "Custom types"
-describe the classes and how to add new ones.
+:class:`X690Type` is the base class: subclassing it registers a new
+universal, application or private type with :func:`decode`.
+Context-specific types are declared on their enclosing type with
+:attr:`X690Type.CHILD_TYPES`. The documentation pages "Supported types" and
+"Custom types" describe the classes and how to add new ones.
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
 from array import array
-from collections.abc import Iterator
+from collections.abc import Collection, Iterable, Iterator
 from datetime import datetime
 from itertools import zip_longest
 from textwrap import indent
 from typing import (
     Any,
+    ClassVar,
     Generic,
     Self,
     TypeVar,
@@ -40,6 +43,7 @@ from .util import (
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 TConcreteType = TypeVar("TConcreteType", bound="X690Type[Any]")
+TInnerType = TypeVar("TInnerType", bound="X690Type[Any]")
 
 
 class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
@@ -54,11 +58,52 @@ UNINITIALISED = _SENTINEL_UNINITIALISED()
 _T61_CODEC = t61codec.Codec()
 
 
+#: Identifies a type within a lookup: its class, tag and nature
+TypeKey = tuple[TypeClass, int, TypeNature]
+
+#: The types that decode everywhere: universal, application and private
+#: types, by key. Context-specific types are never in here.
+_REGISTRY: dict[TypeKey, type["X690Type[Any]"]] = {}
+
+#: The class attributes that make a subclass a type of its own
+_IDENTITY = frozenset({"TYPECLASS", "TAG", "NATURE"})
+
+#: The lookup used where no enclosing type declares any types
+_NO_TYPES: dict[TypeKey, type["X690Type[Any]"]] = {}
+
+
+def _type_map(
+    types: Iterable[type["X690Type[Any]"]],
+) -> dict[TypeKey, type["X690Type[Any]"]]:
+    """
+    Build a lookup from type key to class for *types*.
+
+    Every class is entered once for each of its natures.
+
+    :param types: The classes to enter.
+    :return: A new dictionary keyed by ``(TYPECLASS, TAG, nature)``.
+    :raises ValueError: If two classes share the same key.
+    """
+    output: dict[TypeKey, type[X690Type[Any]]] = {}
+    for cls in types:
+        for nature in cls.NATURE:
+            key = (cls.TYPECLASS, cls.TAG, nature)
+            existing = output.get(key)
+            if existing is not None and existing is not cls:
+                raise ValueError(
+                    f"{existing.__name__} and {cls.__name__} share the "
+                    f"{cls.TYPECLASS.value} {nature.value} tag {cls.TAG}"
+                )
+            output[key] = cls
+    return output
+
+
 def decode(
     data: bytes,
     start_index: int = 0,
     enforce_type: type[TPopType] | None = None,
     strict: bool = False,
+    types: Iterable[type["X690Type[Any]"]] = (),
 ) -> tuple[TPopType, int]:
     """
     Convert a X.690 bytes object into a Python instance, and the location of
@@ -81,25 +126,20 @@ def decode(
         >>> data = b'some-skippable-bytes\\x02\\x01\\x05\\x11'
         >>> decode(data, 20)
         (Integer(5), 23)
+
+    :param data: The buffer to read from. It is never copied.
+    :param start_index: The position of the value in *data*.
+    :param enforce_type: Raise :exc:`~x690.exc.UnexpectedType` unless the
+        value is an instance of this class.
+    :param strict: Raise :exc:`~x690.exc.IncompleteDecoding` if data is left
+        after the value.
+    :param types: Classes to try before the global registry for this value,
+        as :attr:`X690Type.CHILD_TYPES` does for the items of a constructed
+        type. Use it to decode a context-specific value on its own.
+    :return: The value and the index of the next value.
     """
-    if start_index >= len(data):
-        raise IndexError(
-            f"Attempting to read from position {start_index} "
-            f"on data with length {len(data)}"
-        )
-
-    start_index = start_index or 0
-    type_ = TypeInfo.from_bytes(data[start_index])
-
-    try:
-        cls = X690Type.get(type_.cls, type_.tag, type_.nature)
-    except KeyError:
-        cls = UnknownType
-
-    data_slice, next_tlv = get_value_slice(data, start_index)
-    output = cls.from_bytes(data, data_slice)
-    if cls is UnknownType:
-        output.tag = data[start_index]  # type: ignore
+    lookup = _type_map(types) if types else _NO_TYPES
+    output, next_tlv = _decode_value(data, start_index, lookup)
 
     if enforce_type and not isinstance(output, enforce_type):
         raise UnexpectedType(
@@ -117,15 +157,41 @@ def decode(
     return output, next_tlv  # type: ignore
 
 
+def _decode_value(
+    data: bytes,
+    start_index: int,
+    lookup: dict[TypeKey, type["X690Type[Any]"]],
+) -> tuple["X690Type[Any]", int]:
+    """
+    Decode the value at *start_index*, trying *lookup* before the global
+    registry.
+    """
+    if start_index >= len(data):
+        raise IndexError(
+            f"Attempting to read from position {start_index} "
+            f"on data with length {len(data)}"
+        )
+
+    start_index = start_index or 0
+    type_ = TypeInfo.from_bytes(data[start_index])
+    key = (type_.cls, type_.tag, type_.nature)
+    cls = lookup.get(key) or _REGISTRY.get(key, UnknownType)
+
+    data_slice, next_tlv = get_value_slice(data, start_index)
+    output = cls.from_bytes(data, data_slice)
+    if cls is UnknownType:
+        output.tag = data[start_index]  # type: ignore
+    return output, next_tlv
+
+
 class X690Type(Generic[TWrappedPyType]):
     """
     The superclass for all supported types.
     """
 
     __slots__ = ["pyvalue", "_raw_bytes", "_buffer", "_bounds"]
-    __registry: dict[tuple[str, int, TypeNature], type["X690Type[Any]"]] = {}
 
-    #: The x690 type-class (universal, application or context)
+    #: The x690 type-class (universal, application, context or private)
     TYPECLASS: TypeClass = TypeClass.UNIVERSAL
 
     #: The x690 "private/constructed" information
@@ -133,6 +199,19 @@ class X690Type(Generic[TWrappedPyType]):
 
     #: The x690 identifier for the type
     TAG: int = -1
+
+    #: The types of the values inside this one. Their tags are looked up
+    #: here before the global registry, and context-specific tags only
+    #: here. Assign a new collection to change it after the class statement.
+    CHILD_TYPES: ClassVar[Collection[type["X690Type[Any]"]]] = ()
+
+    #: CHILD_TYPES as a lookup, with the collection it was built from
+    _child_lookup: ClassVar[
+        tuple[
+            Collection[type["X690Type[Any]"]],
+            dict[TypeKey, type["X690Type[Any]"]],
+        ]
+    ] = ((), _NO_TYPES)
 
     #: The decoded (or to-be encoded) Python value
     pyvalue: TWrappedPyType | _SENTINEL_UNINITIALISED
@@ -148,9 +227,45 @@ class X690Type(Generic[TWrappedPyType]):
     #: The location of the value's own content bytes within "_buffer"
     _bounds: slice
 
-    def __init_subclass__(cls: type["X690Type[Any]"]) -> None:
+    def __init_subclass__(
+        cls: type["X690Type[Any]"], register: bool = True, **kwargs: object
+    ) -> None:
+        """
+        Register a new universal, application or private type.
+
+        :param register: Pass ``register=False`` in the class statement to
+            keep the type out of the global registry, so that it decodes
+            only where an enclosing type lists it in :attr:`CHILD_TYPES`.
+            Context-specific types are never registered.
+        """
+        super().__init_subclass__(**kwargs)
+        cls.child_lookup()
+        if not register or cls.TYPECLASS == TypeClass.CONTEXT:
+            return
+        if not _IDENTITY.intersection(vars(cls)):
+            # Same type as the parent, for example a sequence that only
+            # declares CHILD_TYPES: the parent stays registered.
+            return
         for nature in cls.NATURE:
-            X690Type.__registry[(cls.TYPECLASS, cls.TAG, nature)] = cls
+            _REGISTRY[(cls.TYPECLASS, cls.TAG, nature)] = cls
+
+    @classmethod
+    def child_lookup(cls) -> dict[TypeKey, type["X690Type[Any]"]]:
+        """
+        Return :attr:`CHILD_TYPES` as a lookup keyed by
+        ``(TYPECLASS, TAG, nature)``.
+
+        The lookup is built once, and again only after a new collection is
+        assigned to :attr:`CHILD_TYPES`.
+
+        :raises ValueError: If two child types share the same key.
+        """
+        source, lookup = cls._child_lookup
+        if source is not cls.CHILD_TYPES:
+            source = cls.CHILD_TYPES
+            lookup = _type_map(source) if source else _NO_TYPES
+            cls._child_lookup = (source, lookup)
+        return lookup
 
     @property
     def value(self) -> TWrappedPyType:
@@ -212,22 +327,28 @@ class X690Type(Generic[TWrappedPyType]):
 
     @staticmethod
     def get(
-        typeclass: str, typeid: int, nature: TypeNature = TypeNature.CONSTRUCTED
+        typeclass: str,
+        typeid: int,
+        nature: TypeNature = TypeNature.CONSTRUCTED,
     ) -> type["X690Type[Any]"]:
         """
-        Retrieve a Python class by x690 type information
+        Retrieve a globally registered class by x690 type information.
 
-        Classes can be registered by subclassing :py:class:`x690.types.X690Type`
+        Subclassing :py:class:`x690.types.X690Type` registers universal,
+        application and private types. Context-specific types are never
+        registered: they are declared in :attr:`CHILD_TYPES` of the
+        enclosing type.
+
+        :raises KeyError: If no class is registered for the type.
         """
-        cls = X690Type.__registry[(typeclass, typeid, nature)]
-        return cls
+        return _REGISTRY[(TypeClass(typeclass), typeid, nature)]
 
     @staticmethod
     def all() -> list[type["X690Type[Any]"]]:
         """
-        Returns all registered classes
+        Returns all globally registered classes
         """
-        return list(X690Type.__registry.values())
+        return list(_REGISTRY.values())
 
     @classmethod
     def validate(cls, data: bytes) -> None:
@@ -613,9 +734,9 @@ class Sequence(X690Type[list[X690Type[Any]]]):
             position = get_value_slice(data, position).next_value_index
         return offsets
 
-    @staticmethod
+    @classmethod
     def decode_raw(
-        data: bytes, slc: slice = slice(None)
+        cls, data: bytes, slc: slice = slice(None)
     ) -> list[X690Type[Any]]:
         """
         Converts the raw byte-value (without type & length header) into a
@@ -623,8 +744,9 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
         """
+        lookup = cls.child_lookup()
         return [
-            decode(data, offset)[0]
+            _decode_value(data, offset, lookup)[0]
             for offset in Sequence.item_offsets(data, slc)
         ]
 
@@ -678,19 +800,21 @@ class Sequence(X690Type[list[X690Type[Any]]]):
             yield from self.value
             return
         data = self._source()[0]
+        lookup = self.child_lookup()
         for offset in self._offsets():
-            yield decode(data, offset)[0]
+            yield _decode_value(data, offset, lookup)[0]
 
     def __getitem__(self, idx: int) -> X690Type[Any]:
         if not self._is_decoded():
             return self.value[idx]
+        data = self._source()[0]
+        lookup = self.child_lookup()
         if isinstance(idx, slice):
             return [
-                decode(self._source()[0], offset)[0]
+                _decode_value(data, offset, lookup)[0]
                 for offset in self._offsets()[idx]
             ]
-        item: X690Type[Any] = decode(self._source()[0], self._offsets()[idx])[0]
-        return item
+        return _decode_value(data, self._offsets()[idx], lookup)[0]
 
     def pythonize(self) -> list[X690Type[Any]]:
         """
@@ -711,6 +835,79 @@ class Sequence(X690Type[list[X690Type[Any]]]):
             for line in prettified_item.splitlines():
                 lines.append(bullet + line)
                 bullet = "  "
+        return "\n".join(lines)
+
+
+class Explicit(X690Type[TInnerType]):
+    """
+    An explicitly tagged value: a constructed context-specific value that
+    wraps exactly one inner value, as in ``version [0] EXPLICIT Version``.
+
+    Subclass it with the ``TAG`` of the wrapper, and declare the inner type
+    in :attr:`~.X690Type.CHILD_TYPES` if it is not a globally registered
+    type. The value is the inner value:
+
+    >>> class Version(Explicit[Integer]):
+    ...     TAG = 0
+    >>> bytes(Version(Integer(2)))
+    b'\\xa0\\x03\\x02\\x01\\x02'
+    >>> decode(b"\\xa0\\x03\\x02\\x01\\x02", types=[Version])[0]
+    Version(Integer(2))
+    """
+
+    __slots__ = ()
+    TYPECLASS = TypeClass.CONTEXT
+    NATURE = [TypeNature.CONSTRUCTED]
+
+    @classmethod
+    def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> TInnerType:
+        """
+        Decode the inner value, resolving its tag with
+        :attr:`~.X690Type.CHILD_TYPES`.
+
+        Overrides :py:meth:`~.X690Type.decode_raw`
+
+        :raises X690Error: If the wrapper holds no value.
+        """
+        start, end, _ = slc.indices(len(data))
+        if start >= end:
+            raise X690Error(
+                f"{cls.__name__} is explicitly tagged but holds no value"
+            )
+        inner, _ = _decode_value(data, start, cls.child_lookup())
+        return inner  # type: ignore[return-value]
+
+    def encode_raw(self) -> bytes:
+        """
+        Overrides :py:meth:`.X690Type.encode_raw`
+        """
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            return b""
+        return bytes(self.pyvalue)
+
+    def __eq__(self, other: object) -> bool:
+        return type(other) is type(self) and self.value == other.value
+
+    # Any: the Python value of the inner type is not known statically
+    def pythonize(self) -> Any:
+        """
+        Return the Python value of the inner value.
+
+        Overrides :py:meth:`~.X690Type.pythonize`
+        """
+        return self.value.pythonize()
+
+    def pretty(self, depth: int = 0) -> str:
+        """
+        Returns a prettified string with *depth* levels of indentation
+
+        See :py:meth:`~.X690Type.pretty`
+        """
+        lines = [f"{self.__class__.__name__} (explicit tag {self.TAG}):"]
+        bullet = INDENT_STRING * depth + "⁃ "
+        for line in self.value.pretty(depth).splitlines():
+            lines.append(bullet + line)
+            bullet = "  "
         return "\n".join(lines)
 
 
