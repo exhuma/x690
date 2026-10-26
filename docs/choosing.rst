@@ -286,6 +286,97 @@ Summary
      - x690 objects
      - first level
 
+Performance
+-----------
+
+A benchmark decodes the same synthetic data with all five libraries:
+records shaped like telecom charging data records, about 80 bytes each, in
+four workloads. ``stream`` reads records one after another, ``full`` reads
+a document of all records by iteration, ``partial`` reads only its last
+record, and ``indexed`` reads every record by index. Times cover decoding
+only; memory is the peak on top of the input.
+
+These are the results for 1,000,000 records (80 MB), each case limited to
+2 GB of memory.
+
+.. note::
+
+   The numbers come from one small machine. Run the benchmark on your own
+   hardware before relying on absolute times.
+
+Reading records one at a time keeps every library under 1 MB of extra
+memory. asn1crypto is fastest there with 14 s, followed by x690 and
+asn1tools with 21 s each, pycrate with 97 s and pyasn1 with 238 s.
+
+For a whole document, x690 needs a few megabytes where the others need
+gigabytes or fail: it keeps only the start of each item and decodes items as
+they are read. pycrate and pyasn1 ran out of memory; for 100,000 records
+they needed 550 MB and 842 MB.
+
+.. list-table:: Decode time for a whole document
+   :header-rows: 1
+
+   * - Library
+     - full
+     - partial
+     - indexed
+   * - x690
+     - 22 s
+     - 1.6 s
+     - 22 s
+   * - asn1crypto
+     - 26 s
+     - 1.9 s
+     - 29 s
+   * - asn1tools
+     - 28 s
+     - 27 s
+     - 29 s
+   * - pycrate
+     - –
+     - –
+     - –
+   * - pyasn1
+     - –
+     - –
+     - –
+
+.. list-table:: Peak memory on top of the input
+   :header-rows: 1
+
+   * - Library
+     - full
+     - partial
+     - indexed
+   * - x690
+     - 8 MB
+     - 8 MB
+     - 8 MB
+   * - asn1crypto
+     - 1,974 MB
+     - 351 MB
+     - 1,974 MB
+   * - asn1tools
+     - 1,436 MB
+     - 1,437 MB
+     - 1,437 MB
+   * - pycrate
+     - over 2 GB
+     - over 2 GB
+     - over 2 GB
+   * - pyasn1
+     - over 2 GB
+     - over 2 GB
+     - over 2 GB
+
+The machine had 2 cores and 3.7 GB of memory and ran CPython 3.13. The
+data uses universal tags only, so that all libraries decode the same
+structure; real charging records use context-specific tags (`#6
+<https://github.com/exhuma/x690/issues/6>`_). The `benchmark
+<https://github.com/exhuma/x690/tree/main/benchmarks>`_ runs with one
+command and writes a JSON report with the machine details, and the reports
+behind this table are in ``benchmarks/results``.
+
 Why x690 works this way
 -----------------------
 
@@ -309,10 +400,11 @@ Typed values, first level
 No copies, parse on read
    Before version 0.5, every nested value copied its part of the data. On
    large documents this cost memory and time. x690 now keeps one reference to
-   the input and parses a value only when it is read. Memory use stays
-   predictable for deeply nested data, and applications that need a few
-   values from a large document do no work for the rest. Errors in a value
-   surface when that value is read.
+   the input and parses a value only when it is read. A sequence records
+   where its items start and creates each item when it is accessed. Memory
+   use stays predictable for deeply nested data, and applications that need
+   a few values from a large document do no work for the rest. Errors in a
+   value surface when that value is read.
 
 Decode anything
    Tags x690 does not know decode to :class:`~x690.types.UnknownType`

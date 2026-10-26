@@ -11,6 +11,15 @@ Unreleased
 * The project is under active development again, starting with
   context-specific tags. The package is classified as
   ``Development Status :: 5 - Production/Stable``.
+* Indexing a decoded ``Sequence`` no longer re-decodes all its items: a
+  sequence records where its items start and decodes each item when it is
+  accessed. Reading every item by index was quadratic and is now linear
+  (`#16 <https://github.com/exhuma/x690/issues/16>`_).
+* Every type declares ``__slots__``, so decoded values no longer carry a
+  ``__dict__``. A decoded ``Integer`` takes about a quarter of the memory it
+  took before (`#17 <https://github.com/exhuma/x690/issues/17>`_).
+* A benchmark in ``benchmarks/`` compares decode time and memory with
+  pyasn1, asn1tools, asn1crypto and pycrate.
 
 Release 1.1.0 - T61String conformance and maintenance mode
 ----------------------------------------------------------
