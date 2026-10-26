@@ -4,88 +4,67 @@ Changelog
 Release 2.0.0
 -------------
 
-2.0.0 includes the changes prepared as 1.1.0, which was never published.
-Upgrading from 1.0 needs code changes where the breaking changes below
-apply.
+2.0.0 is the first release since 1.0.0post1. It includes the changes
+prepared as 1.1.0, which was never published.
 
-**Breaking changes**
+**Changes that need updates to your code**
 
-* Context-specific types are no longer registered globally. A constructed
-  type lists the types of its children in ``CHILD_TYPES``, and tags are
-  resolved per enclosing type, so the same tag can mean a different type in
-  every structure. ``decode()`` takes the types of the top-level value as
-  ``types=``. ``Explicit`` describes explicitly tagged values. A subclass
-  is registered only if it sets its own ``TYPECLASS``, ``TAG`` or
-  ``NATURE``; ``register=False`` keeps an application or private type out of
-  the global registry
+* Context-specific types such as SNMP PDUs are now declared on the type
+  that contains them, in ``CHILD_TYPES``, instead of being registered
+  globally when the class is defined. The same tag can now mean a different
+  type in every structure, as in X.509 and LDAP. See :doc:`custom-types`
   (`#6 <https://github.com/exhuma/x690/issues/6>`_).
-* More universal types hold Python values instead of bytes:
-  ``Utf8String``, ``NumericString``, ``PrintableString``, ``IA5String``,
-  ``VisibleString``, ``ObjectDescriptor``, ``BmpString`` and
-  ``UniversalString`` hold a ``str``; ``UtcTime`` and ``GeneralizedTime`` a
-  ``datetime``; ``Enumerated`` an ``int``; ``RelativeOid`` a ``str``;
-  ``Real`` a ``float``; ``BitString`` a ``Bits`` value; ``Set`` a list of
-  values like ``Sequence``
+* A subclass that only changes how a type converts its value must set its
+  ``TAG`` again to replace the built-in type.
+* Most string types now give a ``str``, ``UtcTime`` and
+  ``GeneralizedTime`` a ``datetime``, ``Enumerated`` an ``int``, ``Real`` a
+  ``float``, ``BitString`` a ``Bits`` value and ``Set`` a list of values,
+  instead of bytes. See :doc:`types`
   (`#7 <https://github.com/exhuma/x690/issues/7>`_).
-* ``raw_bytes`` of a decoded value is its own content bytes instead of the
-  whole input buffer, and the ``bounds`` attribute is gone. The new
-  ``detach()`` copies a value's own bytes and drops the reference to the
-  input, so a value kept from a large document no longer keeps the document
-  alive (`#14 <https://github.com/exhuma/x690/issues/14>`_).
-* ``repr()`` of a ``Sequence`` subclass starts with the subclass name
+* ``raw_bytes`` of a decoded value is now only that value's bytes, and the
+  ``bounds`` attribute is gone
+  (`#14 <https://github.com/exhuma/x690/issues/14>`_).
+* Values are equal only when they have the same class and value, and they
+  can no longer be used in sets or as dictionary keys. ``ObjectIdentifier``
+  is the exception.
+* ``repr()`` of a ``Sequence`` subclass shows the subclass name
   (`#19 <https://github.com/exhuma/x690/issues/19>`_).
-* ``T61String`` uses ``t61codec`` 3, which follows ITU-T T.61 (1988) to
-  the letter. Accented letters decode to precomposed characters
-  (``b"Caf\xc2e"`` gives ``"Café"``), and ``0xE0`` decodes to Ω U+03A9
-  (it was U+2126). Invalid T.61 raises ``UnicodeDecodeError``, and
-  characters which T.61 cannot represent raise an error when encoding.
-  Data written by OpenSSL is often Latin-1 rather than T.61; decode such
-  raw values with ``latin-1`` yourself
+* ``T61String`` follows ITU-T T.61 strictly: accented letters decode to
+  single characters (``b"Caf\xc2e"`` gives ``"Café"``), ``0xE0`` is Ω
+  U+03A9, and invalid data raises an error. Data written by OpenSSL is often
+  Latin-1; decode such values with ``latin-1`` yourself
   (`#3 <https://github.com/exhuma/x690/issues/3>`_).
-* x690 no longer registers the ``t61`` codec in Python's global codec
-  registry.
-* Values compare equal only when they are of the same class and hold the
-  same value. A subclass differs from its base class, and a context-class
-  ``Sequence`` subclass from a plain ``Sequence`` with the same items.
-  All types except ``ObjectIdentifier`` compare by value and cannot be
-  hashed, so they cannot be used in sets or as dictionary keys.
+* Importing x690 no longer makes the ``t61`` codec available to Python's
+  ``codecs`` module.
 * Requires Python 3.11 or newer.
 
-**Performance**
+**New**
 
-* Indexing a decoded ``Sequence`` no longer re-decodes all its items: a
-  sequence records where its items start and decodes each item when it is
-  accessed. Reading every item by index was quadratic and is now linear
-  (`#16 <https://github.com/exhuma/x690/issues/16>`_).
-* Every type declares ``__slots__``, so decoded values no longer carry a
-  ``__dict__``. A decoded ``Integer`` takes about a quarter of the memory it
-  took before (`#17 <https://github.com/exhuma/x690/issues/17>`_).
-* A benchmark in ``benchmarks/`` compares decode time and memory with
-  pyasn1, asn1tools, asn1crypto and pycrate.
+* ``Explicit`` describes explicitly tagged values.
+* ``detach()`` lets you keep a value from a large document without keeping
+  the whole document in memory.
+* ``decode()`` takes the types of a context-tagged value as ``types=``.
+
+**Faster and smaller**
+
+* Large documents decode with a fraction of the memory, and reading items by
+  index no longer slows down as documents grow
+  (`#16 <https://github.com/exhuma/x690/issues/16>`_,
+  `#17 <https://github.com/exhuma/x690/issues/17>`_).
+  :doc:`choosing` compares the results with other ASN.1 libraries.
 
 **Fixes**
 
 * ``decode(..., strict=True)`` raises on a single trailing byte
   (`#12 <https://github.com/exhuma/x690/issues/12>`_).
-* ``GraphicString`` encodes values built from a ``str``
+* ``GraphicString`` values can be encoded
   (`#13 <https://github.com/exhuma/x690/issues/13>`_).
-* ``repr()`` of ``UnknownType`` is stable on Python 3.12 and later.
+* ``repr()`` of an unknown type no longer changes between Python versions.
 
-**Packaging and project**
+**Documentation**
 
-* Depends on ``t61codec>=3.0,<4``.
-* Built with hatchling from a PEP 621 ``pyproject.toml``, with PEP 639
-  license metadata, and classified as
-  ``Development Status :: 5 - Production/Stable``.
-* The wheel contains only the ``x690`` package; the test suite is no longer
-  installed as a top-level ``tests`` package (see
-  `#2 <https://github.com/exhuma/x690/pull/2>`_).
-* CI tests all supported CPython versions automatically, plus a monthly
-  scheduled run. Releases are published through PyPI Trusted Publishing.
-* The documentation has a new theme and structure, including a comparison
-  with other ASN.1 libraries, and is deployed to GitHub Pages:
-  https://exhuma.github.io/x690/. Every x690 example in it runs as a
-  doctest.
+* New documentation at https://exhuma.github.io/x690/, with guides, a list
+  of supported types and a comparison with other ASN.1 libraries.
 
 Release 1.0.0post1 - Maintenance release
 ----------------------------------------
