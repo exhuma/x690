@@ -61,21 +61,22 @@ One dependency
    x690 is pure Python. It depends only on
    `t61codec <https://github.com/exhuma/t61codec>`_ for ``T61String``.
 
-Scope
------
+Project status
+--------------
 
-x690 implements the Basic Encoding Rules. It does not compile ASN.1 modules:
-message structures are built from the type classes in code. Some universal
-types decode to their raw bytes only; :doc:`types` lists what converts to
-which Python value.
-
-The standard is fixed and the library is feature-complete. The project is in
-maintenance mode: it accepts bug fixes, support for new Python versions and
-security fixes. Versions follow `Semantic Versioning
-<https://semver.org/spec/v2.0.0.html>`_.
+The 1.x API is stable and follows `Semantic Versioning
+<https://semver.org/spec/v2.0.0.html>`_. Work continues: context-specific
+tags are registered globally, which keeps protocols such as X.509 and LDAP
+out of reach for now, and some universal types hold raw bytes only.
+:doc:`choosing` compares x690 with other ASN.1 libraries and lists its
+current limitations.
 
 Contents
 --------
+
+:doc:`choosing`
+   x690 next to pyasn1, asn1tools, asn1crypto and pycrate, the reasons behind
+   its design, and its current limitations.
 
 :doc:`usage`
    Encode values, decode single values and streams, check types and inspect
@@ -97,6 +98,7 @@ Contents
 .. toctree::
    :hidden:
 
+   choosing
    usage
    custom-types
    types
