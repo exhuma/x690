@@ -121,7 +121,7 @@ class X690Type(Generic[TWrappedPyType]):
     The superclass for all supported types.
     """
 
-    __slots__ = ["pyvalue", "_raw_bytes"]
+    __slots__ = ["pyvalue", "_raw_bytes", "bounds"]
     __registry: dict[tuple[str, int, TypeNature], type["X690Type[Any]"]] = {}
 
     #: The x690 type-class (universal, application or context)
@@ -140,7 +140,7 @@ class X690Type(Generic[TWrappedPyType]):
     _raw_bytes: bytes
 
     #: The location of the value within "raw_bytes"
-    bounds: slice = slice(None)
+    bounds: slice
 
     def __init_subclass__(cls: type["X690Type[Any]"]) -> None:
         for nature in cls.NATURE:
@@ -253,6 +253,7 @@ class X690Type(Generic[TWrappedPyType]):
     ) -> None:
         self.pyvalue = value
         self._raw_bytes = b""
+        self.bounds = slice(None)
 
     @property
     def raw_bytes(self) -> bytes:
@@ -337,6 +338,7 @@ class UnknownType(X690Type[bytes]):
       with ``__repr__`` of this class).
     """
 
+    __slots__ = ("tag",)
     TAG = 0x99
 
     def __init__(self, value: bytes = b"", tag: int = -1) -> None:
@@ -386,6 +388,7 @@ class UnknownType(X690Type[bytes]):
 
 
 class Boolean(X690Type[bool]):
+    __slots__ = ()
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -422,6 +425,7 @@ class Boolean(X690Type[bool]):
 
 
 class Null(X690Type[None]):
+    __slots__ = ()
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -474,6 +478,7 @@ class Null(X690Type[None]):
 
 
 class OctetString(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -518,6 +523,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
     indexable.
     """
 
+    __slots__ = ("_item_offsets",)
     TAG = 0x10
 
     #: Start index of each item, once a decoded sequence has been read.
@@ -651,6 +657,7 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
 class Integer(X690Type[int]):
     SIGNED = True
+    __slots__ = ()
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -709,6 +716,7 @@ class ObjectIdentifier(X690Type[str]):
         False
     """
 
+    __slots__ = ()
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
 
@@ -973,48 +981,58 @@ class ObjectIdentifier(X690Type[str]):
 
 
 class ObjectDescriptor(X690Type[str]):
+    __slots__ = ()
     TAG = 0x07
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class External(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x08
 
 
 class Real(X690Type[float]):
+    __slots__ = ()
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class Enumerated(X690Type[list[Any]]):
+    __slots__ = ()
     TAG = 0x0A
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class EmbeddedPdv(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x0B
 
 
 class Utf8String(X690Type[str]):
+    __slots__ = ()
     TAG = 0x0C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class RelativeOid(X690Type[str]):
+    __slots__ = ()
     TAG = 0x0D
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class Set(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x11
 
 
 class NumericString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x12
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class PrintableString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x13
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1036,6 +1054,7 @@ class T61String(X690Type[str]):
     The T.61 codec is never registered globally.
     """
 
+    __slots__ = ()
     TAG = 0x14
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1073,21 +1092,25 @@ class T61String(X690Type[str]):
 
 
 class VideotexString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class IA5String(X690Type[str]):
+    __slots__ = ()
     TAG = 0x16
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class UtcTime(X690Type[datetime]):
+    __slots__ = ()
     TAG = 0x17
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class GeneralizedTime(X690Type[datetime]):
+    __slots__ = ()
     TAG = 0x18
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1098,6 +1121,7 @@ class GraphicString(X690Type[str]):
     #       For this reason, it defines this as a "str" type. To keep the
     #       correct behaviours, we can still "borrow" the implementation from
     #       OctetString if needed
+    __slots__ = ()
     TAG = 0x19
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
@@ -1114,34 +1138,41 @@ class GraphicString(X690Type[str]):
 
 
 class VisibleString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1A
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class GeneralString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class UniversalString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1C
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class CharacterString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1D
 
 
 class BmpString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x1E
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
 class EOC(X690Type[bytes]):
+    __slots__ = ()
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
 
 
 class BitString(X690Type[str]):
+    __slots__ = ()
     TAG = 0x03
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
