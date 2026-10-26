@@ -9,6 +9,7 @@ describe the classes and how to add new ones.
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
+from array import array
 from collections.abc import Iterator
 from datetime import datetime
 from itertools import zip_longest
@@ -519,6 +520,42 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
     TAG = 0x10
 
+    #: Start index of each item, once a decoded sequence has been read.
+    _item_offsets: "array[int] | None"
+
+    def __init__(
+        self,
+        value: list[X690Type[Any]] | _SENTINEL_UNINITIALISED = UNINITIALISED,
+    ) -> None:
+        super().__init__(value)
+        self._item_offsets = None
+
+    @property
+    def value(self) -> list[X690Type[Any]]:
+        """
+        The items of this sequence.
+
+        Overrides :py:attr:`~.X690Type.value`
+        """
+        if self._is_decoded():
+            return list(self)
+        return self.pyvalue  # type: ignore
+
+    @staticmethod
+    def item_offsets(data: bytes, slc: slice = slice(None)) -> "array[int]":
+        """
+        Return the start index of every item in the value at *slc*.
+
+        Only the type and length headers are read; no item is decoded.
+        """
+        start, end, _ = slc.indices(len(data))
+        offsets = array("Q")
+        position = start
+        while position < end:
+            offsets.append(position)
+            position = get_value_slice(data, position).next_value_index
+        return offsets
+
     @staticmethod
     def decode_raw(
         data: bytes, slc: slice = slice(None)
@@ -529,17 +566,23 @@ class Sequence(X690Type[list[X690Type[Any]]]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
         """
-        start_index = slc.start or 0
-        if not data[slc] or start_index > len(data):
-            return []
-        item: X690Type[Any]
-        item, next_pos = decode(data, start_index)
-        items: list[X690Type[Any]] = [item]
-        end = slc.stop or len(data)
-        while next_pos < end:
-            item, next_pos = decode(data, next_pos)
-            items.append(item)
-        return items
+        return [
+            decode(data, offset)[0]
+            for offset in Sequence.item_offsets(data, slc)
+        ]
+
+    def _offsets(self) -> "array[int]":
+        """
+        Return the item offsets of a decoded sequence, computed once.
+        """
+        if self._item_offsets is None:
+            self._item_offsets = Sequence.item_offsets(
+                self.raw_bytes, self.bounds
+            )
+        return self._item_offsets
+
+    def _is_decoded(self) -> bool:
+        return isinstance(self.pyvalue, _SENTINEL_UNINITIALISED)
 
     def encode_raw(self) -> bytes:
         """
@@ -561,13 +604,28 @@ class Sequence(X690Type[list[X690Type[Any]]]):
         return "Sequence(%r)" % item_repr
 
     def __len__(self) -> int:
+        if self._is_decoded():
+            return len(self._offsets())
         return len(self.value)
 
     def __iter__(self) -> Iterator[X690Type[Any]]:
-        yield from self.value
+        if not self._is_decoded():
+            yield from self.value
+            return
+        data = self.raw_bytes
+        for offset in self._offsets():
+            yield decode(data, offset)[0]
 
     def __getitem__(self, idx: int) -> X690Type[Any]:
-        return self.value[idx]
+        if not self._is_decoded():
+            return self.value[idx]
+        if isinstance(idx, slice):
+            return [
+                decode(self.raw_bytes, offset)[0]
+                for offset in self._offsets()[idx]
+            ]
+        item: X690Type[Any] = decode(self.raw_bytes, self._offsets()[idx])[0]
+        return item
 
     def pythonize(self) -> list[X690Type[Any]]:
         """
