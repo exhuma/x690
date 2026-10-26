@@ -507,3 +507,12 @@ def test_time_repr(cls):
         b"251026120000Z" if cls is t.UtcTime else b"2025102612"
     )
     assert cls.__name__ in repr(good)
+
+
+def test_repr_of_invalid_text_shows_raw_bytes():
+    """
+    Ensure the repr of a decoded string with invalid content shows the raw
+    bytes instead of raising.
+    """
+    value, _ = decode(b"\x0c\x02\xff\xfe")
+    assert repr(value) == "Utf8String(raw=b'\\xff\\xfe')"

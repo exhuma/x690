@@ -2,6 +2,8 @@
 Resolution of context-specific and other tags relative to the enclosing type.
 """
 
+from types import MappingProxyType
+
 import pytest
 
 from x690 import decode
@@ -362,3 +364,12 @@ def test_object_identifier_still_global() -> None:
     data = bytes(Message([ObjectIdentifier("1.3.6")]))
     message, _ = decode(data, types=[Message])
     assert message[0] == ObjectIdentifier("1.3.6")
+
+
+def test_child_lookup_is_read_only() -> None:
+    """
+    Ensure the lookups of child types are read-only, also the shared empty
+    one.
+    """
+    assert isinstance(Sequence.child_lookup(), MappingProxyType)
+    assert isinstance(Message.child_lookup(), MappingProxyType)

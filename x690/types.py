@@ -1,4 +1,3 @@
-# Type-Hinting is done in a stub file
 """
 The type classes of X.690 and the :func:`decode` function.
 
@@ -15,12 +14,13 @@ import math
 import re
 import string
 from array import array
-from collections.abc import Collection, Iterable, Iterator
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
 from fractions import Fraction
 from itertools import zip_longest
 from textwrap import indent
+from types import MappingProxyType
 from typing import (
     Any,
     ClassVar,
@@ -74,12 +74,12 @@ _REGISTRY: dict[TypeKey, type["X690Type[Any]"]] = {}
 _IDENTITY = frozenset({"TYPECLASS", "TAG", "NATURE"})
 
 #: The lookup used where no enclosing type declares any types
-_NO_TYPES: dict[TypeKey, type["X690Type[Any]"]] = {}
+_NO_TYPES: Mapping[TypeKey, type["X690Type[Any]"]] = MappingProxyType({})
 
 
 def _type_map(
     types: Iterable[type["X690Type[Any]"]],
-) -> dict[TypeKey, type["X690Type[Any]"]]:
+) -> Mapping[TypeKey, type["X690Type[Any]"]]:
     """
     Build a lookup from type key to class for *types*.
 
@@ -100,7 +100,7 @@ def _type_map(
                     f"{cls.TYPECLASS.value} {nature.value} tag {cls.TAG}"
                 )
             output[key] = cls
-    return output
+    return MappingProxyType(output)
 
 
 def decode(
@@ -165,7 +165,7 @@ def decode(
 def _decode_value(
     data: bytes,
     start_index: int,
-    lookup: dict[TypeKey, type["X690Type[Any]"]],
+    lookup: Mapping[TypeKey, type["X690Type[Any]"]],
 ) -> tuple["X690Type[Any]", int]:
     """
     Decode the value at *start_index*, trying *lookup* before the global
@@ -177,7 +177,6 @@ def _decode_value(
             f"on data with length {len(data)}"
         )
 
-    start_index = start_index or 0
     type_ = TypeInfo.from_bytes(data[start_index])
     key = (type_.cls, type_.tag, type_.nature)
     cls = lookup.get(key) or _REGISTRY.get(key, UnknownType)
@@ -214,7 +213,7 @@ class X690Type(Generic[TWrappedPyType]):
     _child_lookup: ClassVar[
         tuple[
             Collection[type["X690Type[Any]"]],
-            dict[TypeKey, type["X690Type[Any]"]],
+            Mapping[TypeKey, type["X690Type[Any]"]],
         ]
     ] = ((), _NO_TYPES)
 
@@ -255,9 +254,9 @@ class X690Type(Generic[TWrappedPyType]):
             _REGISTRY[(cls.TYPECLASS, cls.TAG, nature)] = cls
 
     @classmethod
-    def child_lookup(cls) -> dict[TypeKey, type["X690Type[Any]"]]:
+    def child_lookup(cls) -> Mapping[TypeKey, type["X690Type[Any]"]]:
         """
-        Return :attr:`CHILD_TYPES` as a lookup keyed by
+        Return :attr:`CHILD_TYPES` as a read-only lookup keyed by
         ``(TYPECLASS, TAG, nature)``.
 
         The lookup is built once, and again only after a new collection is
@@ -466,8 +465,16 @@ class X690Type(Generic[TWrappedPyType]):
         return bool(self.value == other.value)
 
     def __repr__(self) -> str:
-        repr_value = repr(self.value)
-        return "%s(%s)" % (self.__class__.__name__, repr_value)
+        name = self.__class__.__name__
+        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+            if not self.raw_bytes:
+                return "%s()" % name
+            try:
+                return "%s(%r)" % (name, self.value)
+            except (ValueError, UnicodeDecodeError):
+                # malformed content must not break the repr
+                return "%s(raw=%r)" % (name, self.raw_bytes)
+        return "%s(%r)" % (name, self.pyvalue)
 
     @property
     def length(self) -> int:
@@ -1813,17 +1820,6 @@ class _TimeType(X690Type[datetime]):
 
     __slots__ = ()
 
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
-            if not self.raw_bytes:
-                return "%s()" % name
-            try:
-                return "%s(%r)" % (name, self.value)
-            except ValueError:
-                return "%s(raw=%r)" % (name, self.raw_bytes)
-        return "%s(%r)" % (name, self.pyvalue)
-
 
 class UtcTime(_TimeType):
     """
@@ -2205,5 +2201,6 @@ class BitString(X690Type[Bits]):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
+        # An empty bit string still carries the unused-bits octet.
         bits = self.value
         return bytes([bits.unused]) + bits.data

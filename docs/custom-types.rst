@@ -237,3 +237,16 @@ Rules for custom types
   the :doc:`raw-bytes types <types>` a Python value.
 - Declarations go by tag, not by position. Two items with the same tag in
   one structure, such as two sequences, decode to the same class.
+- Pass ``register=False`` in the class statement to keep a type out of
+  the global registry. It then decodes only where an enclosing type
+  lists it in ``CHILD_TYPES``:
+
+  >>> class Token(OctetString, register=False):
+  ...     TYPECLASS = TypeClass.APPLICATION
+  ...     TAG = 7
+  >>> class Frame(Sequence):
+  ...     CHILD_TYPES = [Token]
+  >>> Frame.decode_raw(bytes(Token(b"x")))
+  [Token(b'x')]
+  >>> decode(bytes(Token(b"x")))[0]
+  <UnknownType 71 b'x' application/primitive/7>
