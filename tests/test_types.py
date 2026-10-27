@@ -5,6 +5,7 @@ from unittest import TestCase
 
 import pytest
 
+import x690.types as t
 from x690.exc import IncompleteDecoding, UnexpectedType, X690Error
 from x690.types import (
     Boolean,
@@ -886,3 +887,11 @@ def test_graphic_string_non_ascii():
     """
     with pytest.raises(UnicodeEncodeError):
         bytes(GraphicString("abcé"))
+
+
+def test_uninitialised_repr():
+    """
+    Ensure the sentinel is readable in signatures and error messages.
+    """
+    assert repr(t.UNINITIALISED) == "UNINITIALISED"
+    assert isinstance(t.UNINITIALISED, t.Uninitialised)

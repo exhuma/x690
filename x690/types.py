@@ -45,20 +45,26 @@ from .util import (
     wrap,
 )
 
+#: The Python type wrapped by an :class:`X690Type`
 TWrappedPyType = TypeVar("TWrappedPyType", bound=Any)
 TPopType = TypeVar("TPopType", bound=Any)
 TConcreteType = TypeVar("TConcreteType", bound="X690Type[Any]")
 TInnerType = TypeVar("TInnerType", bound="X690Type[Any]")
 
 
-class _SENTINEL_UNINITIALISED:  # pylint: disable=invalid-name
+class Uninitialised:
     """
-    Helper for specific sentinel values
+    The type of :data:`UNINITIALISED`, the only instance.
+
+    It marks a value that has not been decoded yet.
     """
+
+    def __repr__(self) -> str:
+        return "UNINITIALISED"
 
 
 #: sentinel value for uninitialised objects (used for lazy decoding)
-UNINITIALISED = _SENTINEL_UNINITIALISED()
+UNINITIALISED = Uninitialised()
 
 _T61_CODEC = t61codec.Codec()
 
@@ -139,7 +145,7 @@ def decode(
     :param strict: Raise :exc:`~x690.exc.IncompleteDecoding` if data is left
         after the value.
     :param types: Classes to try before the global registry for this value,
-        as :attr:`X690Type.CHILD_TYPES` does for the items of a constructed
+        as :attr:`~x690.types.X690Type.CHILD_TYPES` does for the items of a constructed
         type. Use it to decode a context-specific value on its own.
     :return: The value and the index of the next value.
     """
@@ -218,7 +224,7 @@ class X690Type(Generic[TWrappedPyType]):
     ] = ((), _NO_TYPES)
 
     #: The decoded (or to-be encoded) Python value
-    pyvalue: TWrappedPyType | _SENTINEL_UNINITIALISED
+    pyvalue: TWrappedPyType | Uninitialised
 
     #: Cache for the byte representation of "pyvalue" without
     #: metadata-header (only used for values built from Python objects)
@@ -276,7 +282,7 @@ class X690Type(Generic[TWrappedPyType]):
         """
         Returns the value as a pure Python type
         """
-        if not isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if not isinstance(self.pyvalue, Uninitialised):
             return self.pyvalue
         buffer, bounds = self._source()
         return self.decode_raw(buffer, bounds)
@@ -413,7 +419,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     def __init__(
         self,
-        value: TWrappedPyType | _SENTINEL_UNINITIALISED = UNINITIALISED,
+        value: TWrappedPyType | Uninitialised = UNINITIALISED,
     ) -> None:
         self.pyvalue = value
         self._raw_bytes = b""
@@ -466,7 +472,7 @@ class X690Type(Generic[TWrappedPyType]):
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             if not self.raw_bytes:
                 return "%s()" % name
             try:
@@ -498,7 +504,7 @@ class X690Type(Generic[TWrappedPyType]):
         >>> X690Type(t.UNINITIALISED).encode_raw()
         b''
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         return self.pyvalue
 
@@ -674,9 +680,7 @@ class OctetString(X690Type[bytes]):
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
-    def __init__(
-        self, value: str | bytes | _SENTINEL_UNINITIALISED = b""
-    ) -> None:
+    def __init__(self, value: str | bytes | Uninitialised = b"") -> None:
         if isinstance(value, str):
             value = value.encode("ascii")
 
@@ -724,7 +728,7 @@ class _Structure(X690Type[list[X690Type[Any]]]):
 
     def __init__(
         self,
-        value: list[X690Type[Any]] | _SENTINEL_UNINITIALISED = UNINITIALISED,
+        value: list[X690Type[Any]] | Uninitialised = UNINITIALISED,
     ) -> None:
         super().__init__(value)
         self._item_offsets = None
@@ -790,13 +794,13 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         return self
 
     def _is_decoded(self) -> bool:
-        return isinstance(self.pyvalue, _SENTINEL_UNINITIALISED)
+        return isinstance(self.pyvalue, Uninitialised)
 
     def encode_raw(self) -> bytes:
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         items = [bytes(item) for item in self.pyvalue]
         output = b"".join(items)
@@ -935,7 +939,7 @@ class Explicit(X690Type[TInnerType]):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         return bytes(self.pyvalue)
 
@@ -1025,7 +1029,7 @@ class _IntegerContent(X690Type[int]):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         return _encode_twos_complement(self.pyvalue)
 
@@ -1054,11 +1058,9 @@ class ObjectIdentifier(X690Type[str]):
     TAG = 0x06
     NATURE = [TypeNature.PRIMITIVE]
 
-    def __init__(
-        self, value: str | _SENTINEL_UNINITIALISED = UNINITIALISED
-    ) -> None:
+    def __init__(self, value: str | Uninitialised = UNINITIALISED) -> None:
         if (
-            not isinstance(value, _SENTINEL_UNINITIALISED)
+            not isinstance(value, Uninitialised)
             and value
             and value.startswith(".")
         ):
@@ -1202,7 +1204,7 @@ class ObjectIdentifier(X690Type[str]):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         collapsed_identifiers = self.collapse_identifiers()
         if collapsed_identifiers == ():
@@ -1352,7 +1354,7 @@ class _TextString(X690Type[str]):
         :raises ValueError: if the value contains characters outside of the
             alphabet of the type.
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         alphabet = self._ALPHABET
         if alphabet is not None:
@@ -1523,10 +1525,8 @@ class Real(X690Type[float]):
     TAG = 0x09
     NATURE = [TypeNature.PRIMITIVE]
 
-    def __init__(
-        self, value: float | _SENTINEL_UNINITIALISED = UNINITIALISED
-    ) -> None:
-        if not isinstance(value, _SENTINEL_UNINITIALISED):
+    def __init__(self, value: float | Uninitialised = UNINITIALISED) -> None:
+        if not isinstance(value, Uninitialised):
             value = float(value)
         super().__init__(value)
 
@@ -1559,7 +1559,7 @@ class Real(X690Type[float]):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         return _encode_real(self.pyvalue)
 
@@ -1649,7 +1649,7 @@ class RelativeOid(X690Type[str]):
 
         :raises ValueError: if an arc is not a non-negative integer.
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         if not self.pyvalue:
             return b""
@@ -1739,7 +1739,7 @@ class T61String(X690Type[str]):
         :raises UnicodeEncodeError: if the value cannot be represented
             in T.61.
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         return _T61_CODEC.encode(self.pyvalue)[0]
 
@@ -1876,7 +1876,7 @@ class UtcTime(_TimeType):
         :raises ValueError: if the value is naive or the year is outside
             of 1950 to 2049.
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         if self.pyvalue.tzinfo is None or self.pyvalue.utcoffset() is None:
             raise ValueError("UtcTime requires a timezone-aware datetime")
@@ -1950,7 +1950,7 @@ class GeneralizedTime(_TimeType):
         """
         Overrides :py:meth:`.X690Type.encode_raw`
         """
-        if isinstance(self.pyvalue, _SENTINEL_UNINITIALISED):
+        if isinstance(self.pyvalue, Uninitialised):
             return b""
         moment = self.pyvalue
         zone = ""
@@ -2171,7 +2171,7 @@ class BitString(X690Type[Bits]):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
     def __init__(
-        self, value: Bits | bytes | _SENTINEL_UNINITIALISED = UNINITIALISED
+        self, value: Bits | bytes | Uninitialised = UNINITIALISED
     ) -> None:
         if isinstance(value, bytes):
             value = Bits(value)

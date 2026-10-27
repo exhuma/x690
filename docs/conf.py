@@ -1,5 +1,8 @@
 import tomllib
+import typing
 from pathlib import Path
+
+from sphinx.util.typing import restify
 
 with open(Path(__file__).parent.parent / "pyproject.toml", "rb") as f:
     _meta = tomllib.load(f)
@@ -39,3 +42,23 @@ html_theme_options = {
         "toc.follow",
     ],
 }
+
+
+def _public_ancestors(cls):  # type: ignore[no-untyped-def]
+    """Yield the bases of ``cls``, looking through private classes."""
+    for base in getattr(cls, "__orig_bases__", cls.__bases__):
+        origin = typing.get_origin(base) or base
+        if origin.__name__.startswith("_"):
+            yield from _public_ancestors(origin)
+        else:
+            yield base
+
+
+def _public_bases(app, name, obj, options, bases):  # type: ignore[no-untyped-def]
+    """Replace private base classes with their public ancestors."""
+    if any("._" in base for base in bases):
+        bases[:] = [restify(base, "smart") for base in _public_ancestors(obj)]
+
+
+def setup(app):  # type: ignore[no-untyped-def]
+    app.connect("autodoc-process-bases", _public_bases)
