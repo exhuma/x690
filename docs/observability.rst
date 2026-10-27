@@ -3,8 +3,8 @@ Observability
 
 x690 writes log records through the standard :mod:`logging` module. It
 emits nothing by default: it never adds a handler, never sets a level and
-never touches the root logger. Your application decides whether the records
-go anywhere, and how verbose they are.
+never touches the root logger. The application decides whether the
+records go anywhere, and how verbose they are.
 
 Logger
 ------
@@ -15,22 +15,22 @@ alone.
 
 Every record has the level ``DEBUG``. x690 raises an exception when it
 cannot decode or encode a value, and does not log the failure as well.
-The records tell you about decisions that are otherwise invisible: x690
-carried on, although the input was unusual.
+The records show decisions that are otherwise invisible: x690 carried
+on, although the input was unusual.
 
 x690 never logs decoded content, because it can hold personal data. The
 attributes are tags, class names, offsets and counts.
 
 Values are converted when they are first read, so the records about the
-content of a value appear when you read ``value``, not when you call
+content of a value appear when ``value`` is read, not during
 :func:`~x690.decode`. The record about an unknown type appears during
 decoding.
 
 Enable the records
 ------------------
 
-Set the level of the ``x690`` logger to ``DEBUG`` and attach your own
-handler to it, or to a logger above it. The example collects the records
+Set the level of the ``x690`` logger to ``DEBUG`` and attach a handler
+of the application to it, or to a logger above it. The example collects the records
 in a list. It restores the logging state at the end.
 
 >>> import logging
@@ -113,8 +113,8 @@ Spans
 -----
 
 x690 creates no spans. Decoding and encoding are pure computation, and
-the caller sees how long they take. Wrap the call in a span of your own if
-you want one.
+the caller sees how long they take. To trace a call, wrap it in a span
+in the application.
 
 Compatibility
 -------------
