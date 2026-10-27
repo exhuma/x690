@@ -30,8 +30,8 @@ Enable the records
 ------------------
 
 Set the level of the ``x690`` logger to ``DEBUG`` and attach a handler
-of the application to it, or to a logger above it. The example collects the records
-in a list. It restores the logging state at the end.
+of the application to it, or to a logger above it. The example collects
+the records in a list. It restores the logging state at the end.
 
 >>> import logging
 >>> from x690 import decode
