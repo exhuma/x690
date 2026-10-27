@@ -87,20 +87,26 @@ Python classes built from ``NamedTypes`` and tag objects:
            ),
            namedtype.NamedType(
                "variable-bindings",
-               univ.SequenceOf(componentType=VarBind()),
+               univ.SequenceOf(
+                   componentType=VarBind()
+               ),
            ),
        )
 
    class Message(univ.Sequence):
        componentType = namedtype.NamedTypes(
-           namedtype.NamedType("version", univ.Integer()),
+           namedtype.NamedType(
+               "version", univ.Integer()
+           ),
            namedtype.NamedType(
                "community", univ.OctetString()
            ),
            namedtype.NamedType("data", PDU()),
        )
 
-   message, _ = decoder.decode(DATA, asn1Spec=Message())
+   message, _ = decoder.decode(
+       DATA, asn1Spec=Message()
+   )
    pdu = message["data"]
    int(pdu["request-id"])
    # 1234
