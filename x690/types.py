@@ -1927,7 +1927,7 @@ class T61String(X690Type[str]):
         return _T61_CODEC.encode(self.pyvalue)[0]
 
 
-class VideotexString(X690Type[str]):
+class VideotexString(X690Type[bytes]):
     """
     The ``VideotexString`` type, tag ``0x15``.
 
@@ -2174,7 +2174,7 @@ class VisibleString(_TextString):
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
 
 
-class GeneralString(X690Type[str]):
+class GeneralString(X690Type[bytes]):
     """
     The ``GeneralString`` type, tag ``0x1B``.
 
@@ -2200,7 +2200,7 @@ class UniversalString(_TextString):
     _ENCODING = "utf-32-be"
 
 
-class CharacterString(X690Type[str]):
+class CharacterString(X690Type[bytes]):
     """
     The ``CHARACTER STRING`` type, tag ``0x1D``.
 
