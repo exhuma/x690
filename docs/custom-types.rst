@@ -1,5 +1,5 @@
-Custom types
-============
+Add custom types
+================
 
 Protocols built on ASN.1 define their own types in the application, context
 and private classes. x690 decodes them as :class:`~x690.types.UnknownType`
@@ -40,10 +40,11 @@ Reuse an existing type
 ----------------------
 
 When the new type is encoded like an existing one, subclass that type and
-change only the attributes. The SNMP ``GetRequest`` PDU from :doc:`usage`
-is a sequence in the context class with tag 0. In ASN.1 it reads
-``GetRequest ::= [0] IMPLICIT PDU``: the context tag replaces the tag of the
-sequence.
+change only the attributes. The SNMP ``GetRequest`` PDU from the
+:doc:`guide to encoding and decoding <usage>` is a sequence in the
+context class with tag 0. In ASN.1 it reads
+``GetRequest ::= [0] IMPLICIT PDU``: the context tag replaces the tag of
+the sequence.
 
 >>> from x690 import decode
 >>> from x690.types import Integer, Null

@@ -45,10 +45,10 @@ Example
     >>> decode(data)
     (Sequence([Integer(42), OctetString(b'hello')]), 12)
 
-The documentation covers `decoding streams and checking types
-<https://exhuma.github.io/x690/usage.html>`_, `adding custom types
-<https://exhuma.github.io/x690/custom-types.html>`_ and `which types convert to
-which Python values <https://exhuma.github.io/x690/types.html>`_.
+The documentation covers `how to encode and decode values
+<https://exhuma.github.io/x690/usage.html>`_, `how to add custom types
+<https://exhuma.github.io/x690/custom-types.html>`_ and `which types
+convert to which Python values <https://exhuma.github.io/x690/types.html>`_.
 
 Project status
 --------------

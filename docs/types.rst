@@ -204,4 +204,5 @@ These types are:
 
 To give one of them a Python value, subclass it, set its ``TAG`` again, and
 override :meth:`~x690.types.X690Type.decode_raw` and
-:meth:`~x690.types.X690Type.encode_raw` as shown in :doc:`custom-types`.
+:meth:`~x690.types.X690Type.encode_raw` as shown in
+:doc:`custom-types`.

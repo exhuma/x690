@@ -1,5 +1,5 @@
-Usage
-=====
+Encode and decode
+=================
 
 Encode values
 -------------
@@ -153,5 +153,5 @@ Sequence with 3 items:
 The third item is a constructed value of the context class with tag 0: the
 SNMP ``GetRequest`` PDU. A context tag has a meaning only inside its
 enclosing type, so x690 cannot know it from the tag alone.
-:doc:`custom-types` shows how to declare the PDU on a class for the message,
-so the dump shows its contents.
+:doc:`custom-types` shows how to declare the PDU on a class for the
+message, so the dump shows its contents.

@@ -109,12 +109,12 @@ Contents
    its design, and its current limitations.
 
 :doc:`usage`
-   Encode values, decode single values and streams, check types and inspect
-   unknown data.
+   Encode values, decode single values and streams, check types and
+   inspect unknown data.
 
 :doc:`custom-types`
-   Add application or context types, declare the types of a structure, and
-   write a type with its own conversion.
+   Add application or context types, declare the types of a structure,
+   and write a type with its own conversion.
 
 :doc:`types`
    The universal types and the Python value each one decodes to.
