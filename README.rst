@@ -53,8 +53,13 @@ which Python values <https://exhuma.github.io/x690/types.html>`_.
 Project status
 --------------
 
-The API is stable and follows Semantic Versioning. Context-specific tags
-resolve per enclosing type, so structures that reuse a tag such as ``[0]``,
-as X.509 and LDAP do, can be described. Work continues on declaring types
-by position and on Python values for more universal types. `Choosing x690 <https://exhuma.github.io/x690/choosing.html>`_
-compares x690 with other ASN.1 libraries and lists its current limitations.
+The API is stable. Context-specific tags resolve per enclosing type, so
+structures that reuse a tag such as ``[0]``, as X.509 and LDAP do, can be
+described. Work continues on declaring types by position and on Python
+values for more universal types. `Choosing x690
+<https://exhuma.github.io/x690/choosing.html>`_ compares x690 with other
+ASN.1 libraries and lists its current limitations.
+
+x690 follows Semantic Versioning. The `compatibility policy
+<https://exhuma.github.io/x690/#compatibility>`_ defines what counts as a
+breaking change and how deprecation works.

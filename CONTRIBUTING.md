@@ -15,6 +15,10 @@ stable; the project is under active development. Welcome contributions:
 For a new feature, open an issue first so the design can be agreed before
 the work starts.
 
+Changes follow the [compatibility policy](https://exhuma.github.io/x690/#compatibility):
+a breaking change waits for a major release, and a removal is deprecated
+with a `DeprecationWarning` and a changelog entry in a minor release first.
+
 ## Getting started
 
 1. Fork the repository and clone your fork.
