@@ -1,11 +1,11 @@
 x690
 ====
 
-Encode and decode ASN.1 data in BER (ITU-T X.690) with pure Python. x690
-turns every encoded value into a typed Python object, decodes documents of a
-million values in a few megabytes of memory, and takes new types with a few
-lines of code. It is the encoding layer of `puresnmp
-<https://github.com/exhuma/puresnmp>`_.
+Encode and decode :term:`ASN.1` data in :term:`BER` (ITU-T :term:`X.690`)
+with pure Python. x690 turns every encoded value into a typed Python
+object, decodes documents of a million values in a few megabytes of
+memory, and takes new types with a few lines of code. It is the
+encoding layer of `puresnmp <https://github.com/exhuma/puresnmp>`_.
 
 Install
 -------
@@ -55,11 +55,14 @@ Large documents
 
 Custom types
    Subclass :class:`~x690.types.X690Type` to add application, context or
-   private types. Subclassing registers the type with the decoder.
+   private types. Application and private types are registered with the
+   decoder. Context-specific types are declared on their enclosing type, so
+   the same :term:`tag` can mean a different type in every structure.
 
 Readable dumps
    :meth:`~x690.types.X690Type.pretty` prints nested values with hex dumps,
-   and shows the class, nature and tag of every value x690 does not know.
+   and shows the class, :term:`nature` and tag of every value x690 does
+   not know.
 
 One dependency
    x690 is pure Python. It depends only on
@@ -68,12 +71,36 @@ One dependency
 Project status
 --------------
 
-The 1.x API is stable and follows `Semantic Versioning
-<https://semver.org/spec/v2.0.0.html>`_. Work continues: context-specific
-tags are registered globally, which keeps protocols such as X.509 and LDAP
-out of reach for now, and some universal types hold raw bytes only.
+The API is stable. Context-specific tags resolve per
+enclosing type, so structures that reuse a tag such as ``[0]``, as X.509 and
+LDAP do, can be described. Work continues: types are declared by tag, not
+by position, and some universal types hold raw bytes only.
 :doc:`choosing` compares x690 with other ASN.1 libraries and lists its
-current limitations.
+current limitations. See `Compatibility`_ for the
+versioning and deprecation policy.
+
+Compatibility
+-------------
+
+x690 follows `Semantic Versioning
+<https://semver.org/spec/v2.0.0.html>`_. It supports Python 3.11 to
+3.15, the versions in ``requires-python`` and the package classifiers.
+Raising the minimum Python version is a breaking change.
+
+A change is breaking when it can make working user code fail or behave
+differently. This includes:
+
+- removing or renaming a public name, parameter or attribute,
+- changing a return type or the Python type a value converts to,
+- raising an exception where the code did not raise before,
+- changing equality, hashing or ``repr()`` of a public type,
+- raising the minimum Python version.
+
+Breaking changes are released only in a major version. Before x690
+removes anything, a minor release deprecates it: the old name emits a
+:class:`DeprecationWarning`, and the :doc:`changelog` has a
+``deprecated`` entry that names the replacement. The removal comes no
+earlier than the next major release.
 
 Contents
 --------
@@ -83,15 +110,18 @@ Contents
    its design, and its current limitations.
 
 :doc:`usage`
-   Encode values, decode single values and streams, check types and inspect
-   unknown data.
+   Encode values, decode single values and streams, check types and
+   inspect unknown data.
 
 :doc:`custom-types`
-   Add application or context types, from a tag-only subclass to a type with
-   its own conversion.
+   Add application or context types, declare the types of a structure,
+   and write a type with its own conversion.
 
 :doc:`types`
    The universal types and the Python value each one decodes to.
+
+:doc:`observability`
+   The DEBUG records x690 emits and how to switch them on.
 
 :doc:`api/index`
    Every public module, class and function.
@@ -105,6 +135,7 @@ Contents
    choosing
    usage
    custom-types
+   observability
    types
    api/index
    glossary

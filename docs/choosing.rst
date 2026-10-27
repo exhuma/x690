@@ -1,7 +1,7 @@
 Choosing x690
 =============
 
-Python has several libraries for ASN.1 data. They differ in where the
+Python has several libraries for :term:`ASN.1` data. They differ in where the
 structure of a message is defined, what decoding returns, and what a type
 checker can see. This page decodes the same message with five of them, then
 explains why x690 works the way it does and where it falls short today.
@@ -87,20 +87,26 @@ Python classes built from ``NamedTypes`` and tag objects:
            ),
            namedtype.NamedType(
                "variable-bindings",
-               univ.SequenceOf(componentType=VarBind()),
+               univ.SequenceOf(
+                   componentType=VarBind()
+               ),
            ),
        )
 
    class Message(univ.Sequence):
        componentType = namedtype.NamedTypes(
-           namedtype.NamedType("version", univ.Integer()),
+           namedtype.NamedType(
+               "version", univ.Integer()
+           ),
            namedtype.NamedType(
                "community", univ.OctetString()
            ),
            namedtype.NamedType("data", PDU()),
        )
 
-   message, _ = decoder.decode(DATA, asn1Spec=Message())
+   message, _ = decoder.decode(
+       DATA, asn1Spec=Message()
+   )
    pdu = message["data"]
    int(pdu["request-id"])
    # 1234
@@ -110,10 +116,10 @@ Python classes built from ``NamedTypes`` and tag objects:
    # True
 
 The schema mirrors ASN.1 closely and covers the whole standard, including
-BER, CER and DER. The classes are configured through class attributes rather
-than written as ordinary Python, and values are pyasn1 objects that convert
-with ``int()`` or ``str()``. pyasn1 ships no type hints; separate stubs exist
-in typeshed (``types-pyasn1``).
+:term:`BER`, CER and DER. The classes are configured through class
+attributes rather than written as ordinary Python, and values are pyasn1
+objects that convert with ``int()`` or ``str()``. pyasn1 ships no type
+hints; separate stubs exist in typeshed (``types-pyasn1``).
 
 asn1tools
 ---------
@@ -227,7 +233,7 @@ x690
 ----
 
 x690 needs no schema for the types it knows. Only the context-specific
-``GetRequest`` needs a class:
+``GetRequest`` needs a class, declared on the message that encloses it:
 
 .. code-block:: python
 
@@ -239,7 +245,12 @@ x690 needs no schema for the types it knows. Only the context-specific
        TYPECLASS = TypeClass.CONTEXT
        TAG = 0
 
-   message, _ = decode(DATA, enforce_type=Sequence)
+   class Message(Sequence):
+       CHILD_TYPES = [GetRequest]
+
+   message, _ = decode(
+       DATA, types=[Message], enforce_type=Message
+   )
    pdu = message[2]
    assert isinstance(pdu, GetRequest)
    pdu[0].value
@@ -250,7 +261,7 @@ x690 needs no schema for the types it knows. Only the context-specific
    # True
 
 Values are ordinary Python classes, and the package ships type hints: a type
-checker knows that ``message`` is a ``Sequence``. The items inside a sequence
+checker knows that ``message`` is a ``Message``. The items inside a sequence
 are typed as ``X690Type[Any]``, so indexing into one needs an ``isinstance``
 check first, as for ``pdu`` above. Access is by position. x690 encodes BER
 only.
@@ -376,8 +387,7 @@ pycrate and pyasn1 could not decode the whole document there: they ran out of
 memory.
 
 The data uses universal tags only, so that all libraries decode the same
-structure; real charging records use context-specific tags (`#6
-<https://github.com/exhuma/x690/issues/6>`_). The `benchmark
+structure. The `benchmark
 <https://github.com/exhuma/x690/tree/main/benchmarks>`_ runs with one
 command and writes a JSON report with the machine details. The reports
 behind these numbers are in ``benchmarks/results``.
@@ -392,7 +402,9 @@ build steps.
 
 Python classes, schema optional
    A type is a class with three attributes. Universal types decode without
-   any declaration, and a protocol type needs only its class, nature and tag.
+   any declaration, and a protocol type needs only its
+   :term:`class <type class>`, :term:`nature` and :term:`tag`.
+   A context-specific type is declared on the type that encloses it.
    There is no ASN.1 compiler yet; generating x690 classes from ASN.1 modules
    is a possible addition, as long as x690 keeps working without it.
 
@@ -432,17 +444,11 @@ BER
 Current limitations
 -------------------
 
-.. warning::
-
-   Context-specific tags are registered globally, not per enclosing type.
-   Protocols that reuse a tag such as ``[0]`` in different structures,
-   X.509 and LDAP among them, cannot be modelled yet. Fixing this has high
-   priority (`#6
-   <https://github.com/exhuma/x690/issues/6>`_).
-
-- Several universal types hold raw bytes instead of a Python value; see
-  :doc:`types` (`#7
-  <https://github.com/exhuma/x690/issues/7>`_).
+- Types are declared by tag, not by position. Two items of one structure
+  with the same tag, such as the two sequences that open an X.509
+  certificate, decode to the same class.
+- Six rarely used universal types hold raw bytes instead of a Python value;
+  see :doc:`types`.
 - Sequences are accessed by position, not by name (`#9
   <https://github.com/exhuma/x690/issues/9>`_).
 - There is no validating decode that rejects unknown types (`#8
@@ -456,9 +462,11 @@ When to choose x690
 -------------------
 
 x690 fits when the data is BER, the protocol uses universal types and
-protocol types with unique tags (SNMP is the reference case), and the
-application decodes large documents with limited memory, reads only parts of
-them, wants typed Python objects, or inspects data without a specification.
-For X.509 and other cryptographic structures, asn1crypto ships the
-definitions ready to use. For complete ASN.1 modules or encodings other than
-BER, asn1tools and pycrate compile the specification directly.
+protocol types whose tags are unique within each structure (SNMP is the
+reference case), and the application decodes large documents with limited
+memory, reads only parts of them, wants typed Python objects, or inspects
+data without a specification. For X.509 and other cryptographic structures,
+x690 needs a class for every structure that uses context tags, while
+asn1crypto ships the definitions ready to use. For complete ASN.1 modules or
+encodings other than BER, asn1tools and pycrate compile the specification
+directly.

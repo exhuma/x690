@@ -20,6 +20,9 @@ class IncompleteDecoding(X690Error):
     Raised when decoding did not consume all bytes.
 
     The junk bytes are stored in the "remainder" attribute
+
+    :param message: The description of the error.
+    :param remainder: The bytes that were left after the decoded value.
     """
 
     def __init__(self, message: str, remainder: bytes) -> None:

@@ -1,5 +1,5 @@
-Usage
-=====
+Encode and decode
+=================
 
 Encode values
 -------------
@@ -78,6 +78,15 @@ bytes when first read.
 >>> decode(b"header\x02\x01\x05trailer", 6)
 (Integer(5), 9)
 
+A value kept from a large buffer keeps the whole buffer alive. Call
+``detach()`` to copy only the value's own bytes and release the buffer. It
+returns the value, so it can be chained.
+
+>>> data = b"\x02\x01\x05" + bytes(1000)
+>>> kept = decode(data)[0].detach()
+>>> kept.raw_bytes
+b'\x05'
+
 Check the type
 --------------
 
@@ -112,7 +121,8 @@ Inspect unknown data
 
 :meth:`~x690.types.X690Type.pretty` prints a value and everything inside it.
 Values x690 has no type for decode to :class:`~x690.types.UnknownType`, which
-shows their class, nature and tag. This SNMP request contains such a value:
+shows their :term:`class <type class>`, :term:`nature` and :term:`tag`.
+This SNMP request contains such a value:
 
 >>> data = (
 ...     b"0'\x02\x01\x01\x04\x06public"
@@ -142,5 +152,7 @@ Sequence with 3 items:
   └─────────────────────────────────────────────────────────────────────┘
 
 The third item is a constructed value of the context class with tag 0: the
-SNMP ``GetRequest`` PDU. :doc:`custom-types` shows how to teach x690 that
-type, so the dump shows its contents.
+SNMP ``GetRequest`` PDU. A context tag has a meaning only inside its
+enclosing type, so x690 cannot know it from the tag alone.
+:doc:`custom-types` shows how to declare the PDU on a class for the
+message, so the dump shows its contents.

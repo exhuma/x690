@@ -3,3 +3,4 @@ x690
 
 .. automodule:: x690
    :members:
+   :show-inheritance:

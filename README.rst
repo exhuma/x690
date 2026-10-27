@@ -45,16 +45,21 @@ Example
     >>> decode(data)
     (Sequence([Integer(42), OctetString(b'hello')]), 12)
 
-The documentation covers `decoding streams and checking types
-<https://exhuma.github.io/x690/usage.html>`_, `adding custom types
-<https://exhuma.github.io/x690/custom-types.html>`_ and `which types convert to
-which Python values <https://exhuma.github.io/x690/types.html>`_.
+The documentation covers `how to encode and decode values
+<https://exhuma.github.io/x690/usage.html>`_, `how to add custom types
+<https://exhuma.github.io/x690/custom-types.html>`_ and `which types
+convert to which Python values <https://exhuma.github.io/x690/types.html>`_.
 
 Project status
 --------------
 
-The 1.x API is stable and follows Semantic Versioning. Work continues on
-context-specific tags, which are registered globally for now and keep
-protocols such as X.509 and LDAP out of reach, and on Python values for more
-universal types. `Choosing x690 <https://exhuma.github.io/x690/choosing.html>`_
-compares x690 with other ASN.1 libraries and lists its current limitations.
+The API is stable. Context-specific tags resolve per enclosing type, so
+structures that reuse a tag such as ``[0]``, as X.509 and LDAP do, can be
+described. Work continues on declaring types by position and on Python
+values for more universal types. `Choosing x690
+<https://exhuma.github.io/x690/choosing.html>`_ compares x690 with other
+ASN.1 libraries and lists its current limitations.
+
+x690 follows Semantic Versioning. The `compatibility policy
+<https://exhuma.github.io/x690/#compatibility>`_ defines what counts as a
+breaking change and how deprecation works.

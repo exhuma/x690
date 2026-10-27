@@ -1,66 +1,78 @@
 Changelog
 =========
 
-Unreleased
-----------
+Release 2.0.0
+-------------
 
-* The documentation has a new theme and new structure: a start page, a
-  comparison with other ASN.1 libraries, guides for usage and custom types,
-  a list of supported types and an API reference. Every x690 example in it
-  runs as a doctest.
-* The project is under active development again, starting with
-  context-specific tags. The package is classified as
-  ``Development Status :: 5 - Production/Stable``.
-* Indexing a decoded ``Sequence`` no longer re-decodes all its items: a
-  sequence records where its items start and decodes each item when it is
-  accessed. Reading every item by index was quadratic and is now linear
-  (`#16 <https://github.com/exhuma/x690/issues/16>`_).
-* Every type declares ``__slots__``, so decoded values no longer carry a
-  ``__dict__``. A decoded ``Integer`` takes about a quarter of the memory it
-  took before (`#17 <https://github.com/exhuma/x690/issues/17>`_).
-* A benchmark in ``benchmarks/`` compares decode time and memory with
-  pyasn1, asn1tools, asn1crypto and pycrate.
+2.0.0 is the first release since 1.0.0post1. It includes the changes
+prepared as 1.1.0, which was never published.
 
-Release 1.1.0 - T61String conformance and maintenance mode
-----------------------------------------------------------
+**Changes that need updates to your code**
 
-**T61String**
+* Context-specific types such as SNMP PDUs are now declared on the type
+  that contains them, in ``CHILD_TYPES``, instead of being registered
+  globally when the class is defined. The same tag can now mean a different
+  type in every structure, as in X.509 and LDAP. See :doc:`custom-types`
+  (`#6 <https://github.com/exhuma/x690/issues/6>`_).
+* A subclass that only changes how a type converts its value must set its
+  ``TAG`` again to replace the built-in type.
+* Most string types now give a ``str``, ``UtcTime`` and
+  ``GeneralizedTime`` a ``datetime``, ``Enumerated`` an ``int``, ``Real`` a
+  ``float``, ``BitString`` a ``Bits`` value and ``Set`` a list of values,
+  instead of bytes. See :doc:`types`
+  (`#7 <https://github.com/exhuma/x690/issues/7>`_).
+* ``raw_bytes`` of a decoded value is now only that value's bytes, and the
+  ``bounds`` attribute is gone
+  (`#14 <https://github.com/exhuma/x690/issues/14>`_).
+* Values are equal only when they have the same class and value, so a
+  subclass no longer equals its base class.
+* ``repr()`` of a ``Sequence`` subclass shows the subclass name
+  (`#19 <https://github.com/exhuma/x690/issues/19>`_).
+* ``T61String`` follows ITU-T T.61 strictly: accented letters decode to
+  single characters (``b"Caf\xc2e"`` gives ``"Café"``), ``0xE0`` is Ω
+  U+03A9, and invalid data raises an error. Data written by OpenSSL is often
+  Latin-1; decode such values with ``latin-1`` yourself
+  (`#3 <https://github.com/exhuma/x690/issues/3>`_).
+* Importing x690 no longer makes the ``t61`` codec available to Python's
+  ``codecs`` module.
+* Requires Python 3.11 or newer.
 
-* ``T61String`` now uses ``t61codec`` 3, which follows ITU-T T.61 (1988) to
-  the letter.
-* Accented letters decode to precomposed characters (``b"Caf\xc2e"`` gives
-  ``"Café"``).
-* ``0xE0`` decodes to Ω U+03A9 (it was U+2126).
-* Invalid T.61 now raises ``UnicodeDecodeError``. Data written by OpenSSL is
-  often Latin-1 rather than T.61; decode such raw values with ``latin-1``
-  yourself.
-* Encoding is strict: characters which T.61 cannot represent raise an error.
-* x690 no longer registers the ``t61`` codec in Python's global codec
-  registry.
-* Fixes `#3 <https://github.com/exhuma/x690/issues/3>`_.
+**New**
+
+* ``Explicit`` describes explicitly tagged values.
+* ``detach()`` lets you keep a value from a large document without keeping
+  the whole document in memory.
+* ``decode()`` takes the types of a context-tagged value as ``types=``.
+* Decoding decisions (unknown types, overrides, lenient decoding and
+  saturated values) are logged at DEBUG on the ``x690.types`` logger. See
+  :doc:`observability`.
+
+**Faster and smaller**
+
+* Large documents decode with a fraction of the memory, and reading items by
+  index no longer slows down as documents grow
+  (`#16 <https://github.com/exhuma/x690/issues/16>`_,
+  `#17 <https://github.com/exhuma/x690/issues/17>`_).
+  :doc:`choosing` compares the results with other ASN.1 libraries.
 
 **Fixes**
 
-* ``repr()`` of ``UnknownType`` is now stable on Python 3.12 and later.
+* ``decode(..., strict=True)`` raises on a single trailing byte
+  (`#12 <https://github.com/exhuma/x690/issues/12>`_).
+* ``GraphicString`` values can be encoded
+  (`#13 <https://github.com/exhuma/x690/issues/13>`_).
+* ``repr()`` of an unknown type no longer changes between Python versions.
+* A truncated ``ObjectIdentifier`` raises ``ValueError`` instead of
+  ``StopIteration``.
+* The type hints of ``VideotexString``, ``GeneralString`` and
+  ``CharacterString`` say ``bytes``, which is what they hold.
 
-**Packaging**
+**Documentation**
 
-* Requires Python 3.11 or newer.
-* Depends on ``t61codec>=3.0,<4``.
-* Built with hatchling from a PEP 621 ``pyproject.toml``, with PEP 639
-  license metadata.
-* ``Development Status :: 6 - Mature``: the project is in maintenance mode.
-* The wheel contains only the ``x690`` package; the test suite is no longer
-  installed as a top-level ``tests`` package (see
-  `#2 <https://github.com/exhuma/x690/pull/2>`_).
-
-**Project**
-
-* CI tests all supported CPython versions automatically, plus a monthly
-  scheduled run.
-* Releases are published through PyPI Trusted Publishing.
-* The documentation is deployed to GitHub Pages via GitHub Actions:
-  https://exhuma.github.io/x690/
+* New documentation at https://exhuma.github.io/x690/, with guides, a list
+  of supported types and a comparison with other ASN.1 libraries.
+* The start page states the compatibility and deprecation policy, and the
+  API reference documents every public class and function.
 
 Release 1.0.0post1 - Maintenance release
 ----------------------------------------
@@ -101,7 +113,7 @@ Release 1.0.0post1 - Maintenance release
   for subtree modifications/concatenation.  They will still raise errors if
   they are converted to bytes unmodified.
 
-* Internal typing improvment
+* Internal typing improvement
 
 
 0.5.0-alpha.4
@@ -114,12 +126,12 @@ Release 1.0.0post1 - Maintenance release
 0.5.0-alpha.3
 -------------
 
-* Housekeeping & typing improvments
+* Housekeeping & typing improvements
 
 0.5.0-alpha.2
 -------------
 
-* Don't conider "None/NULL" values as "uninitialised". This prevents
+* Don't consider "None/NULL" values as "uninitialised". This prevents
   unnecessary/repetitive byte-conversions.
 
 0.5.0-alpha.1
@@ -127,7 +139,7 @@ Release 1.0.0post1 - Maintenance release
 
 * ObjectIdentifiers now "feel" more like strings. The constructor changed to
   reflect this: ``ObjectIdentifier("1.2.3")``
-* Improve error message when creating custom typess without no-arg constructor
+* Improve error message when creating custom types without no-arg constructor
 * Fix "unsigned int" values
 * Fix handling of empty ``Sequence`` instances
 
@@ -165,7 +177,7 @@ introduced breaking bugs.
 * **changed** Subclasses of ``x690.Type`` must now override the
   ``Type.encode_raw`` method if the python-value is a non-bytes object.
 * dataclasses in have been replaced with named-tuples for increased performance.
-* An instance can now be creted from raw-bytes (excluding the type and length
+* An instance can now be created from raw-bytes (excluding the type and length
   header bytes) by calling ``Type.from_bytes(...)`` (by using the class of the
   appropriate type!).
 * New function ``x690.util.get_value_slice`` can be used to find the location
@@ -187,7 +199,7 @@ introduced breaking bugs.
   function.
 * Support for "indefinite length" values
 * Allow registering types with "non-constructed" nature
-* Improved prettyfication of unknown types
+* Improved prettification of unknown types
 * Support types which can be encoded as either "primitive" or "constructed"
 * Implement decoding of the GraphicString type
 * Removed duplication of length-decoding
@@ -211,8 +223,8 @@ should only have an impact if you extended ``x690`` with new types.
   instead). For example: ``bytes(x690.types.Integer(10))``
 * Added ``enforce_type`` to ``pop_tlv`` for improved type-safety and -checking
 * Added ``strict`` to ``pop_tlv`` for quick & easy sanity checks
-* Improved prettyfication of byte-values and unknown types
-* Improved prettyfication of nested sequences
+* Improved prettification of byte-values and unknown types
+* Improved prettification of nested sequences
 * Improved type-hints
 * Added default values to all types
 * Changed ``x690.util.LengthValue`` and ``x690.util.TypeInfo`` to dataclasses

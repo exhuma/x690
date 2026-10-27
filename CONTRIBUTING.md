@@ -2,7 +2,7 @@
 
 ## Scope
 
-The library implements the BER encoding of ITU-T X.690. The 1.x API is
+The library implements the BER encoding of ITU-T X.690. The API is
 stable; the project is under active development. Welcome contributions:
 
 - bug fixes,
@@ -14,6 +14,10 @@ stable; the project is under active development. Welcome contributions:
 
 For a new feature, open an issue first so the design can be agreed before
 the work starts.
+
+Changes follow the [compatibility policy](https://exhuma.github.io/x690/#compatibility):
+a breaking change waits for a major release, and a removal is deprecated
+with a `DeprecationWarning` and a changelog entry in a minor release first.
 
 ## Getting started
 
@@ -49,6 +53,9 @@ checks automatically. You can also run them manually:
 ```console
 uv run pre-commit run --all-files
 ```
+
+The hooks also check spelling with [cspell](https://cspell.org/). Add a
+real domain term to `project-words.txt`; fix a typo in the text instead.
 
 ## Submitting changes
 
