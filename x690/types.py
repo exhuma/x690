@@ -10,6 +10,7 @@ Context-specific types are declared on their enclosing type with
 """
 # pylint: disable=abstract-method, missing-class-docstring, too-few-public-methods
 
+import logging
 import math
 import re
 import string
@@ -70,6 +71,8 @@ _T61_CODEC = t61codec.Codec()
 
 
 #: Identifies a type within a lookup: its class, tag and nature
+LOG = logging.getLogger(__name__)
+
 TypeKey = tuple[TypeClass, int, TypeNature]
 
 #: The types that decode everywhere: universal, application and private
@@ -169,14 +172,56 @@ def decode(
     return output, next_tlv  # type: ignore
 
 
+def _log_unknown_type(
+    type_: TypeInfo, offset: int, parent: type["X690Type[Any]"] | None
+) -> None:
+    """
+    Log that no class is known for the identifier of a value.
+    """
+    if not LOG.isEnabledFor(logging.DEBUG):
+        return
+    extra: dict[str, str | int] = {
+        "x690.type.class": type_.cls.value,
+        "x690.type.nature": type_.nature.value,
+        "x690.type.tag": type_.tag,
+        "x690.offset": offset,
+    }
+    if parent is not None:
+        extra["x690.enclosing_type"] = parent.__name__
+    LOG.debug("Unknown type decoded", extra=extra)
+
+
+def _log_overridden_type(
+    key: TypeKey,
+    cls: type["X690Type[Any]"],
+    parent: type["X690Type[Any]"] | None,
+) -> None:
+    """
+    Log that a child type replaces the class registered for the same key.
+    """
+    registered = _REGISTRY.get(key)
+    if registered is None or registered is cls:
+        return
+    extra: dict[str, str | int] = {
+        "x690.type.tag": key[1],
+        "x690.type.name": cls.__name__,
+    }
+    if parent is not None:
+        extra["x690.enclosing_type"] = parent.__name__
+    LOG.debug("Registered type overridden by child type", extra=extra)
+
+
 def _decode_value(
     data: bytes,
     start_index: int,
     lookup: Mapping[TypeKey, type["X690Type[Any]"]],
+    parent: type["X690Type[Any]"] | None = None,
 ) -> tuple["X690Type[Any]", int]:
     """
     Decode the value at *start_index*, trying *lookup* before the global
     registry.
+
+    *parent* is the enclosing type, used only to describe log records.
     """
     if start_index >= len(data):
         raise IndexError(
@@ -186,7 +231,14 @@ def _decode_value(
 
     type_ = TypeInfo.from_bytes(data[start_index])
     key = (type_.cls, type_.tag, type_.nature)
-    cls = lookup.get(key) or _REGISTRY.get(key, UnknownType)
+    cls = lookup.get(key)
+    if cls is None:
+        cls = _REGISTRY.get(key)
+        if cls is None:
+            cls = UnknownType
+            _log_unknown_type(type_, start_index, parent)
+    elif LOG.isEnabledFor(logging.DEBUG):
+        _log_overridden_type(key, cls, parent)
 
     data_slice, next_tlv = get_value_slice(data, start_index)
     output = cls.from_bytes(data, data_slice)
@@ -873,7 +925,7 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         """
         lookup = cls.child_lookup()
         return [
-            _decode_value(data, offset, lookup)[0]
+            _decode_value(data, offset, lookup, cls)[0]
             for offset in cls.item_offsets(data, slc)
         ]
 
@@ -933,7 +985,7 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         data = self._source()[0]
         lookup = self.child_lookup()
         for offset in self._offsets():
-            yield _decode_value(data, offset, lookup)[0]
+            yield _decode_value(data, offset, lookup, type(self))[0]
 
     def __getitem__(self, idx: int) -> X690Type[Any]:
         if not self._is_decoded():
@@ -942,10 +994,10 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         lookup = self.child_lookup()
         if isinstance(idx, slice):
             return [
-                _decode_value(data, offset, lookup)[0]
+                _decode_value(data, offset, lookup, type(self))[0]
                 for offset in self._offsets()[idx]
             ]
-        return _decode_value(data, self._offsets()[idx], lookup)[0]
+        return _decode_value(data, self._offsets()[idx], lookup, type(self))[0]
 
     def pythonize(self) -> list[X690Type[Any]]:
         """
@@ -1040,7 +1092,7 @@ class Explicit(X690Type[TInnerType]):
             raise ValueError(
                 f"{cls.__name__} is explicitly tagged but holds no value"
             )
-        inner, _ = _decode_value(data, start, cls.child_lookup())
+        inner, _ = _decode_value(data, start, cls.child_lookup(), cls)
         return inner  # type: ignore[return-value]
 
     def encode_raw(self) -> bytes:
@@ -1511,7 +1563,19 @@ class _TextString(X690Type[str]):
         :raises UnicodeDecodeError: if the data is invalid for the
             character set of the type.
         """
-        return data[slc].decode(cls._ENCODING)
+        text = data[slc].decode(cls._ENCODING)
+        alphabet = cls._ALPHABET
+        if alphabet is not None and LOG.isEnabledFor(logging.DEBUG):
+            outside = sum(1 for char in text if char not in alphabet)
+            if outside:
+                LOG.debug(
+                    "Text outside permitted alphabet decoded",
+                    extra={
+                        "x690.type.name": cls.__name__,
+                        "x690.char_count": outside,
+                    },
+                )
+        return text
 
     def encode_raw(self) -> bytes:
         """
@@ -1602,6 +1666,16 @@ def _scale_to_float(mantissa: int, exponent: int) -> float:
     return mantissa / (1 << -exponent)
 
 
+def _log_saturated_real(value: float) -> None:
+    """
+    Log that a REAL was out of the float range.
+    """
+    if not LOG.isEnabledFor(logging.DEBUG):
+        return
+    result = "0" if value == 0.0 else "inf" if value > 0 else "-inf"
+    LOG.debug("Real value saturated", extra={"x690.real.result": result})
+
+
 def _decode_binary_real(content: bytes) -> float:
     """
     Decode the contents of a binary REAL (X.690, 8.5.7).
@@ -1631,7 +1705,11 @@ def _decode_binary_real(content: bytes) -> float:
     )
     mantissa = int.from_bytes(content[exponent_end:], "big")
     value = _scale_to_float(mantissa, scale + exponent * base_bits)
-    return -value if first & 0x40 else value
+    if first & 0x40:
+        value = -value
+    if mantissa and (value == 0.0 or math.isinf(value)):
+        _log_saturated_real(value)
+    return value
 
 
 def _decode_decimal_real(content: bytes) -> float:
@@ -1649,7 +1727,10 @@ def _decode_decimal_real(content: bytes) -> float:
         raise ValueError(
             "Invalid Real: %r is not in the NR%d form" % (text, form)
         )
-    return float(text.replace(",", ".").lstrip(" "))
+    value = float(text.replace(",", ".").lstrip(" "))
+    if math.isinf(value):
+        _log_saturated_real(value)
+    return value
 
 
 def _encode_real(value: float) -> bytes:
@@ -2074,6 +2155,11 @@ class UtcTime(_TimeType):
         """
         if isinstance(self.pyvalue, Uninitialised):
             return b""
+        if self.pyvalue.microsecond:
+            LOG.debug(
+                "Microseconds dropped",
+                extra={"x690.type.name": type(self).__name__},
+            )
         if self.pyvalue.tzinfo is None or self.pyvalue.utcoffset() is None:
             raise ValueError("UtcTime requires a timezone-aware datetime")
         moment = self.pyvalue.astimezone(UTC)
@@ -2123,7 +2209,13 @@ class GeneralizedTime(_TimeType):
         extra = timedelta()
         if fraction:
             digits = Fraction(int(fraction), 10 ** len(fraction))
-            extra = timedelta(microseconds=int(digits * unit * 1_000_000))
+            micros = digits * unit * 1_000_000
+            if micros.denominator != 1:
+                LOG.debug(
+                    "Fraction truncated",
+                    extra={"x690.type.name": "GeneralizedTime"},
+                )
+            extra = timedelta(microseconds=int(micros))
         try:
             return (
                 datetime(
@@ -2415,11 +2507,18 @@ class BitString(X690Type[Bits]):
         """
         content = data[slc]
         if not content:
+            LOG.debug("Empty bit string without unused-bits octet")
             return Bits()
         try:
-            return Bits(content[1:], content[0])
+            bits = Bits(content[1:], content[0])
         except ValueError as exc:
             raise ValueError("Invalid BitString: %s" % exc) from exc
+        if bits.unused and bits.data[-1] & ((1 << bits.unused) - 1):
+            LOG.debug(
+                "Bit string padding not zero",
+                extra={"x690.bits.unused": bits.unused},
+            )
+        return bits
 
     def encode_raw(self) -> bytes:
         """
