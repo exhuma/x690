@@ -88,6 +88,7 @@ src = ["."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+extend-select = ["G", "LOG", "TRY400", "T20"]
 ignore = [
     "E501",
     "UP031",  # printf-style formatting is kept to avoid behaviour changes
@@ -97,3 +98,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["x690"]
+
+[tool.ruff.lint.per-file-ignores]
+"benchmarks/**" = ["T201"]
