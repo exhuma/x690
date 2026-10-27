@@ -145,8 +145,9 @@ def decode(
     :param strict: Raise :exc:`~x690.exc.IncompleteDecoding` if data is left
         after the value.
     :param types: Classes to try before the global registry for this value,
-        as :attr:`~x690.types.X690Type.CHILD_TYPES` does for the items of a constructed
-        type. Use it to decode a context-specific value on its own.
+        as :attr:`~x690.types.X690Type.CHILD_TYPES` does for the items of
+        a constructed type. Use it to decode a context-specific value on
+        its own.
     :return: The value and the index of the next value.
     """
     lookup = _type_map(types) if types else _NO_TYPES
@@ -197,6 +198,16 @@ def _decode_value(
 class X690Type(Generic[TWrappedPyType]):
     """
     The superclass for all supported types.
+
+    An instance wraps one Python value of type *TWrappedPyType*. It is
+    created either from that value, to be encoded, or by :func:`decode`,
+    which keeps the encoded bytes and converts them to a Python value only
+    when :attr:`value` is first read. Subclassing registers a new type; see
+    :doc:`/custom-types`.
+
+    :param value: The Python value to wrap. The default,
+        :data:`UNINITIALISED`, creates an empty instance that
+        :meth:`from_bytes` fills with encoded bytes.
     """
 
     __slots__ = ["pyvalue", "_raw_bytes", "_buffer", "_bounds"]
@@ -349,7 +360,16 @@ class X690Type(Generic[TWrappedPyType]):
         registered: they are declared in :attr:`CHILD_TYPES` of the
         enclosing type.
 
+        >>> X690Type.get("universal", 2, TypeNature.PRIMITIVE)
+        <class 'x690.types.Integer'>
+
+        :param typeclass: The value of a :class:`~x690.util.TypeClass`:
+            ``"universal"``, ``"application"`` or ``"private"``.
+        :param typeid: The tag number of the type.
+        :param nature: Whether the type is primitive or constructed.
+        :returns: The registered class.
         :raises KeyError: If no class is registered for the type.
+        :raises ValueError: If *typeclass* is not a valid type class.
         """
         return _REGISTRY[(TypeClass(typeclass), typeid, nature)]
 
@@ -365,6 +385,18 @@ class X690Type(Generic[TWrappedPyType]):
         """
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
+
+        Only the type class and the tag are compared, not the nature.
+
+        >>> Integer.validate(b"\\x02\\x01\\x05")
+        >>> Integer.validate(b"\\x04\\x01\\x05")
+        Traceback (most recent call last):
+        ...
+        ValueError: Invalid type header! Expected a ...
+
+        :param data: A complete encoded value, starting with the type octet.
+        :raises ValueError: If the type octet is not that of this class.
+        :raises IndexError: If *data* is empty.
         """
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
@@ -380,11 +412,17 @@ class X690Type(Generic[TWrappedPyType]):
         cls: type[TConcreteType], data: bytes
     ) -> TConcreteType:  # pragma: no cover
         """
-        This method takes a bytes object which contains the raw content octets
-        of the object. That means, the octets *without* the type information
-        and length.
+        Decode a complete encoded value, starting at its type octet, into a
+        new instance of this class.
 
-        This function must be overridden by the concrete subclasses.
+        The type octet is not checked; call :meth:`validate` first for that.
+
+        >>> Integer.decode(b"\\x02\\x01\\x05")
+        Integer(5)
+
+        :param data: The encoded value including type and length octets.
+        :returns: A new instance holding the decoded value.
+        :raises X690Error: If the length exceeds the available data.
         """
         slc = get_value_slice(data).bounds
         output = cls.decode_raw(data, slc)
@@ -404,6 +442,13 @@ class X690Type(Generic[TWrappedPyType]):
         OctetString(b'hello-world')
         >>> Boolean.from_bytes(b"\\x00")
         Boolean(False)
+
+        :param data: A buffer containing the content octets. It is shared,
+            not copied.
+        :param slc: The location of the content octets within *data*.
+        :returns: A new instance that decodes its value on first access.
+        :raises X690Error: If the class cannot be created without
+            arguments.
         """
         try:
             instance = cls()
@@ -522,6 +567,9 @@ class X690Type(Generic[TWrappedPyType]):
 
         By default this simply returns the string representation. But more
         complex values may override this.
+
+        :param depth: The number of indentation levels to prepend.
+        :returns: The text to display.
         """
         return indent(str(self), INDENT_STRING * depth)
 
@@ -539,6 +587,9 @@ class UnknownType(X690Type[bytes]):
       details.
     * ``typeinfo``: unused (derived from *tag* and only here for consistency
       with ``__repr__`` of this class).
+
+    :param value: The content octets.
+    :param tag: The unparsed identifier octet of the value.
     """
 
     __slots__ = ("tag",)
@@ -565,7 +616,11 @@ class UnknownType(X690Type[bytes]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.X690Type.pretty`
+        The content is shown as a hexdump, shortened if it is long. See
+        :py:meth:`~.X690Type.pretty`.
+
+        :param depth: The number of indentation levels to prepend.
+        :returns: The text to display.
         """
         wrapped = wrap(
             visible_octets(self.value), str(type(self)), depth
@@ -592,6 +647,13 @@ class UnknownType(X690Type[bytes]):
 
 
 class Boolean(X690Type[bool]):
+    """
+    The ``BOOLEAN`` type, tag ``0x01``, holding a :class:`bool`.
+
+    Encoding writes one content octet: ``0x01`` for true, ``0x00`` for
+    false.
+    """
+
     __slots__ = ()
     TAG = 0x01
     NATURE = [TypeNature.PRIMITIVE]
@@ -599,10 +661,13 @@ class Boolean(X690Type[bool]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> bool:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets as a :class:`bool`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        Any content other than a single zero octet is true.
+
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded value.
         """
         return data[slc] != b"\x00"
 
@@ -610,6 +675,10 @@ class Boolean(X690Type[bool]):
     def validate(cls, data: bytes) -> None:
         """
         Overrides :py:meth:`.X690Type.validate`
+
+        :param data: A complete encoded value, starting with the type octet.
+        :raises ValueError: If the type octet is not that of a
+            ``BOOLEAN`` or the length is not 1.
         """
         super().validate(data)
         if data[1] != 1:
@@ -626,6 +695,12 @@ class Boolean(X690Type[bool]):
 
 
 class Null(X690Type[None]):
+    """
+    The ``NULL`` type, tag ``0x05``. Its value is always ``None``.
+
+    The content is empty. An instance is false in a boolean context.
+    """
+
     __slots__ = ()
     TAG = 0x05
     NATURE = [TypeNature.PRIMITIVE]
@@ -634,6 +709,10 @@ class Null(X690Type[None]):
     def validate(cls, data: bytes) -> None:
         """
         Overrides :py:meth:`.X690Type.validate`
+
+        :param data: A complete encoded value, starting with the type octet.
+        :raises ValueError: If the type octet is not that of a ``NULL`` or
+            the length is not 0.
         """
         super().validate(data)
         if data[1] != 0:
@@ -644,10 +723,11 @@ class Null(X690Type[None]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> None:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Return ``None``, whatever the content octets are.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: ``None``.
         """
         # pylint: disable=unused-argument
         return None
@@ -676,6 +756,17 @@ class Null(X690Type[None]):
 
 
 class OctetString(X690Type[bytes]):
+    """
+    The ``OCTET STRING`` type, tag ``0x04``, holding :class:`bytes`.
+
+    The content is arbitrary binary data without a character encoding, so
+    it is kept as raw bytes.
+
+    :param value: The octets. A :class:`str` is encoded as ASCII.
+    :raises UnicodeEncodeError: If *value* is a :class:`str` with
+        non-ASCII characters.
+    """
+
     __slots__ = ()
     TAG = 0x04
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
@@ -696,7 +787,11 @@ class OctetString(X690Type[bytes]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.X690Type.pretty`
+        If the content is itself an encoded value, it is shown decoded in a
+        box, otherwise as a hexdump. See :py:meth:`~.X690Type.pretty`.
+
+        :param depth: The number of indentation levels to prepend.
+        :returns: The text to display.
         """
         if self.value == b"":
             return repr(self)
@@ -750,6 +845,11 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         Return the start index of every item in the value at *slc*.
 
         Only the type and length headers are read; no item is decoded.
+
+        :param data: The buffer holding the encoded items.
+        :param slc: The location of the items within *data*.
+        :returns: The start index of each item within *data*.
+        :raises X690Error: If an item announces more data than available.
         """
         start, end, _ = slc.indices(len(data))
         offsets = array("Q")
@@ -764,10 +864,12 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         cls, data: bytes, slc: slice = slice(None)
     ) -> list[X690Type[Any]]:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode every item of the value, resolving the tags with
+        :meth:`~.X690Type.child_lookup`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded items, in order.
         """
         lookup = cls.child_lookup()
         return [
@@ -855,7 +957,10 @@ class _Structure(X690Type[list[X690Type[Any]]]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.X690Type.pretty`
+        Each item is shown as a bullet. See :py:meth:`~.X690Type.pretty`.
+
+        :param depth: The number of indentation levels to prepend.
+        :returns: The text to display.
         """
         lines = [f"{self.__class__.__name__} with {len(self.value)} items:"]
         for item in self.value:
@@ -925,6 +1030,9 @@ class Explicit(X690Type[TInnerType]):
 
         Overrides :py:meth:`~.X690Type.decode_raw`
 
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The inner value.
         :raises ValueError: If the wrapper holds no value.
         """
         start, end, _ = slc.indices(len(data))
@@ -965,7 +1073,11 @@ class Explicit(X690Type[TInnerType]):
         """
         Returns a prettified string with *depth* levels of indentation
 
-        See :py:meth:`~.X690Type.pretty`
+        The inner value is shown below the tag of the wrapper. See
+        :py:meth:`~.X690Type.pretty`.
+
+        :param depth: The number of indentation levels to prepend.
+        :returns: The text to display.
         """
         lines = [f"{self.__class__.__name__} (explicit tag {self.TAG}):"]
         bullet = INDENT_STRING * depth + "⁃ "
@@ -1017,10 +1129,13 @@ class _IntegerContent(X690Type[int]):
     @classmethod
     def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> int:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets as a big-endian :class:`int`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        The number is read as two's complement if ``SIGNED`` is true.
+
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded number.
         """
         data = data[slc]
         return int.from_bytes(data, "big", signed=cls.SIGNED)
@@ -1035,6 +1150,13 @@ class _IntegerContent(X690Type[int]):
 
 
 class Integer(_IntegerContent):
+    """
+    The ``INTEGER`` type, tag ``0x02``, holding an :class:`int`.
+
+    The value is encoded as the shortest big-endian two's-complement
+    octets, so negative numbers are valid and its size is not limited.
+    """
+
     __slots__ = ()
     TAG = 0x02
     NATURE = [TypeNature.PRIMITIVE]
@@ -1052,6 +1174,9 @@ class ObjectIdentifier(X690Type[str]):
 
         >>> ObjectIdentifier("1.2.4.5.6") in ObjectIdentifier("1.2.3")
         False
+
+    :param value: The dotted notation of the identifier, such as
+        ``"1.3.6.1"``. A leading dot is dropped.
     """
 
     __slots__ = ()
@@ -1085,9 +1210,19 @@ class ObjectIdentifier(X690Type[str]):
     def decode_large_value(current_char: int, stream: Iterator[int]) -> int:
         """
         If we encounter a value larger than 127, we have to consume from the
-        stram until we encounter a value below 127 and recombine them.
+        stream until we encounter a value below 127 and recombine them.
 
         See: https://msdn.microsoft.com/en-us/library/bb540809(v=vs.85).aspx
+
+        >>> ObjectIdentifier.decode_large_value(0x81, iter([0x48]))
+        200
+
+        :param current_char: The first octet of the arc. It must be above
+            127, otherwise it is the whole arc.
+        :param stream: The following octets. Octets are consumed up to and
+            including the last one of the arc.
+        :returns: The recombined number.
+        :raises StopIteration: If *stream* ends before the arc is complete.
         """
         buffer = []
         while current_char > 127:
@@ -1102,6 +1237,13 @@ class ObjectIdentifier(X690Type[str]):
     def encode_large_value(value: int) -> list[int]:
         """
         Inverse function of :py:meth:`~.ObjectIdentifier.decode_large_value`
+
+        >>> ObjectIdentifier.encode_large_value(200)
+        [129, 72]
+
+        :param value: The number to encode as one arc.
+        :returns: The octets of the arc, each but the last with the high
+            bit set.
         """
         if value <= 127:
             return [value]
@@ -1116,10 +1258,15 @@ class ObjectIdentifier(X690Type[str]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets into the dotted notation.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        The first octet holds the first two arcs. Empty content gives an
+        empty string.
+
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The dotted identifier.
+        :raises StopIteration: If the last arc is incomplete.
         """
         # Special case for "empty" object identifiers which should be returned
         # as "0"
@@ -1303,12 +1450,28 @@ class ObjectIdentifier(X690Type[str]):
     def parentof(self, other: "ObjectIdentifier") -> bool:
         """
         Convenience method to check whether this OID is a parent of another OID
+
+        An identifier is a parent of itself.
+
+        >>> ObjectIdentifier("1.2.3").parentof(ObjectIdentifier("1.2.3.4"))
+        True
+
+        :param other: The identifier to test.
+        :returns: ``True`` if *other* is this identifier or below it.
         """
         return other in self
 
     def childof(self, other: "ObjectIdentifier") -> bool:
         """
         Convenience method to check whether this OID is a child of another OID
+
+        An identifier is a child of itself.
+
+        >>> ObjectIdentifier("1.2.3.4").childof(ObjectIdentifier("1.2.3"))
+        True
+
+        :param other: The identifier to test.
+        :returns: ``True`` if this identifier is *other* or below it.
         """
         return self in other
 
@@ -1335,11 +1498,11 @@ class _TextString(X690Type[str]):
     @classmethod
     def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> str:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets with the character set of the type.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded text.
         :raises UnicodeDecodeError: if the data is invalid for the
             character set of the type.
         """
@@ -1379,6 +1542,13 @@ class ObjectDescriptor(_TextString):
 
 
 class External(X690Type[bytes]):
+    """
+    The ``EXTERNAL`` type, tag ``0x08``, holding :class:`bytes`.
+
+    The structured content (identification, data value) is not
+    interpreted, so the value is the raw content octets.
+    """
+
     __slots__ = ()
     TAG = 0x08
 
@@ -1519,6 +1689,8 @@ class Real(X690Type[float]):
     b'\\t\\x03\\x80\\xff\\x01'
     >>> decode(b"\\t\\x04\\x01-25")[0]
     Real(-25.0)
+
+    :param value: The number. An :class:`int` is converted to a float.
     """
 
     __slots__ = ()
@@ -1533,11 +1705,11 @@ class Real(X690Type[float]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> float:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets into a :class:`float`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded number. Empty content is ``0.0``.
         :raises ValueError: if the contents are not a valid REAL.
         """
         content = data[slc]
@@ -1592,6 +1764,13 @@ class Enumerated(_IntegerContent):
 
 
 class EmbeddedPdv(X690Type[bytes]):
+    """
+    The ``EMBEDDED PDV`` type, tag ``0x0B``, holding :class:`bytes`.
+
+    The structured content (identification, data value) is not
+    interpreted, so the value is the raw content octets.
+    """
+
     __slots__ = ()
     TAG = 0x0B
 
@@ -1623,11 +1802,11 @@ class RelativeOid(X690Type[str]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> str:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets into the dotted notation.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The dotted arcs. Empty content gives an empty string.
         :raises ValueError: if the last arc is not complete.
         """
         remaining = iter(data[slc])
@@ -1708,6 +1887,10 @@ class T61String(X690Type[str]):
     values, decode the raw bytes with ``bytes.decode("latin-1")``.
 
     The T.61 codec is never registered globally.
+
+    :param value: The text. :class:`bytes` are decoded as T.61.
+    :raises UnicodeDecodeError: If *value* is :class:`bytes` that are not
+        valid T.61.
     """
 
     __slots__ = ()
@@ -1723,11 +1906,11 @@ class T61String(X690Type[str]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None, None)) -> str:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets as T.61 text.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded text.
         :raises UnicodeDecodeError: if the data is not valid T.61.
         """
         return _T61_CODEC.decode(data[slc])[0]
@@ -1745,6 +1928,14 @@ class T61String(X690Type[str]):
 
 
 class VideotexString(X690Type[str]):
+    """
+    The ``VideotexString`` type, tag ``0x15``.
+
+    The character set is not interpreted: a decoded value holds the raw
+    content octets as :class:`bytes`, because the encoding depends on
+    escape sequences that this library does not process.
+    """
+
     __slots__ = ()
     TAG = 0x15
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
@@ -1842,11 +2033,11 @@ class UtcTime(_TimeType):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> datetime:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets into an aware :class:`~datetime.datetime`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded moment.
         :raises UnicodeDecodeError: if the data is not ASCII.
         :raises ValueError: if the text is not a valid UTCTime.
         """
@@ -1909,11 +2100,11 @@ class GeneralizedTime(_TimeType):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> datetime:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
+        Decode the content octets into a :class:`~datetime.datetime`.
 
-        Overrides :py:meth:`~.X690Type.decode_raw`
-
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded moment, naive if the text has no zone.
         :raises UnicodeDecodeError: if the data is not ASCII.
         :raises ValueError: if the text is not a valid GeneralizedTime.
         """
@@ -1984,6 +2175,14 @@ class VisibleString(_TextString):
 
 
 class GeneralString(X690Type[str]):
+    """
+    The ``GeneralString`` type, tag ``0x1B``.
+
+    The character set is not interpreted: a decoded value holds the raw
+    content octets as :class:`bytes`, because the encoding depends on
+    escape sequences that this library does not process.
+    """
+
     __slots__ = ()
     TAG = 0x1B
     NATURE = [TypeNature.PRIMITIVE, TypeNature.CONSTRUCTED]
@@ -2002,6 +2201,14 @@ class UniversalString(_TextString):
 
 
 class CharacterString(X690Type[str]):
+    """
+    The ``CHARACTER STRING`` type, tag ``0x1D``.
+
+    The structured content (identification, string value) is not
+    interpreted: a decoded value holds the raw content octets as
+    :class:`bytes`.
+    """
+
     __slots__ = ()
     TAG = 0x1D
 
@@ -2019,6 +2226,13 @@ class BmpString(_TextString):
 
 
 class EOC(X690Type[bytes]):
+    """
+    The end-of-contents marker, tag ``0x00``, two zero octets in total.
+
+    It terminates a constructed value of indefinite length and has no
+    content. Its value is an empty :class:`bytes`.
+    """
+
     __slots__ = ()
     TAG = 0x00
     NATURE = [TypeNature.PRIMITIVE]
@@ -2094,6 +2308,8 @@ class Bits:
         >>> Bits.from_bin("1").is_set(5)
         False
 
+        :param index: The position of the bit, 0 being the first.
+        :returns: Whether the bit is set.
         :raises ValueError: if *index* is negative.
         """
         if index < 0:
@@ -2164,6 +2380,8 @@ class BitString(X690Type[Bits]):
     b'\\x03\\x03\\x00\\x01\\x02'
     >>> decode(b"\\x03\\x02\\x05\\xa0")[0].value
     Bits(b'\\xa0', unused=5)
+
+    :param value: The bits, or whole octets as :class:`bytes`.
     """
 
     __slots__ = ()
@@ -2180,12 +2398,13 @@ class BitString(X690Type[Bits]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> Bits:
         """
-        Converts the raw byte-value (without type & length header) into a
-        pure Python type
-
-        Overrides :py:meth:`~.X690Type.decode_raw`
+        Decode the content octets into a :class:`Bits`.
 
         Empty contents decode to an empty value.
+
+        :param data: A data-block containing the content octets.
+        :param slc: The location of the content octets within *data*.
+        :returns: The decoded bits.
 
         :raises ValueError: if the number of unused bits is invalid.
         """
