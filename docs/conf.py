@@ -1,14 +1,25 @@
-from importlib.metadata import version as _version
+import tomllib
+from pathlib import Path
+
+with open(Path(__file__).parent.parent / "pyproject.toml", "rb") as f:
+    _meta = tomllib.load(f)
 
 project = "x690"
 copyright = "2020, Michel Albert"
 author = "Michel Albert"
-release = _version("x690")
+release = _meta["project"]["version"]
+version = ".".join(release.split(".")[:2])
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.intersphinx",
+    "sphinx_autodoc_typehints",
     "michel_albert_sphinx",
 ]
+
+autosectionlabel_prefix_document = True
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
