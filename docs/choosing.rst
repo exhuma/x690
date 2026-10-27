@@ -1,7 +1,7 @@
 Choosing x690
 =============
 
-Python has several libraries for ASN.1 data. They differ in where the
+Python has several libraries for :term:`ASN.1` data. They differ in where the
 structure of a message is defined, what decoding returns, and what a type
 checker can see. This page decodes the same message with five of them, then
 explains why x690 works the way it does and where it falls short today.
@@ -110,10 +110,10 @@ Python classes built from ``NamedTypes`` and tag objects:
    # True
 
 The schema mirrors ASN.1 closely and covers the whole standard, including
-BER, CER and DER. The classes are configured through class attributes rather
-than written as ordinary Python, and values are pyasn1 objects that convert
-with ``int()`` or ``str()``. pyasn1 ships no type hints; separate stubs exist
-in typeshed (``types-pyasn1``).
+:term:`BER`, CER and DER. The classes are configured through class
+attributes rather than written as ordinary Python, and values are pyasn1
+objects that convert with ``int()`` or ``str()``. pyasn1 ships no type
+hints; separate stubs exist in typeshed (``types-pyasn1``).
 
 asn1tools
 ---------
@@ -396,7 +396,8 @@ build steps.
 
 Python classes, schema optional
    A type is a class with three attributes. Universal types decode without
-   any declaration, and a protocol type needs only its class, nature and tag.
+   any declaration, and a protocol type needs only its
+   :term:`class <type class>`, :term:`nature` and :term:`tag`.
    A context-specific type is declared on the type that encloses it.
    There is no ASN.1 compiler yet; generating x690 classes from ASN.1 modules
    is a possible addition, as long as x690 keeps working without it.

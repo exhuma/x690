@@ -121,7 +121,8 @@ Inspect unknown data
 
 :meth:`~x690.types.X690Type.pretty` prints a value and everything inside it.
 Values x690 has no type for decode to :class:`~x690.types.UnknownType`, which
-shows their class, nature and tag. This SNMP request contains such a value:
+shows their :term:`class <type class>`, :term:`nature` and :term:`tag`.
+This SNMP request contains such a value:
 
 >>> data = (
 ...     b"0'\x02\x01\x01\x04\x06public"

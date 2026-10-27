@@ -1,18 +1,18 @@
 Add custom types
 ================
 
-Protocols built on ASN.1 define their own types in the application, context
-and private classes. x690 decodes them as :class:`~x690.types.UnknownType`
-until it knows them. Subclass :class:`~x690.types.X690Type`, or one of its
-subclasses, to describe a type. How x690 finds the class depends on its
-type class:
+Protocols built on :term:`ASN.1` define their own types in the
+application, context and private classes. x690 decodes them as
+:class:`~x690.types.UnknownType` until it knows them. Subclass
+:class:`~x690.types.X690Type`, or one of its subclasses, to describe a
+type. How x690 finds the class depends on its :term:`type class`:
 
 Universal, application and private types
    Subclassing registers the type with :func:`~x690.decode`. It decodes
    wherever it appears.
 
 Context-specific types
-   A context tag such as ``[0]`` has a meaning only inside its enclosing
+   A context :term:`tag` such as ``[0]`` has a meaning only inside its enclosing
    type. These types are never registered. Declare them on the enclosing
    type instead, as shown in `Declare the types of a structure`_.
 
@@ -26,8 +26,9 @@ Three class attributes identify a type:
    ``PRIVATE`` for protocol types. ``UNIVERSAL`` belongs to the standard.
 
 ``NATURE``
-   A list of :class:`~x690.util.TypeNature` values: ``PRIMITIVE`` for single
-   values, ``CONSTRUCTED`` for values that contain other values.
+   The :term:`nature`, a list of :class:`~x690.util.TypeNature` values:
+   ``PRIMITIVE`` for single values, ``CONSTRUCTED`` for values that
+   contain other values.
 
 ``TAG``
    The tag number. It is unique within the class, and for context-specific

@@ -1,9 +1,9 @@
 Supported types
 ===============
 
-:mod:`x690.types` has a class for every universal type of X.690. Each class
-decodes its tag, and each instance encodes back to bytes. They differ in the
-Python value they hold.
+:mod:`x690.types` has a class for every universal type of
+:term:`X.690`. Each class decodes its :term:`tag`, and each instance
+encodes back to bytes. They differ in the Python value they hold.
 
 Types with a Python value
 -------------------------
@@ -108,7 +108,7 @@ Bit strings
 :class:`~x690.types.BitString` holds a :class:`~x690.types.Bits` value.
 It keeps the octets and the number of unused bits, so a decoded value
 encodes back unchanged. Bit 0 is the most significant bit of the first
-octet, as in ASN.1 named bit lists.
+octet, as in :term:`ASN.1` named bit lists.
 
 Read flags such as the X.509 ``KeyUsage`` by position. DER drops trailing
 zero bits, so use :meth:`~x690.types.Bits.is_set`, which reads bits past

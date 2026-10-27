@@ -1,11 +1,11 @@
 x690
 ====
 
-Encode and decode ASN.1 data in BER (ITU-T X.690) with pure Python. x690
-turns every encoded value into a typed Python object, decodes documents of a
-million values in a few megabytes of memory, and takes new types with a few
-lines of code. It is the encoding layer of `puresnmp
-<https://github.com/exhuma/puresnmp>`_.
+Encode and decode :term:`ASN.1` data in :term:`BER` (ITU-T :term:`X.690`)
+with pure Python. x690 turns every encoded value into a typed Python
+object, decodes documents of a million values in a few megabytes of
+memory, and takes new types with a few lines of code. It is the
+encoding layer of `puresnmp <https://github.com/exhuma/puresnmp>`_.
 
 Install
 -------
@@ -57,11 +57,12 @@ Custom types
    Subclass :class:`~x690.types.X690Type` to add application, context or
    private types. Application and private types are registered with the
    decoder. Context-specific types are declared on their enclosing type, so
-   the same tag can mean a different type in every structure.
+   the same :term:`tag` can mean a different type in every structure.
 
 Readable dumps
    :meth:`~x690.types.X690Type.pretty` prints nested values with hex dumps,
-   and shows the class, nature and tag of every value x690 does not know.
+   and shows the class, :term:`nature` and tag of every value x690 does
+   not know.
 
 One dependency
    x690 is pure Python. It depends only on
