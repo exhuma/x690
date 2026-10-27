@@ -1266,7 +1266,7 @@ class ObjectIdentifier(X690Type[str]):
         :param data: A data-block containing the content octets.
         :param slc: The location of the content octets within *data*.
         :returns: The dotted identifier.
-        :raises StopIteration: If the last arc is incomplete.
+        :raises ValueError: If the last arc is incomplete.
         """
         # Special case for "empty" object identifiers which should be returned
         # as "0"
@@ -1285,9 +1285,14 @@ class ObjectIdentifier(X690Type[str]):
             # Each node can only contain values from 0-127. Other values need
             # to be combined.
             if node > 127:
-                collapsed_value = ObjectIdentifier.decode_large_value(
-                    node, remaining
-                )
+                try:
+                    collapsed_value = ObjectIdentifier.decode_large_value(
+                        node, remaining
+                    )
+                except StopIteration as exc:
+                    raise ValueError(
+                        "Truncated ObjectIdentifier: the last arc is incomplete"
+                    ) from exc
                 output.append(collapsed_value)
                 continue
             output.append(node)

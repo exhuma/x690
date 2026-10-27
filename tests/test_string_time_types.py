@@ -516,3 +516,11 @@ def test_repr_of_invalid_text_shows_raw_bytes():
     """
     value, _ = decode(b"\x0c\x02\xff\xfe")
     assert repr(value) == "Utf8String(raw=b'\\xff\\xfe')"
+
+
+def test_object_identifier_truncated():
+    """
+    Ensure an incomplete last arc raises ValueError.
+    """
+    with pytest.raises(ValueError, match="Truncated"):
+        _ = t.ObjectIdentifier.from_bytes(b"\x2b\x81").value
