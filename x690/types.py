@@ -1370,7 +1370,7 @@ class ObjectIdentifier(X690Type[str]):
         if len(nodes) != 1:
             raise ValueError(
                 "Only ObjectIdentifier with one node can be "
-                "converted to int. %r is not convertable. It has %d nodes."
+                "converted to int. %r is not convertible. It has %d nodes."
                 % (self, len(self))
             )
         return nodes[0]
@@ -1417,7 +1417,7 @@ class ObjectIdentifier(X690Type[str]):
         # is a direct subtree of "b" (no diverging nodes). Otherwise we would
         # have te divergence in "b", and we can say that "b is contained in a"
         _, unzipped_b = zip(*tail)
-        # In all other cases we end up with an unmatching tail and know that "b
+        # In all other cases we end up with a non-matching tail and know that "b
         # is not contained in a".
         return all(x is None for x in unzipped_b)
 

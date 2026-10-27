@@ -54,6 +54,9 @@ checks automatically. You can also run them manually:
 uv run pre-commit run --all-files
 ```
 
+The hooks also check spelling with [cspell](https://cspell.org/). Add a
+real domain term to `project-words.txt`; fix a typo in the text instead.
+
 ## Submitting changes
 
 Please open a pull request with a clear description of what was changed and
