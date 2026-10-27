@@ -24,9 +24,8 @@ prepared as 1.1.0, which was never published.
 * ``raw_bytes`` of a decoded value is now only that value's bytes, and the
   ``bounds`` attribute is gone
   (`#14 <https://github.com/exhuma/x690/issues/14>`_).
-* Values are equal only when they have the same class and value, and they
-  can no longer be used in sets or as dictionary keys. ``ObjectIdentifier``
-  is the exception.
+* Values are equal only when they have the same class and value, so a
+  subclass no longer equals its base class.
 * ``repr()`` of a ``Sequence`` subclass shows the subclass name
   (`#19 <https://github.com/exhuma/x690/issues/19>`_).
 * ``T61String`` follows ITU-T T.61 strictly: accented letters decode to
