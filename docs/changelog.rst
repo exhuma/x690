@@ -43,6 +43,9 @@ prepared as 1.1.0, which was never published.
 * ``detach()`` lets you keep a value from a large document without keeping
   the whole document in memory.
 * ``decode()`` takes the types of a context-tagged value as ``types=``.
+* Decoding decisions (unknown types, overrides, lenient decoding and
+  saturated values) are logged at DEBUG on the ``x690.types`` logger. See
+  :doc:`observability`.
 
 **Faster and smaller**
 

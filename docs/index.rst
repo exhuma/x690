@@ -120,6 +120,9 @@ Contents
 :doc:`types`
    The universal types and the Python value each one decodes to.
 
+:doc:`observability`
+   The DEBUG records x690 emits and how to switch them on.
+
 :doc:`api/index`
    Every public module, class and function.
 
@@ -132,6 +135,7 @@ Contents
    choosing
    usage
    custom-types
+   observability
    types
    api/index
    glossary
