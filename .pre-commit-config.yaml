@@ -43,4 +43,3 @@ repos:
           |x690/.*\.py
           |benchmarks/.*
           )$
-        exclude: ^docs/changelog\.rst$

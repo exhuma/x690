@@ -59,11 +59,17 @@ prepared as 1.1.0, which was never published.
 * ``GraphicString`` values can be encoded
   (`#13 <https://github.com/exhuma/x690/issues/13>`_).
 * ``repr()`` of an unknown type no longer changes between Python versions.
+* A truncated ``ObjectIdentifier`` raises ``ValueError`` instead of
+  ``StopIteration``.
+* The type hints of ``VideotexString``, ``GeneralString`` and
+  ``CharacterString`` say ``bytes``, which is what they hold.
 
 **Documentation**
 
 * New documentation at https://exhuma.github.io/x690/, with guides, a list
   of supported types and a comparison with other ASN.1 libraries.
+* The start page states the compatibility and deprecation policy, and the
+  API reference documents every public class and function.
 
 Release 1.0.0post1 - Maintenance release
 ----------------------------------------
@@ -104,7 +110,7 @@ Release 1.0.0post1 - Maintenance release
   for subtree modifications/concatenation.  They will still raise errors if
   they are converted to bytes unmodified.
 
-* Internal typing improvment
+* Internal typing improvement
 
 
 0.5.0-alpha.4
@@ -117,12 +123,12 @@ Release 1.0.0post1 - Maintenance release
 0.5.0-alpha.3
 -------------
 
-* Housekeeping & typing improvments
+* Housekeeping & typing improvements
 
 0.5.0-alpha.2
 -------------
 
-* Don't conider "None/NULL" values as "uninitialised". This prevents
+* Don't consider "None/NULL" values as "uninitialised". This prevents
   unnecessary/repetitive byte-conversions.
 
 0.5.0-alpha.1
@@ -130,7 +136,7 @@ Release 1.0.0post1 - Maintenance release
 
 * ObjectIdentifiers now "feel" more like strings. The constructor changed to
   reflect this: ``ObjectIdentifier("1.2.3")``
-* Improve error message when creating custom typess without no-arg constructor
+* Improve error message when creating custom types without no-arg constructor
 * Fix "unsigned int" values
 * Fix handling of empty ``Sequence`` instances
 
@@ -168,7 +174,7 @@ introduced breaking bugs.
 * **changed** Subclasses of ``x690.Type`` must now override the
   ``Type.encode_raw`` method if the python-value is a non-bytes object.
 * dataclasses in have been replaced with named-tuples for increased performance.
-* An instance can now be creted from raw-bytes (excluding the type and length
+* An instance can now be created from raw-bytes (excluding the type and length
   header bytes) by calling ``Type.from_bytes(...)`` (by using the class of the
   appropriate type!).
 * New function ``x690.util.get_value_slice`` can be used to find the location
@@ -190,7 +196,7 @@ introduced breaking bugs.
   function.
 * Support for "indefinite length" values
 * Allow registering types with "non-constructed" nature
-* Improved prettyfication of unknown types
+* Improved prettification of unknown types
 * Support types which can be encoded as either "primitive" or "constructed"
 * Implement decoding of the GraphicString type
 * Removed duplication of length-decoding
@@ -214,8 +220,8 @@ should only have an impact if you extended ``x690`` with new types.
   instead). For example: ``bytes(x690.types.Integer(10))``
 * Added ``enforce_type`` to ``pop_tlv`` for improved type-safety and -checking
 * Added ``strict`` to ``pop_tlv`` for quick & easy sanity checks
-* Improved prettyfication of byte-values and unknown types
-* Improved prettyfication of nested sequences
+* Improved prettification of byte-values and unknown types
+* Improved prettification of nested sequences
 * Improved type-hints
 * Added default values to all types
 * Changed ``x690.util.LengthValue`` and ``x690.util.TypeInfo`` to dataclasses
