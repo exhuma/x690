@@ -836,8 +836,8 @@ wheels = [
 
 [[package]]
 name = "michel-albert-sphinx"
-version = "0.4.0"
-source = { git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.4.0#b427cf5ab106992c0467d8eb362d6056497aa2f8" }
+version = "0.6.0"
+source = { git = "https://github.com/exhuma/michel-albert-design?subdirectory=packages%2Fsphinx&rev=sphinx-v0.6.0#6a389f50d01bff9663174169aa631a4ac524fbf8" }
 dependencies = [
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "sphinx", version = "9.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*'" },
@@ -1598,7 +1598,7 @@ bench = [
     { name = "pycrate", specifier = ">=0.8" },
 ]
 dev = [
-    { name = "michel-albert-sphinx", git = "https://github.com/exhuma/michel-albert-sphinx?rev=v0.4.0" },
+    { name = "michel-albert-sphinx", git = "https://github.com/exhuma/michel-albert-design?subdirectory=packages%2Fsphinx&rev=sphinx-v0.6.0" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "pre-commit", specifier = ">=3.7" },
     { name = "pygments", specifier = ">=2.17" },
